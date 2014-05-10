@@ -11,10 +11,8 @@ addto(C1& x, typename Field::Element a, const C2& y, const Field& field, const C
     auto cur_y = y.begin(),
          end_y = y.end();
 
-    std::cout << "Add to (" << x.size() << ") + (" << y.size() << "):" << std::endl;
     while (cur_x != end_x && cur_y != end_y)
     {
-        std::cout << "   " << cur_x->index() << " " << cur_y->index() << std::endl;
         if (cmp(cur_x->index(), cur_y->index()))
         {
             visitor.first(cur_x++);
@@ -66,7 +64,6 @@ addto(std::set<T,TCmp>& x, typename Field::Element a, const C2& y, const Field& 
     auto cur_y = y.begin(),
          end_y = y.end();
 
-    std::cout << "Add to (" << x.size() << ") + (" << y.size() << "):" << std::endl;
     while (cur_y != end_y)
     {
         auto cur_x = x.find(*cur_y);
@@ -92,5 +89,37 @@ addto(std::set<T,TCmp>& x, typename Field::Element a, const C2& y, const Field& 
             }
         }
         ++cur_y;
+    }
+}
+
+template<class T, class TCmp>
+template<class Field, class Cmp, class Visitor_>
+void
+dionysus::Chain<std::set<T,TCmp>>::
+addto(std::set<T,TCmp>& x, typename Field::Element a, T&& y, const Field& field, const Cmp& cmp, const Visitor_& visitor)
+{
+    typedef typename Field::Element                     Element;
+
+    auto cur_x = x.find(y);
+    if (cur_x == x.end())
+    {
+        auto nw = x.insert(std::move(y)).first;
+        Element ay = field.mul(a, nw->element());
+        const_cast<T&>(*nw).set_element(ay);
+        visitor.second(nw);
+    } else
+    {
+        Element ay = field.mul(a, y.element());
+        Element r  = field.add(cur_x->element(), ay);
+        if (field.is_zero(r))
+        {
+            visitor.equal_drop(cur_x);
+            x.erase(cur_x);
+        }
+        else
+        {
+            const_cast<T&>(*cur_x).set_element(r);
+            visitor.equal_keep(cur_x);
+        }
     }
 }

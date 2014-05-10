@@ -96,6 +96,9 @@ struct Chain<std::set<T,TCmp>>
     // x += a*y
     template<class C2, class Field, class Cmp, class Visitor_ = Visitor>
     static void addto(std::set<T,TCmp>& x, typename Field::Element a, const C2& y, const Field& field, const Cmp& cmp, const Visitor_& = Visitor_());
+
+    template<class Field, class Cmp, class Visitor_ = Visitor>
+    static void addto(std::set<T,TCmp>& x, typename Field::Element a, T&& y, const Field& field, const Cmp& cmp, const Visitor_& = Visitor_());
 };
 
 }

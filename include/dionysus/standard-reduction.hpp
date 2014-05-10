@@ -14,7 +14,7 @@ operator()(const Filtration& filtration)
 
     for(auto& c : filtration)
     {
-        std::cout << "Adding: " << c << std::endl;
+        std::cout << "Adding: " << c << " : " << boost::distance(c.boundary(persistence_.field())) << std::endl;
         persistence_.add(c.boundary(persistence_.field()) |
                          ba::transformed([this,&filtration](const CellChainEntry& e)
                          { return ChainEntry(e.element(), filtration.index(e.index())); }));

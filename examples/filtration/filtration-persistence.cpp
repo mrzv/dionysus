@@ -7,6 +7,7 @@
 #include <dionysus/fields/z2.h>
 #include <dionysus/ordinary-persistence.h>
 #include <dionysus/standard-reduction.h>
+#include <dionysus/cohomology-persistence.h>
 
 namespace d = dionysus;
 
@@ -15,7 +16,8 @@ typedef     d::ZpField<>                K;
 typedef     d::Simplex<>                Simplex;
 typedef     d::Filtration<Simplex>      Filtration;
 //typedef     d::OrdinaryPersistence<K>   Persistence;
-typedef     d::OrdinaryPersistenceNoNegative<K>   Persistence;
+//typedef     d::OrdinaryPersistenceNoNegative<K>   Persistence;
+typedef     d::CohomologyPersistence<K>     Persistence;
 
 int main()
 {
@@ -45,7 +47,7 @@ int main()
     for (auto& c : persistence.columns())
     {
         std::cout << i << ": ";
-        for (auto& ce : c)
+        for (auto& ce : c.chain)
         {
             std::cout << " + " << ce.element() << " * " << ce.index();
         }
