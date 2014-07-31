@@ -12,6 +12,8 @@ namespace bmi = boost::multi_index;
 namespace dionysus
 {
 
+// Filtration stores a filtered cell complex as boost::multi_index_container<...>.
+// It allows for bidirectional translation between a cell and its index.
 template<class Cell_,
          class CellLookupIndex_ = bmi::hashed_unique<bmi::identity<Cell_>>>
 class Filtration

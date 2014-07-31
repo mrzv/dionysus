@@ -8,6 +8,7 @@
 #include <dionysus/ordinary-persistence.h>
 #include <dionysus/standard-reduction.h>
 #include <dionysus/cohomology-persistence.h>
+#include <dionysus/sparse-row-matrix.h>
 
 namespace d = dionysus;
 
@@ -17,7 +18,8 @@ typedef     d::Simplex<>                Simplex;
 typedef     d::Filtration<Simplex>      Filtration;
 //typedef     d::OrdinaryPersistence<K>   Persistence;
 //typedef     d::OrdinaryPersistenceNoNegative<K>   Persistence;
-typedef     d::CohomologyPersistence<K>     Persistence;
+//typedef     d::CohomologyPersistence<K>     Persistence;
+typedef     d::SparseRowMatrix<K>       Persistence;
 
 int main()
 {
@@ -43,6 +45,7 @@ int main()
     reduce(filtration);
     std::cout << "Reduction finished" << std::endl;
 
+#if 0
     unsigned i = 0;
     for (auto& c : persistence.columns())
     {
@@ -54,4 +57,5 @@ int main()
         std::cout << std::endl;
         ++i;
     }
+#endif
 }

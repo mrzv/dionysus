@@ -62,7 +62,7 @@ class ReducedMatrix
 
         const Field&            field() const                   { return field_; }
         void                    reserve(size_t s)               { reduced_.reserve(s); pairs_.reserve(s); }
-        void                    resize(size_t s)                { reduced_.resize(s); pairs_.resize(s, unpaired); }
+        void                    resize(size_t s)                { reduced_.resize(s);  pairs_.resize(s, unpaired); }
 
         const Chains&           columns() const                 { return reduced_; }
 
