@@ -12,7 +12,6 @@ add(const ChainRange& chain)
 
     if (row_sum.empty())        // Birth
     {
-        std::cout << "Birth" << std::endl;
         columns_.emplace_back(rows_.size());
         auto before_end = columns_.end();
            --before_end;
@@ -22,8 +21,6 @@ add(const ChainRange& chain)
         return unpaired;
     } else                      // Death
     {
-        std::cout << "Death" << std::endl;
-
         // Select front element in terms of comparison (rows are unsorted)
         auto it = std::max_element(std::begin(row_sum), std::end(row_sum), entry_cmp);
 

@@ -9,6 +9,7 @@
 #include <dionysus/standard-reduction.h>
 #include <dionysus/cohomology-persistence.h>
 #include <dionysus/sparse-row-matrix.h>
+#include <dionysus/zigzag-persistence.h>
 
 namespace d = dionysus;
 
@@ -19,7 +20,7 @@ typedef     d::Filtration<Simplex>      Filtration;
 //typedef     d::OrdinaryPersistence<K>   Persistence;
 //typedef     d::OrdinaryPersistenceNoNegative<K>   Persistence;
 //typedef     d::CohomologyPersistence<K>     Persistence;
-typedef     d::SparseRowMatrix<K>       Persistence;
+typedef     d::ZigzagPersistence<K>       Persistence;
 
 int main()
 {

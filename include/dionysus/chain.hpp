@@ -6,10 +6,10 @@ addto(C1& x, typename Field::Element a, const C2& y, const Field& field, const C
 {
     typedef typename Field::Element                     Element;
 
-    auto cur_x = x.begin(),
-         end_x = x.end();
-    auto cur_y = y.begin(),
-         end_y = y.end();
+    auto cur_x = std::begin(x),
+         end_x = std::end(x);
+    auto cur_y = std::begin(y),
+         end_y = std::end(y);
 
     while (cur_x != end_x && cur_y != end_y)
     {
@@ -57,12 +57,12 @@ template<class T, class TCmp>
 template<class C2, class Field, class Cmp, class Visitor_>
 void
 dionysus::Chain<std::set<T,TCmp>>::
-addto(std::set<T,TCmp>& x, typename Field::Element a, const C2& y, const Field& field, const Cmp& cmp, const Visitor_& visitor)
+addto(std::set<T,TCmp>& x, typename Field::Element a, const C2& y, const Field& field, const Cmp&, const Visitor_& visitor)
 {
     typedef typename Field::Element                     Element;
 
-    auto cur_y = y.begin(),
-         end_y = y.end();
+    auto cur_y = std::begin(y),
+         end_y = std::end(y);
 
     while (cur_y != end_y)
     {
@@ -96,7 +96,7 @@ template<class T, class TCmp>
 template<class Field, class Cmp, class Visitor_>
 void
 dionysus::Chain<std::set<T,TCmp>>::
-addto(std::set<T,TCmp>& x, typename Field::Element a, T&& y, const Field& field, const Cmp& cmp, const Visitor_& visitor)
+addto(std::set<T,TCmp>& x, typename Field::Element a, T&& y, const Field& field, const Cmp&, const Visitor_& visitor)
 {
     typedef typename Field::Element                     Element;
 
@@ -122,4 +122,67 @@ addto(std::set<T,TCmp>& x, typename Field::Element a, T&& y, const Field& field,
             visitor.equal_keep(cur_x);
         }
     }
+}
+
+template<class T>
+template<class C2, class Field, class Cmp, class Visitor_>
+void
+dionysus::Chain<std::vector<T>>::
+addto(std::vector<T>& x, typename Field::Element a, const C2& y, const Field& field, const Cmp& cmp, const Visitor_& visitor)
+{
+    typedef typename Field::Element                     Element;
+
+    std::vector<T> res;
+
+    auto cur_x = std::begin(x),
+         end_x = std::end(x);
+    auto cur_y = std::begin(y),
+         end_y = std::end(y);
+
+    while (cur_x != end_x && cur_y != end_y)
+    {
+        if (cmp(*cur_x, *cur_y))
+        {
+            res.emplace_back(std::move(*cur_x));
+            visitor.first(--res.end());
+            ++cur_x;
+        } else if (cmp(*cur_y, *cur_x))
+        {
+            // multiply and add
+            Element ay = field.mul(a, cur_y->element());
+            res.emplace_back(ay, cur_y->index());
+            visitor.second(--res.end());
+            ++cur_y;
+        } else
+        {
+            Element ay = field.mul(a, cur_y->element());
+            Element r  = field.add(cur_x->element(), ay);
+            if (field.is_zero(r))
+                visitor.equal_drop(cur_x);
+            else
+            {
+                res.emplace_back(r, cur_x->index());
+                visitor.equal_keep(--res.end());
+            }
+            ++cur_x;
+            ++cur_y;
+        }
+    }
+
+    while (cur_y != end_y)
+    {
+        Element ay = field.mul(a, cur_y->element());
+        res.emplace_back(ay, cur_y->index());
+        visitor.second(--res.end());
+        ++cur_y;
+    }
+
+    while (cur_x != end_x)
+    {
+        res.emplace_back(std::move(*cur_x));
+        visitor.first(--res.end());
+        ++cur_x;
+    }
+
+    x.swap(res);
 }

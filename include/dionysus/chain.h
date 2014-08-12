@@ -2,6 +2,7 @@
 #define DIONYSUS_CHAIN_H
 
 #include <set>
+#include <vector>
 
 #include "fields/z2.h"
 
@@ -39,6 +40,7 @@ struct ChainEntry: public FieldElement<Field_>, public Extra...
 
                 ChainEntry(ChainEntry&& other)      = default;
                 ChainEntry(const ChainEntry& other) = default;
+    ChainEntry& operator=(ChainEntry&& other)       = default;
 
                 ChainEntry(Element e_, const Index& i_):
                     Parent(e_), i(i_)       {}
@@ -47,6 +49,7 @@ struct ChainEntry: public FieldElement<Field_>, public Extra...
                     Parent(e_), i(std::move(i_))       {}
 
     const Index& index() const              { return i; }
+    Index&      index()                     { return i; }
 
     Index       i;
 };
@@ -71,7 +74,8 @@ struct Chain
 
     // x += a*y
     template<class C2, class Field, class Cmp, class Visitor_ = Visitor>
-    static void addto(C1& x, typename Field::Element a, const C2& y, const Field& field, const Cmp& cmp, const Visitor_& = Visitor_());
+    static void addto(C1& x, typename Field::Element a, const C2& y,
+                      const Field& field, const Cmp& cmp, const Visitor_& visitor = Visitor_());
 };
 
 
@@ -95,10 +99,35 @@ struct Chain<std::set<T,TCmp>>
 
     // x += a*y
     template<class C2, class Field, class Cmp, class Visitor_ = Visitor>
-    static void addto(std::set<T,TCmp>& x, typename Field::Element a, const C2& y, const Field& field, const Cmp& cmp, const Visitor_& = Visitor_());
+    static void addto(std::set<T,TCmp>& x, typename Field::Element a, const C2& y,
+                      const Field& field, const Cmp& cmp, const Visitor_& = Visitor_());
 
     template<class Field, class Cmp, class Visitor_ = Visitor>
-    static void addto(std::set<T,TCmp>& x, typename Field::Element a, T&& y, const Field& field, const Cmp& cmp, const Visitor_& = Visitor_());
+    static void addto(std::set<T,TCmp>& x, typename Field::Element a, T&& y,
+                      const Field& field, const Cmp& cmp, const Visitor_& = Visitor_());
+};
+
+template<class T>
+struct Chain<std::vector<T>>
+{
+    struct Visitor
+    {
+        template<class Iter>
+        void first(Iter it) const               {}
+
+        template<class Iter>
+        void second(Iter it) const              {}
+
+        template<class Iter>
+        void equal_keep(Iter it) const          {}
+
+        template<class Iter>
+        void equal_drop(Iter it) const          {}
+    };
+
+    // x += a*y
+    template<class C2, class Field, class Cmp, class Visitor_ = Visitor>
+    static void addto(std::vector<T>& x, typename Field::Element a, const C2& y, const Field& field, const Cmp& cmp, const Visitor_& = Visitor_());
 };
 
 }

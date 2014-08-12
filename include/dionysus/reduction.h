@@ -2,10 +2,20 @@
 #define DIONYSUS_REDUCTION_H
 
 #include <vector>
+#include <tuple>
 #include "chain.h"
 
 namespace dionysus
 {
+
+namespace detail
+{
+
+template<class Index>
+struct Unpaired
+{ static constexpr Index value()          { return std::numeric_limits<Index>::max(); } };
+
+}
 
 template<class Index_>
 struct Reduction
@@ -76,7 +86,7 @@ struct Reduction
 
 template<class Index>
 const Index
-Reduction<Index>::unpaired = std::numeric_limits<Index>::max();
+Reduction<Index>::unpaired = detail::Unpaired<Index>::value();
 
 }
 

@@ -31,25 +31,25 @@ class SparseRowMatrix
         typedef         std::vector<Entry>                                      Column;
         typedef         bi::list<Entry, bi::constant_time_size<false>>          Row;
 
+        typedef         std::vector<ChainEntry<Field, Index>>                   IndexChain;
+
         typedef         std::unordered_map<Index, Column>                       Columns;
         typedef         std::unordered_map<Index, Row>                          Rows;
         typedef         std::unordered_map<Index, Index>                        LowMap;
 
     public:
-                        SparseRowMatrix(const Field&          field):
-                                        column_last_(0),
-                                        field_(field)                           {}
-
                         SparseRowMatrix(const Field&          field,
-                                        const Comparison&     cmp):
-                            column_last_(0), cmp_(cmp)                          {}
+                                        const Comparison&     cmp = Comparison()):
+                            field_(field), cmp_(cmp)                            {}
 
-        // add
-        template<class ChainRange, class AddTo>
-        IndexPair       add(const ChainRange& chain, const AddTo& addto);       // append and reduce
+        // TODO
+        template<class ChainRange>
+        Column          reduce(const ChainRange& chain, IndexChain& trail);
 
         template<class ChainRange>
-        IndexPair       add(const ChainRange& chain)                            { return add(chain, [](FieldElement, IndexPair) {}); }
+        void            set(Index i, const ChainRange& chain);
+
+        void            set(Index i, Column&& chain);
 
         // TODO: remove
 
@@ -60,9 +60,7 @@ class SparseRowMatrix
 
         const Field&    field() const                                           { return field_; }
         void            reserve(size_t)                                         {}                              // here for compatibility only
-
-        static
-        const Index unpaired = Reduction<Index>::unpaired;
+        const Comparison&   cmp() const                                         { return cmp_; }
 
     private:
         Field       field_;
@@ -71,8 +69,6 @@ class SparseRowMatrix
         Columns     columns_;
         Rows        rows_;
         LowMap      lows_;
-
-        Index       column_last_;
 };
 
 template<class F, class I, class C>
@@ -89,11 +85,27 @@ struct SparseRowMatrix<F,I,C>::Entry:
 
                         Entry(const Entry& other)   = default;
                         Entry(Entry&& other)        = default;
+    Entry&              operator=(Entry&& other)    = default;
 
     void                unlink()                                            { auto_unlink_hook::unlink(); }
     bool                is_linked()  const                                  { return auto_unlink_hook::is_linked();  }
 };
 
+
+namespace detail
+{
+
+template<class Index>
+struct Unpaired<std::tuple<Index,Index>>
+{
+    static
+    constexpr std::tuple<Index,Index>
+    value()
+    { return std::make_tuple(std::numeric_limits<Index>::max(),
+                             std::numeric_limits<Index>::max()); }
+};
+
+}
 
 }
 
