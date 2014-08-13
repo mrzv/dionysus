@@ -1,7 +1,7 @@
-template<class F, class I, class C>
+template<class F, class I, class C, template<class E, class... A> class Col>
 template<class ChainRange>
-typename dionysus::SparseRowMatrix<F,I,C>::Column
-dionysus::SparseRowMatrix<F,I,C>::
+typename dionysus::SparseRowMatrix<F,I,C,Col>::Column
+dionysus::SparseRowMatrix<F,I,C,Col>::
 reduce(const ChainRange& chain_, IndexChain& trail)
 {
     auto    row_cmp = [this](const Entry& e1, const Entry& e2)
@@ -47,29 +47,9 @@ reduce(const ChainRange& chain_, IndexChain& trail)
 #endif
 }
 
-template<class F, class I, class C>
-template<class ChainRange>
+template<class F, class I, class C, template<class E, class... A> class Col>
 void
-dionysus::SparseRowMatrix<F,I,C>::
-set(Index col, const ChainRange& chain)
-{
-    Column& column = columns_.emplace(col, Column()).first->second;
-    column.reserve(chain.size());
-
-    for (auto& x : chain)
-    {
-        Index r = x.index();
-        column.push_back(Entry(x.element(), IndexPair(r, col)));
-        row(r).push_back(column.back());
-    }
-
-    Index r = std::get<0>(column.back().index());
-    lows_[r] = col;
-}
-
-template<class F, class I, class C>
-void
-dionysus::SparseRowMatrix<F,I,C>::
+dionysus::SparseRowMatrix<F,I,C,Col>::
 set(Index col, Column&& chain)
 {
     Column& column = columns_.emplace(col, std::move(chain)).first->second;

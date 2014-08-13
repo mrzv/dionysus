@@ -15,7 +15,37 @@ namespace dionysus
 
 namespace bi = boost::intrusive;
 
-template<class Field_, class Index_ = int, class Comparison_ = std::less<Index_>>
+namespace detail
+{
+    typedef         bi::list_base_hook<bi::link_mode<bi::auto_unlink>>      auto_unlink_hook;
+
+    template<class F, class I>
+    struct SparseRowMatrixEntry:
+        public ChainEntry<F, std::tuple<I,I>, auto_unlink_hook>
+    {
+        typedef             I                                                   Index;
+        typedef             typename F::Element                                 FieldElement;
+        typedef             std::tuple<Index, Index>                            IndexPair;                  // (id, pair)
+        typedef             ChainEntry<F, IndexPair, auto_unlink_hook>          Parent;
+        typedef             SparseRowMatrixEntry                                Entry;
+
+                            SparseRowMatrixEntry(FieldElement e, const IndexPair& ip):
+                                Parent(e,ip)                                    {}
+
+                            SparseRowMatrixEntry(FieldElement e, const Index& r, const Index& c):
+                                Parent(e,IndexPair(r,c))                        {}
+
+                            SparseRowMatrixEntry(const Entry& other)   = default;
+                            SparseRowMatrixEntry(Entry&& other)        = default;
+        Entry&              operator=(Entry&& other)    = default;
+
+        void                unlink()                                            { auto_unlink_hook::unlink(); }
+        bool                is_linked()  const                                  { return auto_unlink_hook::is_linked();  }
+    };
+}
+
+template<class Field_, class Index_ = int, class Comparison_ = std::less<Index_>,
+         template<class E, class... Args> class Column_ = std::vector>
 class SparseRowMatrix
 {
     public:
@@ -24,11 +54,10 @@ class SparseRowMatrix
         typedef         Comparison_                 Comparison;
 
         typedef         typename Field::Element     FieldElement;
-        typedef         std::tuple<Index, Index>    IndexPair;                  // (id, pair)
 
-        struct          Entry;                                                  // (FieldElement, (Index, Index))
-        typedef         bi::list_base_hook<bi::link_mode<bi::auto_unlink>>      auto_unlink_hook;
-        typedef         std::vector<Entry>                                      Column;
+        typedef         detail::SparseRowMatrixEntry<Field,Index>               Entry;
+        typedef         Column_<Entry>                                          Column;
+        typedef         typename Entry::IndexPair                               IndexPair;
         typedef         bi::list<Entry, bi::constant_time_size<false>>          Row;
 
         typedef         std::vector<ChainEntry<Field, Index>>                   IndexChain;
@@ -42,12 +71,8 @@ class SparseRowMatrix
                                         const Comparison&     cmp = Comparison()):
                             field_(field), cmp_(cmp)                            {}
 
-        // TODO
         template<class ChainRange>
         Column          reduce(const ChainRange& chain, IndexChain& trail);
-
-        template<class ChainRange>
-        void            set(Index i, const ChainRange& chain);
 
         void            set(Index i, Column&& chain);
 
@@ -56,6 +81,7 @@ class SparseRowMatrix
         // accessors
         Row&            row(Index r)                                            { return rows_[r]; }
         Column&         col(Index c)                                            { return columns_[c]; }
+        const Column&   col(Index c) const                                      { return columns_.find(c)->second; }
         Index           low(Index r) const                                      { return lows_[r]; }            // column that has this low
 
         const Field&    field() const                                           { return field_; }
@@ -69,26 +95,6 @@ class SparseRowMatrix
         Columns     columns_;
         Rows        rows_;
         LowMap      lows_;
-};
-
-template<class F, class I, class C>
-struct SparseRowMatrix<F,I,C>::Entry:
-    public ChainEntry<F, IndexPair, auto_unlink_hook>
-{
-    typedef             ChainEntry<Field, IndexPair, auto_unlink_hook>      Parent;
-
-                        Entry(FieldElement e, const IndexPair& ip):
-                            Parent(e,ip)                                    {}
-
-                        Entry(FieldElement e, const Index& r, const Index& c):
-                            Parent(e,IndexPair(r,c))                        {}
-
-                        Entry(const Entry& other)   = default;
-                        Entry(Entry&& other)        = default;
-    Entry&              operator=(Entry&& other)    = default;
-
-    void                unlink()                                            { auto_unlink_hook::unlink(); }
-    bool                is_linked()  const                                  { return auto_unlink_hook::is_linked();  }
 };
 
 
