@@ -8,7 +8,6 @@
 #include <dionysus/ordinary-persistence.h>
 #include <dionysus/standard-reduction.h>
 #include <dionysus/cohomology-persistence.h>
-#include <dionysus/sparse-row-matrix.h>
 #include <dionysus/zigzag-persistence.h>
 
 namespace d = dionysus;

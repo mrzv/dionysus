@@ -9,19 +9,22 @@ template<class Persistence_>
 class StandardReduction
 {
     public:
-        typedef     Persistence_                                Persistence;
-        typedef     typename Persistence::Field                 Field;
+        typedef         Persistence_                                Persistence;
+        typedef         typename Persistence::Field                 Field;
 
     public:
-                    StandardReduction(Persistence& persistence):
-                        persistence_(persistence)           {}
+                        StandardReduction(Persistence& persistence):
+                            persistence_(persistence)               {}
 
         template<class Filtration>
-        void        operator()(const Filtration& f);
+        void            operator()(const Filtration& f);
 
+        const Persistence&
+                        persistence() const                         { return persistence_; }
+        Persistence&    persistence()                               { return persistence_; }
 
     private:
-        Persistence&  persistence_;
+        Persistence&    persistence_;
 };
 
 }

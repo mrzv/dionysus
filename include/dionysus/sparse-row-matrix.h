@@ -49,11 +49,11 @@ template<class Field_, class Index_ = int, class Comparison_ = std::less<Index_>
 class SparseRowMatrix
 {
     public:
-        typedef         Field_                      Field;
-        typedef         Index_                      Index;
-        typedef         Comparison_                 Comparison;
+        typedef         Field_                                                  Field;
+        typedef         Index_                                                  Index;
+        typedef         Comparison_                                             Comparison;
 
-        typedef         typename Field::Element     FieldElement;
+        typedef         typename Field::Element                                 FieldElement;
 
         typedef         detail::SparseRowMatrixEntry<Field,Index>               Entry;
         typedef         Column_<Entry>                                          Column;
@@ -67,34 +67,41 @@ class SparseRowMatrix
         typedef         std::unordered_map<Index, Index>                        LowMap;
 
     public:
-                        SparseRowMatrix(const Field&          field,
-                                        const Comparison&     cmp = Comparison()):
+                        SparseRowMatrix(const Field&        field,
+                                        const Comparison&   cmp = Comparison()):
                             field_(field), cmp_(cmp)                            {}
 
         template<class ChainRange>
         Column          reduce(const ChainRange& chain, IndexChain& trail);
 
-        void            set(Index i, Column&& chain);
+        Index           set(Index i, Column&& chain);       // returns previous column with this low
+        void            fix(Index c, Column& column);
+        void            fix(Index c)                                            { fix(c, col(c)); }
 
-        // TODO: remove
+        void            prepend_row(Index r, FieldElement m, const Row& chain); // could be horribly inefficient if Column is chosen poorly
+
+        void            drop_row(Index r)                                       { rows_.erase(r); if (is_low(r)) lows_.erase(r); }
+        void            drop_col(Index c)                                       { columns_.erase(c); }
 
         // accessors
         Row&            row(Index r)                                            { return rows_[r]; }
         Column&         col(Index c)                                            { return columns_[c]; }
         const Column&   col(Index c) const                                      { return columns_.find(c)->second; }
-        Index           low(Index r) const                                      { return lows_[r]; }            // column that has this low
+        Index           low(Index r) const                                      { return lows_.find(r)->second; }
+        bool            is_low(Index r) const                                   { return lows_.find(r) != lows_.end(); }
+        void            update_low(Index c)                                     { lows_[std::get<0>(col(c).back().index())] = c; }
 
-        const Field&    field() const                                           { return field_; }
-        void            reserve(size_t)                                         {}                              // here for compatibility only
+        const Field&        field() const                                       { return field_; }
+        void                reserve(size_t)                                     {}                              // here for compatibility only
         const Comparison&   cmp() const                                         { return cmp_; }
 
     private:
-        Field       field_;
-        Comparison  cmp_;
+        Field           field_;
+        Comparison      cmp_;
 
-        Columns     columns_;
-        Rows        rows_;
-        LowMap      lows_;
+        Columns         columns_;
+        Rows            rows_;
+        LowMap          lows_;          // column that has this low
 };
 
 

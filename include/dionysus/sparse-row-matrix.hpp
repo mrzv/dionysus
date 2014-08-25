@@ -48,19 +48,50 @@ reduce(const ChainRange& chain_, IndexChain& trail)
 }
 
 template<class F, class I, class C, template<class E, class... A> class Col>
-void
+typename dionysus::SparseRowMatrix<F,I,C,Col>::Index
 dionysus::SparseRowMatrix<F,I,C,Col>::
 set(Index col, Column&& chain)
 {
     Column& column = columns_.emplace(col, std::move(chain)).first->second;
 
+    fix(col, column);
+
+    Index r = std::get<0>(column.back().index());
+    Index res;
+    if (is_low(r))
+        res = low(r);
+    else
+        res = col;
+    lows_[r] = col;
+
+    return res;
+}
+
+template<class F, class I, class C, template<class E, class... A> class Col>
+void
+dionysus::SparseRowMatrix<F,I,C,Col>::
+fix(Index col, Column& column)
+{
     for (auto& x : column)
     {
         std::get<1>(x.index()) = col;
         Index r = std::get<0>(x.index());
         row(r).push_back(x);
     }
+}
 
-    Index r = std::get<0>(column.back().index());
-    lows_[r] = col;
+template<class F, class I, class C, template<class E, class... A> class Col>
+void
+dionysus::SparseRowMatrix<F,I,C,Col>::
+prepend_row(Index r, FieldElement m, const Row& chain)
+{
+    Row& new_row = row(r);
+
+    for (auto& x : chain)
+    {
+        Index c = std::get<1>(x.index());
+        Column& column = col(c);
+        auto it = column.emplace(column.begin(), field().mul(x.element(), m), r, c);
+        new_row.push_back(*it);
+    }
 }

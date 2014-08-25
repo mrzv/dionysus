@@ -1,8 +1,8 @@
-template<class C1>
+template<class T>
 template<class C2, class Field, class Cmp, class Visitor_>
 void
-dionysus::Chain<C1>::
-addto(C1& x, typename Field::Element a, const C2& y, const Field& field, const Cmp& cmp, const Visitor_& visitor)
+dionysus::Chain<std::list<T>>::
+addto(std::list<T>& x, typename Field::Element a, const C2& y, const Field& field, const Cmp& cmp, const Visitor_& visitor)
 {
     typedef typename Field::Element                     Element;
 
@@ -124,15 +124,15 @@ addto(std::set<T,TCmp>& x, typename Field::Element a, T&& y, const Field& field,
     }
 }
 
-template<class T>
+template<class C1>
 template<class C2, class Field, class Cmp, class Visitor_>
 void
-dionysus::Chain<std::vector<T>>::
-addto(std::vector<T>& x, typename Field::Element a, const C2& y, const Field& field, const Cmp& cmp, const Visitor_& visitor)
+dionysus::Chain<C1>::
+addto(C1& x, typename Field::Element a, const C2& y, const Field& field, const Cmp& cmp, const Visitor_& visitor)
 {
     typedef typename Field::Element                     Element;
 
-    std::vector<T> res;
+    C1 res;
 
     auto cur_x = std::begin(x),
          end_x = std::end(x);
@@ -161,7 +161,8 @@ addto(std::vector<T>& x, typename Field::Element a, const C2& y, const Field& fi
                 visitor.equal_drop(cur_x);
             else
             {
-                res.emplace_back(r, cur_x->index());
+                res.emplace_back(std::move(*cur_x));
+                cur_x->set_element(r);
                 visitor.equal_keep(--res.end());
             }
             ++cur_x;

@@ -25,13 +25,14 @@ class ZigzagPersistence
         typedef         typename RowMatrix::Column                  Column;
         typedef         typename RowMatrix::Row                     Row;
         typedef         typename DequeRowMatrix::Column             DequeColumn;
+        typedef         typename DequeRowMatrix::Row                DequeRow;
 
         typedef         std::unordered_map<Index, Index>            BirthIndexMap;
 
 
                         ZigzagPersistence(const Field&      field,
                                           const Comparison& cmp = Comparison()):
-                            Z(field, cmp), B(field, cmp), D(field, cmp),
+                            Z(field, cmp), B(field, cmp), C(field, cmp),
                             operations(0),
                             cell_indices(0),
                             z_indicies_last(0),
@@ -42,15 +43,20 @@ class ZigzagPersistence
         Index           add(const ChainRange& chain);               // returns the id of the dying cycle (or unpaired)
         Index           remove(Index cell);
 
-        void            reserve(size_t)                             {}              // here for compatibility only
-        const Field&    field() const                               { return Z.field(); }
+        void                reserve(size_t)                         {}              // here for compatibility only
+        const Field&        field() const                           { return Z.field(); }
         const Comparison&   cmp() const                             { return Z.cmp(); }
+
+        template<class Entry>
+        static Index    row(const Entry& e)                         { return std::get<0>(e.index()); }
+        template<class Entry>
+        static Index    col(const Entry& e)                         { return std::get<1>(e.index()); }
 
         static
         const Index     unpaired = Reduction<Index>::unpaired;
 
     private:
-        RowMatrix       Z, D;
+        RowMatrix       Z, C;
         DequeRowMatrix  B;
 
         BirthIndexMap   birth_index;
