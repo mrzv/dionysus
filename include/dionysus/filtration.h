@@ -54,6 +54,8 @@ class Filtration
 
         void                push_back(const Cell& s)                            { cells_.template get<order>().push_back(s); }
 
+        // TODO: add move and emplace
+
         template<class Cmp = std::less<Cell>>
         void                sort(const Cmp& cmp = Cmp())                        { cells_.template get<order>().sort(cmp); }
 

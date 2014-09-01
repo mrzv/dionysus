@@ -105,15 +105,19 @@ remove(Index cell)
         // 4: subtract B[j] from every B[k] that has l
         //    (we don't need to update C because ZB[j] = 0 after step 2)
         DequeColumn&    Bj      = B.col(j);
-        const DequeRow& Bl_row  = B.row(l);
         FieldElement    bm      = field().neg(field().inv(Bj.back().element()));    // bm = -1/B[l,j]
+        IndexChain      Bl_row; // make a copy of Bl_row, since it will be changing
+        for (auto& x : B.row(l))
+        {
+            if (col(x) == j)
+                continue;
+            Bl_row.emplace_back(x.element(), col(x));
+        }
         for (auto& x : Bl_row)
         {
-            Index c = col(x);
-            if (c == j)
-                continue;
-            Chain<DequeColumn>::addto(B.col(c), field().mul(bm, x.element()), Bj, field(), b_row_cmp);  // using it->element() since b_row = m*c_row
-            B.fix(c);                                                                                   // old elements got removed via auto_unlink_hook
+            Index c = x.index();
+            Chain<DequeColumn>::addto(B.col(c), field().mul(bm, x.element()), Bj, field(), b_row_cmp);
+            B.fix(c);                                                               // old elements got removed via auto_unlink_hook
             // l cannot be the low in c, so no need to update lows
         }
         //std::cout << "Done with step 4" << std::endl;
@@ -126,26 +130,39 @@ remove(Index cell)
         C.drop_row(cell);
         Z.drop_row(cell);
         //std::cout << "Done with step 5" << std::endl;
-        if (oth == l)
+        if (oth == l)       // we just dropped our collision in Z
             oth = znew;
 
         // 6: reduce Z
+        std::unordered_map<Index, DequeColumn>  b_changes;  // the columns to add in B to apply row changes
         Index cur = znew;
         while (oth != cur)
         {
             Column& cur_col = Z.col(cur);
             Column& oth_col = Z.col(oth);
-            std::cout << cur_col.size() << ' ' << oth_col.size() << std::endl;
+            std::cout << "--- " << cur_col.size() << ' ' << oth_col.size() << std::endl;
             FieldElement m1 = cur_col.back().element();
             FieldElement m2 = oth_col.back().element();
-            Chain<Column>::addto(oth_col, field().neg(field().div(m2, m1)), cur_col, field(), row_cmp);
+            FieldElement m2_div_m1 = field().div(m2, m1);
+            Chain<Column>::addto(oth_col, field().neg(m2_div_m1), cur_col, field(), row_cmp);
             Z.fix(oth, oth_col);
+
+            // record the changes we need to make in B
+            for (auto& x : this->B.row(oth))
+                b_changes[col(x)].emplace_front(field().neg(m2_div_m1), cur, col(x));
 
             cur = oth;
             Index low = row(oth_col.back());
             if (Z.is_low(low))
                 oth = Z.low(low);
             Z.update_low(cur);
+        }
+        // apply changes in B (the complexity here could get ugly)
+        for (auto& bx : b_changes)
+        {
+            Chain<DequeColumn>::addto(B.col(bx.first), field().id(), bx.second, field(), b_row_cmp);
+            B.fix(bx.first);
+            // no need to update low (additions from bottom up)
         }
         //std::cout << "Done with step 6" << std::endl;
 
@@ -188,28 +205,36 @@ remove(Index cell)
         {
             auto rit = reducers[i];
             FieldElement m = field().neg(field().inv(rit->element()));
+
+            // NB: since we are moving it from right to left, z_row will be losing elements at the end,
+            //     so the iterators should remain intact
             for (auto it  = std::prev(rit); it != reducers[i-1]; --it)
                 add_in_z(col(*it), col(*rit), m, it->element());
 
-            // This code duplication is unpleasant; simplify it
             add_in_z(col(*reducers[i-1]), col(*rit), m, reducers[i-1]->element());
         }
 
-        // apply changes in b -- the complexity here could get uglier than desirable
+        // apply changes in b (the complexity here could get ugly)
         for (auto& bx : b_changes)
         {
             Chain<DequeColumn>::addto(B.col(bx.first), field().id(), bx.second, field(), b_row_cmp);
             B.fix(bx.first);
-            // no need to update low
+            // no need to update low (additions from bottom up)
         }
 
         // 2: subtract cycle from every chain in C
         const Column& Zj = Z.col(j);
+
+        IndexChain Ccols;       // save the columns in C, we'll be modifying C.row(cell)
         for (auto& x : C.row(cell))
+            Ccols.emplace_back(x.element(), col(x));
+
+        for (auto& x : Ccols)
         {
+            Index           c = x.index();
             FieldElement    m = field().neg(field().mul(x.element(), field().inv(e)));      // m = -C[k][cell]/Z[j][cell]
-            Chain<Column>::addto(C.col(col(x)), m, Zj, field(), row_cmp);
-            C.fix(col(x));
+            Chain<Column>::addto(C.col(c), m, Zj, field(), row_cmp);
+            C.fix(c);
             // we don't care about lows in C, so don't update them
         }
 
