@@ -30,16 +30,14 @@ add(const ChainRange& chain)
         for (auto& ce : row_sum)
         {
             FieldElement ay = field_.neg(field_.div(ce.element(), first.element()));
-            std::list<Entry> tmp(ce.column->chain.begin(), ce.column->chain.end());
+            Chain<Column>::addto(ce.column->chain, ay, first.column->chain, field_,
+                                 [this](const Entry& e1, const Entry& e2)
+                                 { return this->cmp_(e1.index(), e2.index()); });
 
-            Chain<decltype(tmp)>::addto(tmp, ay, first.column->chain, field_, cmp_);
-
-            ce.column->chain = Column(std::make_move_iterator(std::begin(tmp)),
-                                      std::make_move_iterator(std::end(tmp)));
-            for (auto it = ce.column->chain.begin(); it != ce.column->chain.end(); ++it)
+            for (auto& x : ce.column->chain)
             {
-                it->column = ce.column;
-                rows_[it->index()].push_back(*it);
+                x.column = ce.column;
+                rows_[x.index()].push_back(x);
             }
         }
         Index pair = first.column->index();

@@ -77,6 +77,9 @@ struct CohomologyPersistence<Field, Index, Cmp>::Entry:
 {
     typedef             ChainEntry<Field, Index, auto_unlink_hook>          Parent;
 
+                        Entry(FieldElement e, const Index& i):              // slightly dangerous
+                            Parent(e,i)                                     {}
+
                         Entry(FieldElement e, const Index& i, ColumnsIterator it):
                             Parent(e,i), column(it)                         {}
 
