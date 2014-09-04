@@ -31,8 +31,7 @@ addto(std::list<T>& x, typename Field::Element a, const C2& y, const Field& fiel
             if (field.is_zero(r))
             {
                 visitor.equal_drop(cur_x);
-                x.erase(cur_x);
-                ++cur_x;
+                x.erase(cur_x++);
             }
             else
             {
