@@ -12,13 +12,13 @@ void
 dionysus::Rips<D,S>::
 generate(Dimension k, DistanceType max, const Functor& f, Iterator bg, Iterator end) const
 {
+    auto neighbor = [this, max](Vertex u, Vertex v) { return this->distances()(u,v) <= max; };
+
     // current      = empty
     // candidates   = everything
     VertexContainer current;
     VertexContainer candidates(bg, end);
-    bron_kerbosch(current, candidates, std::prev(candidates.begin()), k,
-                  [this, max](Vertex u, Vertex v) { return this->distances()(u,v) <= max; },
-                  f);
+    bron_kerbosch(current, candidates, std::prev(candidates.begin()), k, neighbor, f);
 }
 
 template<class D, class S>
@@ -27,6 +27,8 @@ void
 dionysus::Rips<D,S>::
 vertex_cofaces(IndexType v, Dimension k, DistanceType max, const Functor& f, Iterator bg, Iterator end) const
 {
+    auto neighbor = [this, max](Vertex u, Vertex v) { return this->distances()(u,v) <= max; };
+
     // current      = [v]
     // candidates   = everything - [v]
     VertexContainer current; current.push_back(v);
@@ -35,9 +37,7 @@ vertex_cofaces(IndexType v, Dimension k, DistanceType max, const Functor& f, Ite
         if (*cur != v && neighbor(v, *cur))
             candidates.push_back(*cur);
 
-    bron_kerbosch(current, candidates, std::prev(candidates.begin()), k,
-                  [this, max](Vertex u, Vertex v) { return this->distances()(u,v) <= max; },
-                  f);
+    bron_kerbosch(current, candidates, std::prev(candidates.begin()), k, neighbor, f);
 }
 
 template<class D, class S>
@@ -46,7 +46,7 @@ void
 dionysus::Rips<D,S>::
 edge_cofaces(IndexType u, IndexType v, Dimension k, DistanceType max, const Functor& f, Iterator bg, Iterator end) const
 {
-    AssertMsg(distances()(u,v) <= max, "The new edge must be in the complex");
+    auto neighbor = [this, max](Vertex u, Vertex v) { return this->distances()(u,v) <= max; };
 
     // current      = [u,v]
     // candidates   = everything - [u,v]
@@ -57,9 +57,7 @@ edge_cofaces(IndexType u, IndexType v, Dimension k, DistanceType max, const Func
         if (*cur != u && *cur != v && neighbor(v,*cur) && neighbor(u,*cur))
             candidates.push_back(*cur);
 
-    bron_kerbosch(current, candidates, std::prev(candidates.begin()), k,
-                  [this, max](Vertex u, Vertex v) { return this->distances()(u,v) <= max; },
-                  f);
+    bron_kerbosch(current, candidates, std::prev(candidates.begin()), k, neighbor, f);
 }
 
 template<class D, class S>
