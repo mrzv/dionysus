@@ -1,5 +1,8 @@
-add_executable              (rips-basic     rips-basic.cpp)
-target_link_libraries       (rips-basic     ${libraries})
+set                         (targets    rips-basic
+                                        rips-pairwise
+                                        rips-zigzag)
 
-add_executable              (rips-pairwise     rips-pairwise.cpp)
-target_link_libraries       (rips-pairwise     ${libraries})
+foreach                     (t ${targets})
+    add_executable          (${t} ${t}.cpp)
+    target_link_libraries   (${t} ${libraries})
+endforeach                  (t)

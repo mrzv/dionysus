@@ -15,7 +15,7 @@ namespace d = dionysus;
 
 #include <opts/opts.h>
 
-#include <common.h>
+#include <common.h>     // read_points()
 
 typedef         std::vector<float>                                      Point;
 typedef         std::vector<Point>                                      PointContainer;
