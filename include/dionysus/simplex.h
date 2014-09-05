@@ -216,6 +216,17 @@ boundary_end(const F& field) const
     return BoundaryChainIterator<F>(field, boundary_end());
 }
 
-}
+} // dionysus
+
+namespace std
+{
+
+template<class V, class T>
+struct hash<dionysus::Simplex<V,T>>
+{
+    size_t operator()(const dionysus::Simplex<V,T>& s) const            { return hash_value(s); }
+};
+
+} // std
 
 #endif
