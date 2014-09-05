@@ -17,12 +17,12 @@ operator()(const Filtration& filtration)
     unsigned i = 0;
     for(auto& c : filtration)
     {
-        std::cout << "Adding: " << c << " : " << boost::distance(c.boundary(persistence_.field())) << std::endl;
+        //std::cout << "Adding: " << c << " : " << boost::distance(c.boundary(persistence_.field())) << std::endl;
         Index pair = persistence_.add(c.boundary(persistence_.field()) |
                                                  ba::transformed([this,&filtration](const CellChainEntry& e)
                                                  { return ChainEntry(e.element(), filtration.index(e.index())); }));
-        if (pair != persistence_.unpaired)
-            std::cout << "[" << pair << " - " << i << "]" << std::endl;
+        //if (pair != persistence_.unpaired)
+        //    std::cout << "[" << pair << " - " << i << "]" << std::endl;
         ++i;
     }
 }

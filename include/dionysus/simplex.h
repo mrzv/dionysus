@@ -15,12 +15,13 @@ namespace dionysus
 
 struct Empty {};
 
-template<class Vertex = unsigned, class T = Empty>
+template<class Vertex_ = unsigned, class T = Empty>
 class Simplex
 {
     public:
-        typedef         std::unique_ptr<Vertex[]>                   Vertices;
+        typedef         Vertex_                                     Vertex;
         typedef         T                                           Data;
+        typedef         std::unique_ptr<Vertex[]>                   Vertices;
 
         template<class Field>
         struct BoundaryChainIterator;
@@ -32,6 +33,11 @@ class Simplex
 
     public:
                         Simplex(const std::initializer_list<Vertex>& vertices,
+                                const Data& d = Data()):
+                            Simplex(vertices.size() - 1, vertices.begin(), vertices.end(), d)   { std::sort(begin(), end()); }
+
+        template<class VertexRange>
+                        Simplex(const VertexRange& vertices,
                                 const Data& d = Data()):
                             Simplex(vertices.size() - 1, vertices.begin(), vertices.end(), d)   { std::sort(begin(), end()); }
 
