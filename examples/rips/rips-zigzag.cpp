@@ -46,6 +46,9 @@ typedef         std::unordered_map<Simplex, Index>                      Complex;
 typedef         d::ChainEntry<K, Simplex>                               SimplexChainEntry;
 typedef         d::ChainEntry<K, Index>                                 ChainEntry;
 
+// debug
+typedef         std::unordered_map<Index, Simplex>                      RComplex;
+
 // Information we need to know when a class dies
 struct      BirthInfo
 {
@@ -69,18 +72,21 @@ int main(int argc, char** argv)
 
     short unsigned          skeleton = 2;
     DistanceType            multiplier = 6;
+    short unsigned          p = 11;
     std::string             infilename, diagram_name;
 
     Options ops(argc, argv);
     ops
         >> Option('s', "skeleton",      skeleton,           "dimension of the Rips complex we want to compute")
         >> Option('m', "multiplier",    multiplier,         "multiplier for epsilon (distance to the next maxmin point)")
+        >> Option('p', "prime",         p,                  "prime for arithmetic")
     ;
 
     if ( (ops >> Present('h', "help", "show help message") ||
-        !(ops >> PosOption(infilename))))
+        !(ops >> PosOption(infilename)) ||
+        !(ops >> PosOption(diagram_name))))
     {
-        std::cout << "Usage: " << argv[0] << " input-points" << std::endl;
+        std::cout << "Usage: " << argv[0] << " input-points diagram.out" << std::endl;
         std::cout << ops;
         return 1;
     }
@@ -88,6 +94,10 @@ int main(int argc, char** argv)
     PointContainer          points;
     read_points(infilename, points);
 
+    std::ofstream   dgm_out(diagram_name);
+    std::ostream&   out = dgm_out;
+
+    // Construct distances and Rips generator
     PairDistances           distances(points);
     Generator               rips(distances);
     Generator::Evaluator    size(distances);
@@ -128,11 +138,13 @@ int main(int argc, char** argv)
               { return distances(std::get<0>(e1), std::get<1>(e1)) < distances(std::get<0>(e2), std::get<1>(e2)); });
 
     // Construct zigzag
-    K               k(11);
+    //K               k;
+    K               k(p);
     Persistence     persistence(k);
     Complex         simplices;
-
-    std::ostream&   out = std::cout;
+#ifdef DIONYSUS_ZIGZAG_DEBUG
+    RComplex        rsimplices;
+#endif
 
     // Insert vertices
     Index       op   = 0;
@@ -149,20 +161,26 @@ int main(int argc, char** argv)
                                                 ba::transformed([&simplices](const SimplexChainEntry& e)
                                                 { return ChainEntry(e.element(), simplices.find(e.index())->second); }));
 
+#ifdef DIONYSUS_ZIGZAG_DEBUG
+        rsimplices.emplace(cell, s);
+        persistence.check_boundaries([&simplices](const Simplex& s) { return simplices[s]; },
+                                     [&rsimplices](Index i)         { return rsimplices.find(i)->second; });
+#endif
+
         births[op++] = BirthInfo(0,0);                  // record the birth
         simplices.emplace(std::move(s), cell++);        // record the cell id
     }
 
     // Process vertices
     dlog::progress progress(vertices.size());
-    unsigned ce     = 0;        // index of the current one past last edge in the complex
+    unsigned    ce = 0;         // index of the current one past last edge in the complex
+    SimplexSet  cofaces;        // record the cofaces of all the simplices that need to be removed and reinserted
     for (unsigned stage = 0; stage != vertices.size() - 1; ++stage)
     {
         unsigned i = vertices.size() - 1 - stage;
 
         /* Increase epsilon */
-        // Record the cofaces of all the simplices that need to be removed and reinserted
-        SimplexSet cofaces;
+        cofaces.clear();
 
         // Add anything else that needs to be inserted into the complex
         while (ce < edges.size())
@@ -173,6 +191,7 @@ int main(int argc, char** argv)
                 ++ce;
             else
                 break;
+            //std::cout << "Adding cofaces of " << u << ' ' << v << std::endl;
             rips.edge_cofaces(u, v,
                               skeleton,
                               multiplier*epsilons[i-1],
@@ -184,10 +203,18 @@ int main(int argc, char** argv)
         // Insert all the cofaces
         for (auto& s : cofaces)
         {
+            //std::cout << "Inserting: " << s << std::endl;
+
             Index pair = persistence.add(s.boundary(persistence.field()) |
                                                     ba::transformed([&simplices](const SimplexChainEntry& e)
                                                     { return ChainEntry(e.element(), simplices.find(e.index())->second); }));
-            simplices.emplace(std::move(s), cell++);        // record the cell id
+            simplices.emplace(std::move(s), cell);      // record the cell id
+#ifdef DIONYSUS_ZIGZAG_DEBUG
+            rsimplices.emplace(cell, s);
+            persistence.check_boundaries([&simplices](const Simplex& s) { return simplices[s]; },
+                                         [&rsimplices](Index i)         { return rsimplices.find(i)->second; });
+#endif
+            ++cell;
 
             if (pair == Persistence::unpaired)
                 births[op++] = BirthInfo(epsilons[i-1],s.dimension());              // record the birth
@@ -201,6 +228,7 @@ int main(int argc, char** argv)
         }
 
         /* Remove the vertex */
+        //std::cout << "Removing vertex: " << vertices[i] << std::endl;
         cofaces.clear();
         rips.vertex_cofaces(vertices[i],
                             skeleton,
@@ -208,14 +236,21 @@ int main(int argc, char** argv)
                             [&cofaces](Simplex&& s) { cofaces.insert(s); },
                             vertices.begin(),
                             vertices.begin() + i + 1);
+        //std::cout << "Total cofaces: " << cofaces.size() << std::endl;
 
         for (auto& s : cofaces | ba::reversed)
         {
-            auto  it    = simplices.find(s);
-            Index c     = it->second;
+            //std::cout << "Removing: " << s << std::endl;
+            Complex::const_iterator  it    = simplices.find(s);
+            Index                    c     = it->second;
             simplices.erase(it);
 
             Index pair  = persistence.remove(c);
+#ifdef DIONYSUS_ZIGZAG_DEBUG
+            rsimplices.erase(c);
+            persistence.check_boundaries([&simplices](const Simplex& s) { return simplices[s]; },
+                                         [&rsimplices](Index i)         { return rsimplices.find(i)->second; });
+#endif
 
             if (pair == Persistence::unpaired)
                 births[op++] = BirthInfo(epsilons[i-1],s.dimension() - 1);          // record the birth
@@ -233,9 +268,16 @@ int main(int argc, char** argv)
 
     // Remove the last vertex
     Index pair = persistence.remove(0);
-    simplices.erase(simplices.begin());     // TODO: add an assertion that the complex has only 1 simplex
+    simplices.erase((Complex::const_iterator) simplices.begin());     // TODO: add an assertion that the complex has only 1 simplex
+#ifdef DIONYSUS_ZIGZAG_DEBUG
+    rsimplices.erase(0);
+    persistence.check_boundaries([&simplices](const Simplex& s) { return simplices[s]; },
+                                 [&rsimplices](Index i)         { return rsimplices.find(i)->second; });
+#endif
 
     const BirthInfo& birth = births[pair];
     out << birth.dimension << " " << birth.distance << " " << epsilons[0] << std::endl;
     ++progress;
+
+    std::cout << "Finished" << std::endl;
 }

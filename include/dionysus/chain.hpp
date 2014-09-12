@@ -161,7 +161,7 @@ addto(C1& x, typename Field::Element a, const C2& y, const Field& field, const C
             else
             {
                 res.emplace_back(std::move(*cur_x));
-                cur_x->set_element(r);
+                res.back().set_element(r);
                 visitor.equal_keep(--res.end());
             }
             ++cur_x;

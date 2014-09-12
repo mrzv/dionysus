@@ -5,6 +5,8 @@ option                      (debug              "Build Dionysus with debugging" 
 option                      (optimize           "Build Dionysus with optimization"              ON)
 option                      (trace              "Build Dionysus with trace logging"             OFF)
 option                      (counters           "Build Dionysus with counters"                  OFF)
+option                      (debug_zigzag       "Turn on debug routines for zigzags"            OFF)
+mark_as_advanced            (debug_zigzag)
 
 # Debugging
 if                          (debug)
@@ -31,6 +33,10 @@ endif                       (counters)
 if                          (trace)
     add_definitions         (-DTRACE)
 endif                       (trace)
+
+if                          (debug_zigzag)
+    add_definitions         (-DDIONYSUS_ZIGZAG_DEBUG)
+endif                       (debug_zigzag)
 
 # Set includes
 set                         (CMAKE_INCLUDE_SYSTEM_FLAG_CXX "-isystem")

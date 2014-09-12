@@ -7,7 +7,7 @@ reduce(const ChainRange& chain_, IndexChain& trail)
     auto    row_cmp = [this](const Entry& e1, const Entry& e2)
                       { return this->cmp_(std::get<0>(e1.index()), std::get<0>(e2.index())); };
 
-#define __DIONYSUS_USE_VECTOR_CHAINS    0
+#define __DIONYSUS_USE_VECTOR_CHAINS    1
 
 #if !(__DIONYSUS_USE_VECTOR_CHAINS)
     std::set<Entry,decltype(row_cmp)>   chain(row_cmp);
@@ -31,7 +31,12 @@ reduce(const ChainRange& chain_, IndexChain& trail)
                              if (it == this->lows_.end())
                                  return ReductionIP::unpaired;
                              else
+                             {
+                                 Index rr = std::get<0>(col(it->second).back().index());
+                                 if (rr != r)
+                                     std::cout << "Mismatch: " << rr << ' ' << r << std::endl;
                                  return IndexPair(r, it->second);
+                             }
                          };
 
     auto      addto    = [&trail](FieldElement m, const IndexPair& rc)  { trail.emplace_back(m, std::get<1>(rc)); };
@@ -81,7 +86,7 @@ fix(Index col, Column& column)
 }
 
 template<class F, class I, class C, template<class E, class... A> class Col>
-void
+const typename dionysus::SparseRowMatrix<F,I,C,Col>::Row&
 dionysus::SparseRowMatrix<F,I,C,Col>::
 prepend_row(Index r, FieldElement m, const Row& chain)
 {
@@ -94,4 +99,6 @@ prepend_row(Index r, FieldElement m, const Row& chain)
         auto it = column.emplace(column.begin(), field().mul(x.element(), m), r, c);
         new_row.push_back(*it);
     }
+
+    return new_row;
 }

@@ -45,7 +45,7 @@ struct Reduction
         while (!c.empty())
         {
             //auto&  low = c.back();
-            auto&  low = *(--c.end());
+            auto&  low = *(std::prev(c.end()));
             Index  l   = low.index();
             Index  cl  = lows(l);
             if (cl == unpaired)

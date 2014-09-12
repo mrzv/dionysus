@@ -40,8 +40,26 @@ class ZigzagPersistence
                             b_indices(0)                            {}
 
         template<class ChainRange>
-        Index           add(const ChainRange& chain);               // returns the id of the dying cycle (or unpaired)
-        Index           remove(Index cell);
+        Index           add(const ChainRange& chain)                // returns the id of the dying cycle (or unpaired)
+        {
+            Index res = add_impl(chain);
+#ifdef DIONYSUS_ZIGZAG_DEBUG
+            check_sorted();
+            check_b_cols();
+            Z.check_columns();
+#endif
+            return res;
+        }
+        Index           remove(Index cell)
+        {
+            Index res = remove_impl(cell);
+#ifdef DIONYSUS_ZIGZAG_DEBUG
+            check_sorted();
+            check_b_cols();
+            Z.check_columns();
+#endif
+            return res;
+        }
 
         void                reserve(size_t)                         {}              // here for compatibility only
         const Field&        field() const                           { return Z.field(); }
@@ -54,6 +72,29 @@ class ZigzagPersistence
 
         static
         const Index     unpaired = Reduction<Index>::unpaired;
+
+        // debug
+        void            check_b_cols() const;
+
+        template<class SimplexToIndex, class IndexToSimplex>
+        void            check_boundaries(const SimplexToIndex& s2i, const IndexToSimplex& i2s) const;
+        template<class SimplexToIndex, class IndexToSimplex>
+        void            check_cycles(const SimplexToIndex& s2i, const IndexToSimplex& i2s) const;
+
+        Column          zb_dot(Index c) const;
+
+        template<class SimplexToIndex, class IndexToSimplex>
+        Column          dc_dot(Index c, const SimplexToIndex& s2i, const IndexToSimplex& i2s) const;
+
+        template<class SimplexToIndex, class IndexToSimplex>
+        Column          boundary(Index i, const SimplexToIndex& s2i, const IndexToSimplex& i2s) const;
+
+        void            check_sorted() const;
+
+    private:
+        template<class ChainRange>
+        Index           add_impl(const ChainRange& chain);
+        Index           remove_impl(Index cell);
 
     private:
         RowMatrix       Z, C;
