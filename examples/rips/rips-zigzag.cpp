@@ -223,7 +223,8 @@ int main(int argc, char** argv)
                 const BirthInfo& birth = births[pair];
                 if ((birth.distance - epsilons[i-1]) != 0 && birth.dimension < skeleton)
                     out << birth.dimension << " " << birth.distance << " " << epsilons[i-1] << std::endl;
-                births.erase(op++);
+                births.erase(pair);
+                ++op;
             }
         }
 
@@ -259,7 +260,8 @@ int main(int argc, char** argv)
                 const BirthInfo& birth = births[pair];
                 if ((birth.distance - epsilons[i-1]) != 0 && birth.dimension < skeleton)
                     out << birth.dimension << " " << birth.distance << " " << epsilons[i-1] << std::endl;
-                births.erase(op++);
+                births.erase(pair);
+                ++op;
             }
         }
 
