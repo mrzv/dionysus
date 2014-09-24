@@ -26,7 +26,6 @@ reduce(const ChainRange& chain_, IndexChain& trail)
     auto      lows     = [this](const IndexPair& rc) -> IndexPair
                          {
                              Index r  = std::get<0>(rc);
-                             Index c  = std::get<1>(rc);
                              auto  it = this->lows_.find(r);
                              if (it == this->lows_.end())
                                  return ReductionIP::unpaired;
@@ -41,9 +40,9 @@ reduce(const ChainRange& chain_, IndexChain& trail)
 
     auto      addto    = [&trail](FieldElement m, const IndexPair& rc)  { trail.emplace_back(m, std::get<1>(rc)); };
 
-    IndexPair pair     = ReductionIP::reduce(chain,
-                                             chains, lows,
-                                             field_, addto, row_cmp);
+    ReductionIP::reduce(chain,
+                        chains, lows,
+                        field_, addto, row_cmp);
 
 #if !(__DIONYSUS_USE_VECTOR_CHAINS)
     return Column(std::begin(chain), std::end(chain));

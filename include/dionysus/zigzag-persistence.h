@@ -32,7 +32,7 @@ class ZigzagPersistence
 
                         ZigzagPersistence(const Field&      field,
                                           const Comparison& cmp = Comparison()):
-                            Z(field, cmp), B(field, cmp), C(field, cmp),
+                            Z(field, cmp), C(field, cmp), B(field, cmp),
                             operations(0),
                             cell_indices(0),
                             z_indicies_last(0),
