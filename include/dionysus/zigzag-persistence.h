@@ -61,6 +61,17 @@ class ZigzagPersistence
             return res;
         }
 
+        struct IsAlive
+        {
+                    IsAlive(const ZigzagPersistence& zz_): zz(zz_)      {}
+            bool    operator()(const std::pair<Index,Index>& x) const   { return !zz.B.is_low(x.first); }
+            const   ZigzagPersistence&  zz;
+        };
+
+        auto                alive() const -> decltype(BirthIndexMap() | ba::filtered(IsAlive(*this)) | ba::map_values)
+        { return birth_index | ba::filtered(IsAlive(*this)) | ba::map_values; }
+
+
         void                reserve(size_t)                         {}              // here for compatibility only
         const Field&        field() const                           { return Z.field(); }
         const Comparison&   cmp() const                             { return Z.cmp(); }

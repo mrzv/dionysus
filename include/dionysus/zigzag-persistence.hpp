@@ -140,6 +140,7 @@ remove_impl(Index cell)
         B.drop_row(l);
         Index Zl_low = row(Z.col(l).back());
         Z.drop_col(l);
+        birth_index.erase(l);
         C.drop_col(j);
         assert(Z.row(cell).empty());
         assert(C.row(cell).empty());
