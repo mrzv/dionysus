@@ -32,9 +32,15 @@ class Simplex
         using BoundaryRange      = boost::iterator_range<BoundaryIterator>;
 
     public:
+                        Simplex(const Data& d = Data()):
+                            dim_(-1), data_(d)                                                  {}
+
                         Simplex(const std::initializer_list<Vertex>& vertices,
                                 const Data& d = Data()):
                             Simplex(vertices.size() - 1, vertices.begin(), vertices.end(), d)   { std::sort(begin(), end()); }
+
+                        Simplex(short unsigned dim, Vertices&& vertices, Data&& data):
+                            dim_(dim), vertices_(std::move(vertices)), data_(std::move(data))   {}
 
         template<class VertexRange>
                         Simplex(const VertexRange& vertices,
@@ -48,14 +54,15 @@ class Simplex
                             dim_(other.dim_),
                             vertices_(std::move(other.vertices_)),
                             data_(std::move(other.data_))           {}
+        Simplex&        operator=(Simplex&& other)                  = default;
 
         template<class Iterator>
                         Simplex(short unsigned dim,
-                                Iterator bg, Iterator end,
+                                Iterator b, Iterator e,
                                 const Data& d = Data()):
                             dim_(dim),
                             vertices_(new Vertex[dim_+1]),
-                            data_(d)                                { std::copy(bg, end, begin()); }
+                            data_(d)                                { std::copy(b, e, begin()); std::sort(begin(), end()); }
 
         short unsigned  dimension() const                           { return dim_; }
 
@@ -78,6 +85,7 @@ class Simplex
         const Vertex*   end() const                                 { return begin() + dim_ + 1; }
 
         bool            operator==(const Simplex& other) const      { return dim_ == other.dim_ && std::equal(begin(), end(), other.begin()); }
+        bool            operator!=(const Simplex& other) const      { return !operator==(other); }
         bool            operator<(const Simplex& other) const       { return dim_ < other.dim_ || (dim_ == other.dim_ && std::lexicographical_compare(begin(), end(), other.begin(), other.end())); }
 
         Vertex          operator[](short unsigned i) const          { return vertices_[i]; }

@@ -77,8 +77,8 @@ struct Reduction
                  const Comparison&           cmp     = Comparison())
     {
         return reduce(c,
-                      [&chains](Index i)    { return chains[i]; },
-                      [&lows](Index i)      { return lows[i]; },
+                      [&chains](Index i) -> const Chain2&   { return chains[i]; },
+                      [&lows](Index i)                      { return lows[i]; },
                       field, visitor, cmp);
     }
 };

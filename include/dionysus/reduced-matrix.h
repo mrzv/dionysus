@@ -54,22 +54,27 @@ class ReducedMatrix
 
         template<class ChainRange>
         Index                   set(Index i, const ChainRange& chain);
+        Index                   reduce(Index i);
 
         Index                   reduce_upto(Index i);           // TODO
+
+        size_t                  size() const                    { return pairs_.size(); }
 
         const Chain&            operator[](Index i) const       { return reduced_[i]; }
         Index                   pair(Index i) const             { return pairs_[i]; }
 
+        Chain&                  column(Index i)                 { return reduced_[i]; }
+
         const Field&            field() const                   { return field_; }
         void                    reserve(size_t s)               { reduced_.reserve(s); pairs_.reserve(s); }
-        void                    resize(size_t s)                { reduced_.resize(s);  pairs_.resize(s, unpaired); }
+        void                    resize(size_t s);
 
         const Chains&           columns() const                 { return reduced_; }
 
         template<std::size_t I>
         Visitor<I>&             visitor()                       { return std::get<I>(visitors_); }
 
-        static const Index      unpaired = Reduction<Index>::unpaired;
+        static const Index      unpaired()                      { return Reduction<Index>::unpaired; }
 
     public:
         // Visitors::chain_initialized(c)

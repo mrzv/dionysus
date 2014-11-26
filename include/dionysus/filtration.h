@@ -35,7 +35,9 @@ class Filtration
 
 
     public:
-                            Filtration() = default;
+                            Filtration()                                        = default;
+                            Filtration(Filtration&& other)                      = default;
+        Filtration&         operator=(Filtration&& other)                       = default;
 
                             Filtration(const std::initializer_list<Cell>& cells):
                                 Filtration(std::begin(cells), std::end(cells))  {}
@@ -53,11 +55,14 @@ class Filtration
         const Cell&         operator[](size_t i) const                          { return cells_.template get<order>()[i]; }
         OrderConstIterator  iterator(const Cell& s) const                       { return bmi::project<order>(cells_, cells_.find(s)); }
         size_t              index(const Cell& s) const                          { return iterator(s) - begin(); }
+        bool                contains(const Cell& s) const                       { return cells_.find(s) != cells_.end(); }
 
         void                push_back(const Cell& s)                            { cells_.template get<order>().push_back(s); }
         void                push_back(Cell&& s)                                 { cells_.template get<order>().push_back(s); }
 
-        // TODO: add emplace
+        // TODO: this is possibly incomplete (it seems to have trouble with multiple arguments); double-check
+        template<class... Args>
+        void                emplace_back(Args&&... args)                        { cells_.template get<order>().emplace_back(std::forward<Args>(args)...); }
 
         template<class Cmp = std::less<Cell>>
         void                sort(const Cmp& cmp = Cmp())                        { cells_.template get<order>().sort(cmp); }

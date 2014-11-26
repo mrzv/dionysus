@@ -38,6 +38,8 @@ struct ChainEntry: public FieldElement<Field_>, public Extra...
     typedef     FieldElement<Field>         Parent;
     typedef     typename Parent::Element    Element;
 
+                ChainEntry(): Parent(Element()), i(Index()) {}      // need for serialization
+
                 ChainEntry(ChainEntry&& other)      = default;
                 ChainEntry(const ChainEntry& other) = default;
     ChainEntry& operator=(ChainEntry&& other)       = default;
@@ -130,6 +132,16 @@ struct Chain<std::set<T,TCmp>>
                       const Field& field, const Cmp& cmp, const Visitor_& = Visitor_());
 };
 
+}
+
+namespace std
+{
+    template<class F, class I, class... E>
+    void swap(::dionysus::ChainEntry<F,I,E...>& x, ::dionysus::ChainEntry<F,I,E...>& y)
+    {
+        std::swap(x.e, y.e);
+        std::swap(x.i, y.i);
+    }
 }
 
 #include "chain.hpp"

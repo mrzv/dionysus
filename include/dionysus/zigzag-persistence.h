@@ -3,10 +3,15 @@
 
 #include <tuple>
 
+#include <boost/range/adaptor/filtered.hpp>
+#include <boost/range/adaptor/map.hpp>
+
 #include "sparse-row-matrix.h"
 
 namespace dionysus
 {
+
+namespace ba = boost::adaptors;
 
 template<class Field_, class Index_ = int, class Comparison_ = std::less<Index_>>
 class ZigzagPersistence
