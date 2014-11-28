@@ -25,6 +25,9 @@ struct Reduction
     template<class Field>
     using AddtoVisitor = std::function<void(typename Field::Element, Index)>;
 
+    template<class Item>
+    struct CallToSub;
+
     static const Index unpaired;
 
     template<class Chain1,
@@ -77,10 +80,20 @@ struct Reduction
                  const Comparison&           cmp     = Comparison())
     {
         return reduce(c,
-                      [&chains](Index i) -> const Chain2&   { return chains[i]; },
-                      [&lows](Index i)                      { return lows[i]; },
+                      CallToSub<Chain2>(chains),
+                      CallToSub<Index>(lows),
                       field, visitor, cmp);
     }
+
+    // This is a work-around a bug in GCC (should really be a lambda function)
+    template<class Item>
+    struct CallToSub
+    {
+                                        CallToSub(const std::vector<Item>& items_):
+                                            items(items_)                       {}
+        const Item&                     operator()(Index i) const               { return items[i]; }
+        const std::vector<Item>&        items;
+    };
 };
 
 

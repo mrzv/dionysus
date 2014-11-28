@@ -8,6 +8,8 @@ option                      (counters           "Build Dionysus with counters"  
 option                      (debug_zigzag       "Turn on debug routines for zigzags"            OFF)
 mark_as_advanced            (debug_zigzag)
 
+find_package                (Boost)
+
 # Debugging
 if                          (debug)
     if                      (optimize)

@@ -76,7 +76,7 @@ cofaces(const Simplex& s, Dimension k, DistanceType max, const Functor& f, Itera
     // candidates   = everything - s     that is a neighbor of every vertex in the simplex
     VertexContainer candidates;
     boost::set_difference(std::make_pair(bg, end) |
-                                ba::filtered([this,&s](Vertex cur)
+                                ba::filtered([this,&s,&neighbor](Vertex cur)
                                              { for (auto& v : s)
                                                    if (!neighbor(v, cur))
                                                        return false;
