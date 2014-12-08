@@ -59,6 +59,7 @@ class ReducedMatrix
         Index                   reduce_upto(Index i);           // TODO
 
         size_t                  size() const                    { return pairs_.size(); }
+        void                    clear()                         { reduced_.clear(); pairs_.clear(); }
 
         const Chain&            operator[](Index i) const       { return reduced_[i]; }
         Index                   pair(Index i) const             { return pairs_[i]; }

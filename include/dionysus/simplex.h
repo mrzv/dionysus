@@ -39,7 +39,7 @@ class Simplex
                                 const Data& d = Data()):
                             Simplex(vertices.size() - 1, vertices.begin(), vertices.end(), d)   { std::sort(begin(), end()); }
 
-                        Simplex(short unsigned dim, Vertices&& vertices, Data&& data):
+                        Simplex(short unsigned dim, Vertices&& vertices, Data&& data = Data()):
                             dim_(dim), vertices_(std::move(vertices)), data_(std::move(data))   {}
 
         template<class VertexRange>
@@ -83,10 +83,15 @@ class Simplex
 
         const Vertex*   begin() const                               { return vertices_.get(); }
         const Vertex*   end() const                                 { return begin() + dim_ + 1; }
+        size_t          size() const                                { return dim_ + 1; }
+
+        std::pair<const Vertex*, const Vertex*>
+                        range() const                               { return std::make_pair(begin(), end()); }
 
         bool            operator==(const Simplex& other) const      { return dim_ == other.dim_ && std::equal(begin(), end(), other.begin()); }
         bool            operator!=(const Simplex& other) const      { return !operator==(other); }
         bool            operator<(const Simplex& other) const       { return dim_ < other.dim_ || (dim_ == other.dim_ && std::lexicographical_compare(begin(), end(), other.begin(), other.end())); }
+        bool            operator>(const Simplex& other) const       { return other < (*this); }
 
         Vertex          operator[](short unsigned i) const          { return vertices_[i]; }
         const Data&     data() const                                { return data_; }

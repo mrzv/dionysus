@@ -53,6 +53,9 @@ struct ChainEntry: public FieldElement<Field_>, public Extra...
     const Index& index() const              { return i; }
     Index&      index()                     { return i; }
 
+    // debug
+    bool        operator==(const ChainEntry& other) const       { return i == other.i; }
+
     Index       i;
 };
 
