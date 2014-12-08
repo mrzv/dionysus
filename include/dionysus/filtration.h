@@ -74,7 +74,7 @@ class Filtration
         OrderConstIterator  begin() const                                       { return cells_.template get<order>().begin(); }
         OrderConstIterator  end() const                                         { return cells_.template get<order>().end(); }
         size_t              size() const                                        { return cells_.size(); }
-        void                clear()                                             { return cells_.clear(); }
+        void                clear()                                             { return Container().swap(cells_); }
 
 
     private:
