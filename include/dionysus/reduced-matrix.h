@@ -63,6 +63,7 @@ class ReducedMatrix
 
         const Chain&            operator[](Index i) const       { return reduced_[i]; }
         Index                   pair(Index i) const             { return pairs_[i]; }
+        void                    set_pair(Index i, Index j)      { pairs_[i] = j; pairs_[j] = i; }
 
         Chain&                  column(Index i)                 { return reduced_[i]; }
 
