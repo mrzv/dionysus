@@ -12,6 +12,8 @@
 
 namespace d = dionysus;
 
+#include <format.h>
+
 //typedef     d::Z2Field                  K;
 typedef     d::ZpField<>                K;
 typedef     d::Simplex<>                Simplex;
@@ -28,22 +30,22 @@ int main()
 
     Simplex         s {0,1,3};
     for (auto sb : s.boundary())
-        std::cout << sb << std::endl;
+        fmt::print("{}\n", sb);
 
 
     Filtration filtration { Simplex{0}, Simplex{1}, Simplex{2}, Simplex{0,1}, Simplex{0,2}, Simplex{1,2}, Simplex{0,1,2} };
 
     for (auto& s : filtration)
     {
-        std::cout << s << " at " << filtration.index(s) << std::endl;
+        fmt::print("{} at {}\n", s, filtration.index(s));
         for (auto sb : s.boundary(k))
-            std::cout << "   " << sb.element() << " * " << sb.index() << " at " << filtration.index(sb.index()) << std::endl;
+            fmt::print("   {} * {} at {}\n", sb.element(), sb.index(), filtration.index(sb.index()));
     }
 
     Persistence                             persistence(k);
     d::StandardReduction<Persistence>       reduce(persistence);
     reduce(filtration);
-    std::cout << "Reduction finished" << std::endl;
+    fmt::print("Reduction finished\n");
 
 #if 0
     unsigned i = 0;
