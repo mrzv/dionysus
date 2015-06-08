@@ -76,6 +76,8 @@ class Filtration
         size_t              size() const                                        { return cells_.size(); }
         void                clear()                                             { return Container().swap(cells_); }
 
+        Cell&               back()                                              { return const_cast<Cell&>(cells_.template get<order>().back()); }
+        const Cell&         back() const                                        { return cells_.template get<order>().back(); }
 
     private:
         Container           cells_;
