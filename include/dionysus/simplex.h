@@ -36,7 +36,12 @@ class Simplex
                             dim_(-1), data_(d)                                                  {}
 
                         Simplex(const std::initializer_list<Vertex>& vertices,
-                                const Data& d = Data()):
+                                Data&& d = Data()):
+                            Simplex(vertices.size() - 1, vertices.begin(), vertices.end(), std::move(d))
+                                                                                                { std::sort(begin(), end()); }
+
+                        Simplex(const std::initializer_list<Vertex>& vertices,
+                                const Data& d):
                             Simplex(vertices.size() - 1, vertices.begin(), vertices.end(), d)   { std::sort(begin(), end()); }
 
                         Simplex(short unsigned dim, Vertices&& vertices, Data&& data = Data()):
@@ -44,13 +49,19 @@ class Simplex
 
         template<class VertexRange>
                         Simplex(const VertexRange& vertices,
-                                const Data& d = Data()):
+                                Data&& d = Data()):
+                            Simplex(vertices.size() - 1, vertices.begin(), vertices.end(), std::move(d))
+                                                                                                { std::sort(begin(), end()); }
+
+        template<class VertexRange>
+                        Simplex(const VertexRange& vertices,
+                                const Data& d):
                             Simplex(vertices.size() - 1, vertices.begin(), vertices.end(), d)   { std::sort(begin(), end()); }
 
                         Simplex(const Simplex& other):
                             Simplex(other.dim_, other.begin(), other.end(), other.data_)        {}
 
-                        Simplex(Simplex&& other):
+                        Simplex(Simplex&& other) noexcept:
                             dim_(other.dim_),
                             vertices_(std::move(other.vertices_)),
                             data_(std::move(other.data_))           {}
@@ -59,7 +70,15 @@ class Simplex
         template<class Iterator>
                         Simplex(short unsigned dim,
                                 Iterator b, Iterator e,
-                                const Data& d = Data()):
+                                Data&& d = Data()):
+                            dim_(dim),
+                            vertices_(new Vertex[dim_+1]),
+                            data_(std::move(d))                     { std::copy(b, e, begin()); std::sort(begin(), end()); }
+
+        template<class Iterator>
+                        Simplex(short unsigned dim,
+                                Iterator b, Iterator e,
+                                const Data& d):
                             dim_(dim),
                             vertices_(new Vertex[dim_+1]),
                             data_(d)                                { std::copy(b, e, begin()); std::sort(begin(), end()); }
