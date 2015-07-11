@@ -50,16 +50,24 @@ class ReducedMatrix
                                     visitors_(visitors...)                      {}
 
         template<class ChainRange>
-        Index                   add(const ChainRange& chain);
+        Index                   add(const ChainRange& chain)                    { return add(Chain(std::begin(chain), std::end(chain))); }
+        Index                   add(Chain&& chain);
 
         template<class ChainRange>
-        Index                   set(Index i, const ChainRange& chain);
+        Index                   set(Index i, const ChainRange& chain)           { return set(i, Chain(std::begin(chain), std::end(chain))); }
+        Index                   set(Index i, Chain&& chain);
+
         Index                   reduce(Index i);
+        Index                   reduce(Chain& c)                { return reduce(c, reduced_, pairs_); }
+        template<class ChainsLookup, class LowLookup>
+        Index                   reduce(Chain& c, const ChainsLookup& chains, const LowLookup& low);
 
         Index                   reduce_upto(Index i);           // TODO
 
         size_t                  size() const                    { return pairs_.size(); }
         void                    clear()                         { Chains().swap(reduced_); Indices().swap(pairs_); }
+
+        void                    sort(Chain& c)                  { std::sort(c.begin(), c.end(), [this](const Entry& e1, const Entry& e2) { return this->cmp_(e1.index(), e2.index()); }); }
 
         const Chain&            operator[](Index i) const       { return reduced_[i]; }
         Index                   pair(Index i) const             { return pairs_[i]; }
