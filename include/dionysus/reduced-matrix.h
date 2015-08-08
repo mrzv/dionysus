@@ -54,8 +54,8 @@ class ReducedMatrix
         Index                   add(Chain&& chain);
 
         template<class ChainRange>
-        Index                   set(Index i, const ChainRange& chain)           { return set(i, Chain(std::begin(chain), std::end(chain))); }
-        Index                   set(Index i, Chain&& chain);
+        void                    set(Index i, const ChainRange& chain)           { return set(i, Chain(std::begin(chain), std::end(chain))); }
+        void                    set(Index i, Chain&& chain);
 
         Index                   reduce(Index i);
         Index                   reduce(Chain& c)                { return reduce(c, reduced_, pairs_); }

@@ -17,19 +17,19 @@ add(Chain&& chain)
     pairs_.emplace_back(unpaired());
     reduced_.emplace_back();
 
-    return set(i, std::move(chain));
+    set(i, std::move(chain));
+
+    return reduce(i);
 }
 
 template<class F, typename I, class C, template<class Self> class... V>
-typename dionysus::ReducedMatrix<F,I,C,V...>::Index
+void
 dionysus::ReducedMatrix<F,I,C,V...>::
 set(Index i, Chain&& c)
 {
     sort(c);
     visitors_chain_initialized(c);
     reduced_[i] = std::move(c);
-
-    return reduce(i);
 }
 
 template<class F, typename I, class C, template<class Self> class... V>
