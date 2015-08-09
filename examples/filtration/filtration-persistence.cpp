@@ -7,6 +7,7 @@
 #include <dionysus/fields/z2.h>
 #include <dionysus/ordinary-persistence.h>
 #include <dionysus/standard-reduction.h>
+#include <dionysus/row-reduction.h>
 #include <dionysus/cohomology-persistence.h>
 #include <dionysus/zigzag-persistence.h>
 
@@ -40,8 +41,9 @@ int main()
             std::cout << "   " << sb.element() << " * " << sb.index() << " at " << filtration.index(sb.index()) << std::endl;
     }
 
-    Persistence                             persistence(k);
-    d::StandardReduction<Persistence>       reduce(persistence);
+    //Persistence                             persistence(k);
+    //d::StandardReduction<Persistence>       reduce(persistence);
+    d::RowReduction<K>                      reduce(k);
     reduce(filtration);
     std::cout << "Reduction finished" << std::endl;
 

@@ -137,15 +137,15 @@ struct Chain<std::set<T,TCmp>>
 
 }
 
-namespace std
-{
-    template<class F, class I, class... E>
-    void swap(::dionysus::ChainEntry<F,I,E...>& x, ::dionysus::ChainEntry<F,I,E...>& y)
-    {
-        std::swap(x.e, y.e);
-        std::swap(x.i, y.i);
-    }
-}
+//namespace std
+//{
+//    template<class F, class I, class... E>
+//    void swap(::dionysus::ChainEntry<F,I,E...>& x, ::dionysus::ChainEntry<F,I,E...>& y)
+//    {
+//        std::swap(x.e, y.e);
+//        std::swap(x.i, y.i);
+//    }
+//}
 
 #include "chain.hpp"
 

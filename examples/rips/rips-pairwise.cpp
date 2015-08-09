@@ -11,6 +11,8 @@
 #include <dionysus/cohomology-persistence.h>
 #include <dionysus/zigzag-persistence.h>
 #include <dionysus/standard-reduction.h>
+#include <dionysus/row-reduction.h>
+#include <dionysus/pair-recorder.h>
 namespace d = dionysus;
 
 #include <opts/opts.h>
@@ -32,7 +34,7 @@ typedef         d::Filtration<Simplex>                                  Filtrati
 //typedef         d::Z2Field                                              K;
 typedef         d::ZpField<>                                            K;
 //typedef         d::OrdinaryPersistence<K>                               Persistence;
-typedef         d::CohomologyPersistence<K>                             Persistence;
+typedef         d::PairRecorder<d::CohomologyPersistence<K>>            Persistence;
 //typedef         d::ZigzagPersistence<K>                                 Persistence;
 
 int main(int argc, char* argv[])
@@ -51,6 +53,7 @@ int main(int argc, char* argv[])
         >> Option('s', "skeleton",      skeleton,           "dimension of the Rips complex we want to compute")
         >> Option('m', "max-distance",  max_distance,       "maximum distance value cutoff")
     ;
+    bool output_diagram = ops >> Present('d', "diagram", "output diagram");
 
     if ( (ops >> Present('h', "help", "show help message") ||
         !(ops >> PosOption(infilename))))
@@ -80,6 +83,28 @@ int main(int argc, char* argv[])
     K k(11);
     Persistence                             persistence(k);
     d::StandardReduction<Persistence>       reduce(persistence);
+    //d::RowReduction<K>                      reduce(k);
+    //const auto&                             persistence = reduce.persistence();
     reduce(filtration);
     std::cout << "Reduction finished" << std::endl;
+
+    if (output_diagram)
+    {
+        typedef decltype(persistence.pair(0)) Index;
+        Generator::Evaluator    eval(distances);
+        for (Index i = 0; i < persistence.size(); ++i)
+        {
+            Index j = persistence.pair(i);
+            if (j < i) continue;
+
+            if (filtration[i].dimension() == skeleton)
+                continue;
+
+            std::cout << eval(filtration[i]) << " ";
+            if (j == persistence.unpaired())
+                std::cout << "inf\n";
+            else
+                std::cout << eval(filtration[j]) << '\n';
+        }
+    }
 }

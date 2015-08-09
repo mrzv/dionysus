@@ -76,6 +76,7 @@ class ReducedMatrix
         Chain&                  column(Index i)                 { return reduced_[i]; }
 
         const Field&            field() const                   { return field_; }
+        const Comparison&       cmp() const                     { return cmp_; }
         void                    reserve(size_t s)               { reduced_.reserve(s); pairs_.reserve(s); }
         void                    resize(size_t s);
 
