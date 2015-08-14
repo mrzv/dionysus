@@ -43,7 +43,7 @@ struct ExecuteEP
 
 
 
-    void            operator()(cnpy::NpyArray& arr, K k, std::ostream* out) const
+    void            operator()(cnpy::NpyArray& arr, K k, std::ostream* out, bool extended = true) const
     {
         // load the data
         Function        function(reinterpret_cast<Value*>(arr.data), typename Function::Vertex(arr.shape), !arr.fortran_order);
@@ -74,18 +74,20 @@ struct ExecuteEP
             ops.push_back(filtration.size());
         }
 
-        // add the extended part
-        for (auto it = vertices.rbegin(); it != vertices.rend(); ++it)
-        {
-            Vertex v = std::get<1>(*it);
-            std::vector<Simplex>    upper_star = topology.upper_star(v, function);
-            std::sort(upper_star.begin(), upper_star.end());
+        if (extended)
+            for (auto it = vertices.rbegin(); it != vertices.rend(); ++it)
+            {
+                Vertex v = std::get<1>(*it);
+                std::vector<Simplex>    upper_star = topology.upper_star(v, function);
+                std::sort(upper_star.begin(), upper_star.end());
 
-            for (auto& s : upper_star)
-                filtration.emplace_back(s.join(w));
+                for (auto& s : upper_star)
+                    filtration.emplace_back(s.join(w));
 
-            ops.push_back(filtration.size());
-        }
+                ops.push_back(filtration.size());
+            }
+
+        fmt::print("Filtration size: {}\n", filtration.size());
 
         // compute persistence
         typedef         d::StandardReduction<Persistence>       StandardReduction;
@@ -125,6 +127,8 @@ int main(int argc, char** argv)
     using namespace opts;
     Options ops(argc, argv);
 
+    bool no_extended = ops >> Present('n', "no-extended", "don't compute the extended part");
+
     std::string infn;
     if (  ops >> Present('h', "help", "show help") ||
         !(ops >> PosOption(infn)))
@@ -150,9 +154,9 @@ int main(int argc, char** argv)
     }
 
     if (arr.shape.size() == 3)
-        ExecuteEP<3>()(arr, d::Z2Field(), out);
+        ExecuteEP<3>()(arr, d::Z2Field(), out, !no_extended);
     else if (arr.shape.size() == 2)
-        ExecuteEP<2>()(arr, d::Z2Field(), out);
+        ExecuteEP<2>()(arr, d::Z2Field(), out, !no_extended);
     else
         fmt::print("Can't process array of dimension: {}\n", arr.shape.size());
 
