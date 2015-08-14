@@ -55,7 +55,7 @@ typename dionysus::RelativeHomologyZigzag<F,I,C>::Index
 dionysus::RelativeHomologyZigzag<F,I,C>::
 decode_pair(Index pair)
 {
-    if (pair == unpaired)
+    if (pair == unpaired())
         return pair;
 
     Index decoded = op_map_.find(pair)->second;

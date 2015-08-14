@@ -40,7 +40,7 @@ int main()
         Index pair = persistence.add(c.boundary(persistence.field()) |
                                                 ba::transformed([&filtration](const CellChainEntry& e)
                                                 { return ChainEntry(e.element(), filtration.index(e.index())); }));
-        //if (pair != persistence.unpaired)
+        //if (pair != persistence.unpaired())
         //    std::cout << "[" << pair << " - " << i << "]" << std::endl;
         //++i;
     }
@@ -49,7 +49,7 @@ int main()
     {
         fmt::print("[{}] Removing: {}\n", op++, i);
         Index pair = persistence.remove(i);
-        if (pair == Persistence::unpaired)
+        if (pair == Persistence::unpaired())
             fmt::print("Birth\n");
         else
             fmt::print("Death: {}\n", pair);

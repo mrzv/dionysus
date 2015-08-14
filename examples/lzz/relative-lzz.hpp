@@ -83,7 +83,7 @@ operator()(const ReportPair& report_pair)
         for (auto it = upper_star.rbegin(); it != upper_star.rend(); ++it)
         {
             Index pair = remove_relative(*it);
-            if (pair != zz.unpaired)
+            if (pair != zz.unpaired())
             {
                 Index pair_op = std::upper_bound(ops.begin(), ops.end(), pair) - ops.begin();
                 if (pair_op != ops.size())
@@ -98,7 +98,7 @@ operator()(const ReportPair& report_pair)
         for (auto& s : lower_star)
         {
             Index pair = add_relative(s);
-            if (pair != zz.unpaired)
+            if (pair != zz.unpaired())
             {
                 Index pair_op = std::upper_bound(ops.begin(), ops.end(), pair) - ops.begin();
                 if (pair_op != ops.size())
@@ -143,7 +143,7 @@ remove_relative(const Simplex& s)
     Index idx = std::get<1>(cmplx.find(s)->second);
     op++;
     Index pair = zz.remove(idx);
-    if (pair == zz.unpaired)
+    if (pair == zz.unpaired())
         birth_type_[idx] = false;
 
     return pair;
@@ -165,7 +165,7 @@ add_relative(const Simplex& s)
                                    Index idx = std::get<1>(it->second);
                                    return ChainEntry(e.element(), idx);
                                }));
-    if (pair == zz.unpaired)
+    if (pair == zz.unpaired())
         birth_type_[idx] = true;
 
     return pair;

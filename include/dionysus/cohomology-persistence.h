@@ -50,7 +50,7 @@ class CohomologyPersistence
 
         struct AddtoVisitor;
 
-        static const Index      unpaired = Reduction<Index>::unpaired;
+        static const Index      unpaired()                                  { return Reduction<Index>::unpaired; }
 
     private:
         Field                   field_;

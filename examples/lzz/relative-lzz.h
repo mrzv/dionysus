@@ -9,6 +9,7 @@ namespace ba = boost::adaptors;
 
 #include <dionysus/relative-homology-zigzag.h>
 #include <dionysus/simplex.h>
+namespace d = dionysus;
 
 template<class Field_, class Topology_, class Function_>
 struct RelativeLZZ

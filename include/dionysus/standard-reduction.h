@@ -11,13 +11,17 @@ class StandardReduction
     public:
         typedef         Persistence_                                Persistence;
         typedef         typename Persistence::Field                 Field;
+        typedef         typename Persistence::Index                 Index;
 
     public:
                         StandardReduction(Persistence& persistence):
                             persistence_(persistence)               {}
 
+        template<class Filtration, class ReportPair>
+        void            operator()(const Filtration& f, const ReportPair& report_pair);
+
         template<class Filtration>
-        void            operator()(const Filtration& f);
+        void            operator()(const Filtration& f)             { return (*this)(f, [](int, Index, Index) {}); }
 
         const Persistence&
                         persistence() const                         { return persistence_; }

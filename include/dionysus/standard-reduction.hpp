@@ -2,14 +2,13 @@
 namespace ba = boost::adaptors;
 
 template<class P>
-template<class Filtration>
+template<class Filtration, class ReportPair>
 void
 dionysus::StandardReduction<P>::
-operator()(const Filtration& filtration)
+operator()(const Filtration& filtration, const ReportPair& report_pair)
 {
     persistence_.reserve(filtration.size());
 
-    typedef     typename Persistence::Index                     Index;
     typedef     typename Filtration::Cell                       Cell;
     typedef     ChainEntry<Field, Cell>                         CellChainEntry;
     typedef     ChainEntry<Field, Index>                        ChainEntry;
@@ -21,8 +20,8 @@ operator()(const Filtration& filtration)
         Index pair = persistence_.add(c.boundary(persistence_.field()) |
                                                  ba::transformed([this,&filtration](const CellChainEntry& e)
                                                  { return ChainEntry(e.element(), filtration.index(e.index())); }));
-        //if (pair != persistence_.unpaired)
-        //    std::cout << "[" << pair << " - " << i << "]" << std::endl;
+        if (pair != persistence_.unpaired())
+            report_pair(c.dimension(), pair, i);
         ++i;
     }
 }

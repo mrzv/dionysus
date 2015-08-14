@@ -53,7 +53,7 @@ class RelativeHomologyZigzag
         size_t          size_alive() const                          { return boost::distance(zzp_.alive()) - 1; }   // -1 for the cone vertex
 
         static
-        const Index     unpaired = ZZP::unpaired;
+        const Index     unpaired()                                  { return ZZP::unpaired(); }
 
     private:
         template<class ChainRange>

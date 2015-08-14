@@ -47,7 +47,7 @@ int main()
     {
         fmt::print("[{}] Removing: {} = {}\n", op++, i, filtration[i]);
         Index pair = persistence.remove(i);
-        if (pair == Persistence::unpaired)
+        if (pair == Persistence::unpaired())
             fmt::print("Birth\n");
         else
             fmt::print("Death: {}\n", pair);

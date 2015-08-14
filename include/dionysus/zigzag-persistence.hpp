@@ -29,7 +29,7 @@ add_impl(const ChainRange& chain_)
         Index z_col = z_indicies_last++;
         Z.set(z_col, std::move(chain));
         birth_index[z_col] = op;
-        return unpaired;
+        return unpaired();
     }
     else                            // death
     {
@@ -196,7 +196,7 @@ remove_impl(Index cell)
         }
         //std::cout << "Done with step 6" << std::endl;
 
-        return unpaired;
+        return unpaired();
     }
     else                            // death
     {
