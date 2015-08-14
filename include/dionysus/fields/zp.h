@@ -1,6 +1,8 @@
 #ifndef DIONYSUS_ZP_H
 #define DIONYSUS_ZP_H
 
+#include <vector>
+
 namespace dionysus
 {
 

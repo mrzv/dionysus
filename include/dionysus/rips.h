@@ -89,15 +89,14 @@ class Rips
         DistanceType        distance(const Simplex& s1, const Simplex& s2) const;
 
 
-    protected:
         template<class Functor, class NeighborTest>
-        void                bron_kerbosch(VertexContainer&                          current,
+        static void         bron_kerbosch(VertexContainer&                          current,
                                           const VertexContainer&                    candidates,
                                           typename VertexContainer::const_iterator  excluded,
                                           Dimension                                 max_dim,
                                           const NeighborTest&                       neighbor,
                                           const Functor&                            functor,
-                                          bool                                      check_initial = true) const;
+                                          bool                                      check_initial = true);
 
     protected:
         const Distances&    distances_;

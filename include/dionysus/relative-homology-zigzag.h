@@ -50,6 +50,8 @@ class RelativeHomologyZigzag
         const Field&    field() const                               { return zzp_.field(); }
         const Cmp&      cmp() const                                 { return zzp_.cmp(); }
 
+        size_t          size_alive() const                          { return boost::distance(zzp_.alive()) - 1; }   // -1 for the cone vertex
+
         static
         const Index     unpaired = ZZP::unpaired;
 
