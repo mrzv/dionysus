@@ -1,31 +1,6 @@
 #include <cassert>
 
 template<class K, class T, class F>
-std::tuple<bool,bool,bool>
-RelativeLZZ<K,T,F>::
-lower_upper(const Simplex& s, const ValueVertex& vval) const
-{
-    Vertex v = std::get<1>(vval);
-    bool lower = false, upper = false, has_v = false;
-    for (auto& u : s)
-    {
-        if (u == v)
-        {
-            has_v = true;
-            continue;
-        }
-
-        ValueVertex uval(function(u), u);
-        if (uval < vval)
-            lower = true;
-        else if (uval > vval)
-            upper = true;
-    }
-
-    return std::make_tuple(lower,upper,has_v);
-}
-
-template<class K, class T, class F>
 void
 RelativeLZZ<K,T,F>::
 add_both(const Simplex& s)
@@ -92,31 +67,10 @@ operator()(const ReportPair& report_pair)
         //fmt::print("Vertex: {} {}\n", v, val);
 
         // generate the closures of upper and lower stars
-        std::vector<Simplex>    lower_star, upper_star, lower_link, upper_link;
-        for (auto& s : topology.closed_star(v))
-        {
-            bool lower, upper, has_v;
-            std::tie(lower,upper,has_v) = lower_upper(s, vval);
-            if (lower && !upper)
-            {
-                if (has_v)
-                    lower_star.emplace_back(std::move(s));
-                else
-                    lower_link.emplace_back(std::move(s));
-            }
-            else if (!lower && upper)
-            {
-                if (has_v)
-                    upper_star.emplace_back(std::move(s));
-                else
-                    upper_link.emplace_back(std::move(s));
-            } else if (!lower && !upper)
-            {
-                // s = { v }
-                lower_star.push_back(s);
-                upper_star.push_back(s);
-            }
-        }
+        std::vector<Simplex>    lower_star = topology.lower_star(v, function),
+                                upper_star = topology.upper_star(v, function),
+                                lower_link = topology.lower_link(v, function),
+                                upper_link = topology.upper_link(v, function);
 
         // add upper link and star to zz
         std::sort(upper_star.begin(), upper_star.end());        // order by dimension

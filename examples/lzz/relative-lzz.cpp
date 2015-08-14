@@ -10,6 +10,7 @@
 #include <dionysus/rips.h>          // for bron-kebosch to generate the star in the Freudenthal triangulation
 namespace d = dionysus;
 
+#include <format.h>
 #include "relative-lzz.h"
 
 #include <grid/grid.h>
@@ -20,24 +21,6 @@ namespace d = dionysus;
 
 #include <format.h>
 #include <opts/opts.h>
-
-#if 0
-struct DummyTopology
-{
-    typedef     int                         Vertex;
-    typedef     d::Simplex<>                Simplex;
-
-    std::vector<Vertex>         vertices() const                { return { 0, 1, 2 }; }
-    std::vector<Simplex>        closed_star(Vertex v) const     { return { {0}, {1}, {2}, {0,1}, {0,2}, {1,2}, {0,1,2} }; }
-};
-
-struct DummyFunction
-{
-    typedef     float                       Value;
-
-    Value       operator()(int v) const     { return v; }
-};
-#endif
 
 template<unsigned D>
 struct GridTopology
@@ -51,93 +34,108 @@ struct GridTopology
     typedef     d::Simplex<Vertex>                              Simplex;
     typedef     std::vector<Simplex>                            Simplices;
 
+    struct FakeDistances
+    {
+        typedef     Position        IndexType;
+        typedef     float           DistanceType;       // meaningless
+    };
+    typedef     d::Rips<FakeDistances,Simplex>                  Rips;
+    typedef     typename Rips::VertexContainer                  VertexContainer;
+
+
                 GridTopology(const Position& shape);
 
     Vertices    vertices() const                                { return Vertices(Vertex(0), box.position_to_vertex()(box.to()) + 1); }
-    Simplices   closed_star(Vertex v) const;
 
-    Box                 box;
-    PositionSimplices   star;
+    template<class Function>
+    Simplices   neighborhood(Vertex v, const Function& f, bool lower, bool include) const;
+
+    template<class Function>
+    Simplices   upper_star(Vertex v, const Function& f) const   { return neighborhood(v,f,false,true); }
+    template<class Function>
+    Simplices   upper_link(Vertex v, const Function& f) const   { return neighborhood(v,f,false,false); }
+    template<class Function>
+    Simplices   lower_star(Vertex v, const Function& f) const   { return neighborhood(v,f,true,true); }
+    template<class Function>
+    Simplices   lower_link(Vertex v, const Function& f) const   { return neighborhood(v,f,true,false); }
+
+    static bool neighbor(const Position& x, const Position& y);
+    bool        neighbor_vertex(Vertex x, Vertex y) const       { return neighbor(box.position(x), box.position(y)); }
+
+    Box                     box;
+    std::vector<Position>   neighbors;
 };
 
 template<unsigned D>
 GridTopology<D>::
 GridTopology(const Position& shape): box(shape)
 {
-    struct FakeDistances
-    {
-        typedef     Position        IndexType;
-        typedef     float           DistanceType;       // meaningless
-    };
-    typedef     d::Rips<FakeDistances,PositionSimplex>          Rips;
-    typedef     typename Rips::VertexContainer                  VertexContainer;
-
-    auto neighbor = [](const Position& x, const Position& y)        // neighbor
-                    {
-                        Position diff = x - y;
-
-                        int min = diff[0], max = diff[0];
-                        for (unsigned i = 0; i < D; ++i)
-                        {
-                            if (diff[i] < min)
-                                min = diff[i];
-                            if (diff[i] > max)
-                                max = diff[i];
-                        }
-
-                        if (min < -1) return false;
-                        if (max > +1) return false;
-
-                        return !(min < 0 && max > 0);
-                    };
-
-    VertexContainer vertices;
     auto vi  = grid::VerticesIterator<Position>::begin(-Position::one(), Position::one()),
          end = grid::VerticesIterator<Position>::end  (-Position::one(), Position::one());
     while (vi != end)
     {
-        if (neighbor(*vi,Position::zero()))
-            vertices.push_back(*vi);
+        if (neighbor(*vi,Position::zero()) && *vi != Position::zero())
+            neighbors.push_back(*vi);
         ++vi;
     }
-
-    VertexContainer current;
-    Rips::bron_kerbosch(current, vertices, std::prev(vertices.begin()), D,
-                        neighbor,
-                        [this,neighbor](PositionSimplex&& s)
-                        {
-                            const PositionSimplex& cs = s;
-                            star.emplace_back(s);
-                        });
-
-    //fmt::print("Star generated; size = {}\n", star.size());
-    //for (auto& s : star)
-    //    fmt::print("   {}\n", s);
 }
 
 template<unsigned D>
+bool
+GridTopology<D>::
+neighbor(const Position& x, const Position& y)
+{
+    Position diff = x - y;
+
+    int min = diff[0], max = diff[0];
+    for (unsigned i = 0; i < D; ++i)
+    {
+        if (diff[i] < min)
+            min = diff[i];
+        if (diff[i] > max)
+            max = diff[i];
+    }
+
+    if (min < -1) return false;
+    if (max > +1) return false;
+
+    return !(min < 0 && max > 0);
+}
+
+template<unsigned D>
+template<class Function>
 typename GridTopology<D>::Simplices
 GridTopology<D>::
-closed_star(Vertex v) const
+neighborhood(Vertex v, const Function& f, bool lower, bool include) const
 {
-    Simplices   result;
-    Position    p = box.position(v);
-    auto        bounds = box.bounds_test();
-    auto        vertex = box.position_to_vertex();
-    for (auto& ps : star)
+    typedef                 typename Function::Value                            Value;
+    typedef                 std::tuple<Value, Vertex>                           ValueVertex;
+
+    Position    vp = box.position(v);
+    ValueVertex vval(f(v), v);
+
+    auto vertex = box.position_to_vertex();
+
+    VertexContainer vertices;
+    for (auto up : neighbors)
     {
-        bool accept = true;
-        for (auto& u : ps)
-            if (!bounds(p + u))
-            {
-                accept = false;
-                break;
-            }
-
-        if (!accept) continue;
-
-        result.emplace_back(std::make_pair(ps.begin(),ps.end()) | ba::transformed([vertex,p](const Position& u) { return vertex(p+u); }));
+        up += vp;
+        if (!box.contains(up))
+            continue;
+        Vertex u = vertex(up);
+        ValueVertex uval(f(up), u);
+        if ((lower && uval < vval) || (!lower && uval > vval))
+            vertices.push_back(u);
     }
+
+    Simplices       result;
+    VertexContainer current;
+    if (include)
+        current.push_back(v);
+    Rips::bron_kerbosch(current, vertices, std::prev(vertices.begin()), D,
+                        [this](Vertex u, Vertex v) { return neighbor_vertex(u,v); },
+                        [this,&result](Simplex&& s) { result.emplace_back(s); });
+
     return result;
 }
 

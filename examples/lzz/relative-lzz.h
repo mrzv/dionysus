@@ -35,9 +35,6 @@ struct RelativeLZZ
                             RelativeLZZ(const Field& field_, const Topology& topology_, const Function& function_):
                                 topology(topology_), function(function_), zz(field_)    {}
 
-    std::tuple<bool,bool,bool>
-                            lower_upper(const Simplex& s, const ValueVertex& vval) const;
-
     void                    add_both(const Simplex& s);
     void                    remove_both(const Simplex& s);
 
