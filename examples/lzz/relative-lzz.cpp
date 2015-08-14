@@ -72,9 +72,6 @@ GridTopology(const Position& shape): box(shape)
     typedef     d::Rips<FakeDistances,PositionSimplex>          Rips;
     typedef     typename Rips::VertexContainer                  VertexContainer;
 
-    VertexContainer vertices(grid::VerticesIterator<Position>::begin(-Position::one(), Position::one()),
-                             grid::VerticesIterator<Position>::end  (-Position::one(), Position::one()));
-
     auto neighbor = [](const Position& x, const Position& y)        // neighbor
                     {
                         Position diff = x - y;
@@ -94,15 +91,22 @@ GridTopology(const Position& shape): box(shape)
                         return !(min < 0 && max > 0);
                     };
 
+    VertexContainer vertices;
+    auto vi  = grid::VerticesIterator<Position>::begin(-Position::one(), Position::one()),
+         end = grid::VerticesIterator<Position>::end  (-Position::one(), Position::one());
+    while (vi != end)
+    {
+        if (neighbor(*vi,Position::zero()))
+            vertices.push_back(*vi);
+        ++vi;
+    }
+
     VertexContainer current;
     Rips::bron_kerbosch(current, vertices, std::prev(vertices.begin()), D,
                         neighbor,
                         [this,neighbor](PositionSimplex&& s)
                         {
                             const PositionSimplex& cs = s;
-                            for (auto& u : cs)
-                                if (!neighbor(u,Position::zero()))
-                                    return;
                             star.emplace_back(s);
                         });
 
