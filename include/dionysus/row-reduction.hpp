@@ -2,10 +2,10 @@
 namespace ba = boost::adaptors;
 
 template<class F, typename I, class C, template<class Self> class... V>
-template<class Filtration>
+template<class Filtration, class ReportPair>
 void
 dionysus::RowReduction<F,I,C,V...>::
-operator()(const Filtration& filtration)
+operator()(const Filtration& filtration, const ReportPair& report_pair)
 {
     persistence_.resize(filtration.size());
 
@@ -74,6 +74,7 @@ operator()(const Filtration& filtration)
         }
 
         persistence_.set_pair(r,c);
+        report_pair(filtration[r].dimension(), r, c);
 
         // zero out the corresponding column (the clearing optimization)
         persistence_.column(r).clear();

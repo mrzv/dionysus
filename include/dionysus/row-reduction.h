@@ -24,8 +24,12 @@ class RowReduction
                                      const Visitors<Persistence>&...    visitors):
                             persistence_(field, cmp, visitors...)       {}
 
+        template<class Filtration, class ReportPair>
+        void            operator()(const Filtration& f, const ReportPair& report_pair);
+
         template<class Filtration>
-        void            operator()(const Filtration& f);
+        void            operator()(const Filtration& f)             { return (*this)(f, [](int, Index, Index) {}); }
+
 
         const Persistence&
                         persistence() const                         { return persistence_; }

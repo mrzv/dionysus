@@ -216,7 +216,7 @@ int main(int argc, char** argv)
 #endif
             ++cell;
 
-            if (pair == Persistence::unpaired)
+            if (pair == Persistence::unpaired())
                 births[op++] = BirthInfo(epsilons[i-1],s.dimension());              // record the birth
             else
             {
@@ -253,7 +253,7 @@ int main(int argc, char** argv)
                                          [&rsimplices](Index i)         { return rsimplices.find(i)->second; });
 #endif
 
-            if (pair == Persistence::unpaired)
+            if (pair == Persistence::unpaired())
                 births[op++] = BirthInfo(epsilons[i-1],s.dimension() - 1);          // record the birth
             else
             {

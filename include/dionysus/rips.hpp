@@ -98,7 +98,7 @@ bron_kerbosch(VertexContainer&                          current,
               Dimension                                 max_dim,
               const NeighborTest&                       neighbor,
               const Functor&                            functor,
-              bool                                      check_initial) const
+              bool                                      check_initial)
 {
     if (check_initial && !current.empty())
         functor(Simplex(current));

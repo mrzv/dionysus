@@ -18,7 +18,7 @@ add(const ChainRange& chain)
         columns_.back().chain.push_back(Entry(field_.id(), rows_.size(), before_end));
         rows_.emplace_back();
         rows_.back().push_back(columns_.back().chain.front());
-        return unpaired;
+        return unpaired();
     } else                      // Death
     {
         // Select front element in terms of comparison (rows are unsorted)

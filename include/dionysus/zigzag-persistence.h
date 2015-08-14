@@ -87,7 +87,7 @@ class ZigzagPersistence
         static Index    col(const Entry& e)                         { return std::get<1>(e.index()); }
 
         static
-        const Index     unpaired = Reduction<Index>::unpaired;
+        const Index     unpaired()                                  { return Reduction<Index>::unpaired; }
 
         // debug
         void            check_b_cols() const;

@@ -4,6 +4,7 @@
 #include <vector>
 #include <list>
 #include <unordered_map>
+#include <iostream>         // for debugging output
 
 #include <boost/intrusive/list.hpp>
 

@@ -29,7 +29,7 @@ struct NoNegative
             {
                 Index i = cur->index();
                 Index p = matrix->pair(i);
-                if (!(p == Self::unpaired || (*matrix)[i].empty()))
+                if (!(p == Self::unpaired() || (*matrix)[i].empty()))
                     c.erase(cur--);
             }
         }

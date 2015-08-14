@@ -12,6 +12,8 @@ namespace ba = boost::adaptors;
 
 namespace d = dionysus;
 
+#include <format.h>
+
 //typedef     d::Z2Field                      K;
 typedef     d::ZpField<>                    K;
 typedef     d::Simplex<>                    Simplex;
@@ -34,22 +36,22 @@ int main()
     unsigned op = 0;
     for(auto& c : filtration)
     {
-        std::cout << '[' << op++ << "] " << "Adding: " << c << " : " << boost::distance(c.boundary(persistence.field())) << std::endl;
+        fmt::print("[{}] Adding: {} : {}\n", op++, c, boost::distance(c.boundary(persistence.field())));
         Index pair = persistence.add(c.boundary(persistence.field()) |
                                                 ba::transformed([&filtration](const CellChainEntry& e)
                                                 { return ChainEntry(e.element(), filtration.index(e.index())); }));
-        //if (pair != persistence.unpaired)
+        //if (pair != persistence.unpaired())
         //    std::cout << "[" << pair << " - " << i << "]" << std::endl;
         //++i;
     }
 
     for (int i = 6; i >= 0; --i)
     {
-        std::cout << '[' << op++ << "] " << "Removing: " << i << std::endl;
+        fmt::print("[{}] Removing: {}\n", op++, i);
         Index pair = persistence.remove(i);
-        if (pair == Persistence::unpaired)
-            std::cout << "Birth" << std::endl;
+        if (pair == Persistence::unpaired())
+            fmt::print("Birth\n");
         else
-            std::cout << "Death: " << pair << std::endl;
+            fmt::print("Death: {}\n", pair);
     }
 }
