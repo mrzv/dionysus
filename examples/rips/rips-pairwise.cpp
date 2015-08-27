@@ -1,6 +1,8 @@
 #include <iostream>
 #include <vector>
 #include <fstream>
+#include <iomanip>
+#include <limits>
 
 #include <dionysus/distances.h>
 #include <dionysus/rips.h>
@@ -31,8 +33,8 @@ typedef         d::Rips<PairDistances>                                  Generato
 typedef         Generator::Simplex                                      Simplex;
 typedef         d::Filtration<Simplex>                                  Filtration;
 
-//typedef         d::Z2Field                                              K;
-typedef         d::ZpField<>                                            K;
+typedef         d::Z2Field                                              K;
+//typedef         d::ZpField<>                                            K;
 //typedef         d::OrdinaryPersistence<K>                               Persistence;
 typedef         d::PairRecorder<d::CohomologyPersistence<K>>            Persistence;
 //typedef         d::ZigzagPersistence<K>                                 Persistence;
@@ -47,13 +49,16 @@ int main(int argc, char* argv[])
     short unsigned          skeleton = 2;
     DistanceType            max_distance = std::numeric_limits<DistanceType>::infinity();
     std::string             infilename, diagram_name;
+    int                     p = -1;
 
     Options ops(argc, argv);
     ops
         >> Option('s', "skeleton",      skeleton,           "dimension of the Rips complex we want to compute")
         >> Option('m', "max-distance",  max_distance,       "maximum distance value cutoff")
+        >> Option('p', "p",             p,                  "restrict diagrams to this dimension")
     ;
     bool output_diagram = ops >> Present('d', "diagram", "output diagram");
+    bool verbose        = ops >> Present('v', "verbose", "verbose output");
 
     if ( (ops >> Present('h', "help", "show help message") ||
         !(ops >> PosOption(infilename))))
@@ -74,19 +79,21 @@ int main(int argc, char* argv[])
 
     rips.generate(skeleton, max_distance,
                   [&filtration](Simplex&& s) { filtration.push_back(s); });
-    std::cout << "Generated complex of size: " << filtration.size() << std::endl;
+    if (verbose) std::cout << "# Generated complex of size: " << filtration.size() << std::endl;
 
     // Generate filtration with respect to distance and compute its persistence
     filtration.sort(Generator::Comparison(distances));
 
-    //K k;
-    K k(11);
+    K k;
+    //K k(11);
     Persistence                             persistence(k);
     d::StandardReduction<Persistence>       reduce(persistence);
     //d::RowReduction<K>                      reduce(k);
     //const auto&                             persistence = reduce.persistence();
     reduce(filtration);
-    std::cout << "Reduction finished" << std::endl;
+    if (verbose) std::cout << "# Reduction finished" << std::endl;
+
+    std::cout << std::setprecision(std::numeric_limits<long double>::digits10 + 1);
 
     if (output_diagram)
     {
@@ -100,11 +107,23 @@ int main(int argc, char* argv[])
             if (filtration[i].dimension() == skeleton)
                 continue;
 
-            std::cout << eval(filtration[i]) << " ";
+            if (p != -1 && filtration[i].dimension() != p)
+                continue;
+
+            auto birth = eval(filtration[i]);
+            auto death = birth;
+
+            if (j != persistence.unpaired())
+                death = eval(filtration[j]);
+
+            if (birth == death)
+                continue;
+
+            std::cout << birth << " ";
             if (j == persistence.unpaired())
                 std::cout << "inf\n";
             else
-                std::cout << eval(filtration[j]) << '\n';
+                std::cout << death << '\n';
         }
     }
 }
