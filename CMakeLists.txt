@@ -1,8 +1,12 @@
 project                     (Dionysus)
 cmake_minimum_required      (VERSION 2.8)
 
-option                      (debug              "Build Dionysus with debugging"                 OFF)
-option                      (optimize           "Build Dionysus with optimization"              ON)
+# Default to Release
+if                          (NOT CMAKE_BUILD_TYPE)
+    set                     (CMAKE_BUILD_TYPE "Release" CACHE STRING "Choose the type of build, options are: Debug Release RelWithDebInfo MinSizeRel." FORCE)
+    set_property            (CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release" "MinSizeRel" "RelWithDebInfo")
+endif                       (NOT CMAKE_BUILD_TYPE)
+
 option                      (trace              "Build Dionysus with trace logging"             OFF)
 option                      (counters           "Build Dionysus with counters"                  OFF)
 option                      (debug_zigzag       "Turn on debug routines for zigzags"            OFF)
@@ -11,21 +15,11 @@ mark_as_advanced            (debug_zigzag)
 find_package                (Boost)
 
 # Debugging
-if                          (debug)
-    if                      (optimize)
-            set             (cxx_flags                  ${CMAKE_CXX_FLAGS_RELWITHDEBINFO})
-    else                    (optimize)
-            set             (cxx_flags                  ${CMAKE_CXX_FLAGS_DEBUG})
-    endif                   (optimize)
+if                          (${CMAKE_BUILD_TYPE} STREQUAL "Debug" OR
+                             ${CMAKE_BUILD_TYPE} STREQUAL "RelWithDebInfo")
     add_definitions         (-DDEBUG)
-else                        (debug)
-    if                      (optimize)
-            set             (cxx_flags                  ${CMAKE_CXX_FLAGS_RELEASE})
-    else                    (optimize)
-            set             (cxx_flags                  ${CMAKE_CXX_FLAGS})
-    endif                   (optimize)
-endif                       (debug)
-add_definitions             (${cxx_flags} -std=c++11)
+endif                       ()
+set                         (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 
 if                          (counters)
     add_definitions         (-DCOUNTERS)
