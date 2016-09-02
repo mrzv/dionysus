@@ -61,4 +61,4 @@ endif                       (debug)
 
 add_subdirectory            (examples)
 
-
+add_subdirectory            (bindings/python)
