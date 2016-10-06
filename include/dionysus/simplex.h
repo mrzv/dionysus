@@ -38,25 +38,25 @@ class Simplex
                         Simplex(const std::initializer_list<Vertex>& vertices,
                                 Data&& d = Data()):
                             Simplex(vertices.size() - 1, vertices.begin(), vertices.end(), std::move(d))
-                                                                                                { std::sort(begin(), end()); }
+                                                                                                {}
 
                         Simplex(const std::initializer_list<Vertex>& vertices,
                                 const Data& d):
-                            Simplex(vertices.size() - 1, vertices.begin(), vertices.end(), d)   { std::sort(begin(), end()); }
+                            Simplex(vertices.size() - 1, vertices.begin(), vertices.end(), d)   {}
 
                         Simplex(short unsigned dim, Vertices&& vertices, Data&& data = Data()):
-                            dim_(dim), vertices_(std::move(vertices)), data_(std::move(data))   {}
+                            dim_(dim), vertices_(std::move(vertices)), data_(std::move(data))   { std::sort(begin(), end()); }
 
         template<class VertexRange>
                         Simplex(const VertexRange& vertices,
                                 Data&& d = Data()):
                             Simplex(vertices.size() - 1, vertices.begin(), vertices.end(), std::move(d))
-                                                                                                { std::sort(begin(), end()); }
+                                                                                                {}
 
         template<class VertexRange>
                         Simplex(const VertexRange& vertices,
                                 const Data& d):
-                            Simplex(vertices.size() - 1, vertices.begin(), vertices.end(), d)   { std::sort(begin(), end()); }
+                            Simplex(vertices.size() - 1, vertices.begin(), vertices.end(), d)   {}
 
                         Simplex(const Simplex& other):
                             Simplex(other.dim_, other.begin(), other.end(), other.data_)        {}
