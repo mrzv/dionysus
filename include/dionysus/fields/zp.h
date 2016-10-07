@@ -29,6 +29,8 @@ class ZpField
 
         bool            is_zero(Element a) const            { return (a % p_) == 0; }
 
+        Element         prime() const                       { return p_; }
+
     private:
         Element                 p_;
         std::vector<Element>    inverses_;

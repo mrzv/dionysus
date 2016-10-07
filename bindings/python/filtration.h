@@ -1,3 +1,5 @@
+#pragma once
+
 #include <dionysus/filtration.h>
 
 #include "simplex.h"

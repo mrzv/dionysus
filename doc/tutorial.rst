@@ -158,6 +158,38 @@ Vietoris--Rips Complexes
    :scale: 50 %
    :align: center
 
+.. testsetup::
+
+   import numpy as np
+   np.random.seed(0)
+
+.. doctest::
+   :options: +ELLIPSIS
+
+   >>> import numpy as np
+   >>> points = np.random.random((100,2))
+   >>> f = fill_rips(points, 2, .3)
+   >>> print(f)
+   Filtration with 5974 simplices
+   >>> for s in f:
+   ...     print(s)
+   <0> 0
+   ...
+   <9,61,92> 0.0899135
+   <9,72,92> 0.0899135
+   <9,82,92> 0.0899135
+
+:func:`~dionysus._dionysus.fill_rips` also accepts `condensed distance matrices <https://docs.scipy.org/doc/scipy-0.18.1/reference/spatial.distance.html>`_
+(linearized lower triangular part of a symmetric matrix):
+
+.. doctest::
+
+   >>> from scipy.spatial.distance import pdist
+   >>> dists = pdist(points)
+   >>> f = fill_rips(dists, 2, .3)
+   >>> print(f)
+   Filtration with 5974 simplices
+
 Lower-star Filtrations
 ----------------------
 

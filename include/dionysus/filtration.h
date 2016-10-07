@@ -32,6 +32,7 @@ class Filtration
         typedef             typename Container::template nth_index<0>::type     Complex;
         typedef             typename Container::template nth_index<1>::type     Order;
         typedef             typename Order::const_iterator                      OrderConstIterator;
+        typedef             typename Order::iterator                            OrderIterator;
 
 
     public:
@@ -73,6 +74,8 @@ class Filtration
 
         OrderConstIterator  begin() const                                       { return cells_.template get<order>().begin(); }
         OrderConstIterator  end() const                                         { return cells_.template get<order>().end(); }
+        OrderIterator       begin()                                             { return cells_.template get<order>().begin(); }
+        OrderIterator       end()                                               { return cells_.template get<order>().end(); }
         size_t              size() const                                        { return cells_.size(); }
         void                clear()                                             { return Container().swap(cells_); }
 
