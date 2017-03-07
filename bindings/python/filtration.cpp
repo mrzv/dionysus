@@ -12,8 +12,11 @@ void init_filtration(py::module& m)
                         };
 
     py::class_<PyFiltration>(m, "Filtration", "store an ordered sequence of simplices, providing lookup")
-        .def(py::init<>())
-        .def("add",             [](PyFiltration* f, const PySimplex& s) { f->push_back(s); }, "add simplex to the filtration")
+        .def(py::init<>(),      "initialize empty filtration")
+        .def(py::init<std::vector<PySimplex>>(),      "initialize filtration from a list")
+        .def("append",          [](PyFiltration* f, const PySimplex& s) { f->push_back(s); }, "append simplex to the filtration")
+        .def("add",             [](PyFiltration* f, const PySimplex& s) { return f->add(s); },
+                                "append simplex to the filtration, if not already in the filtration; either way return the index of the simplex")
         .def("__len__",         &PyFiltration::size,        "size of the filtration")
         .def("__getitem__",     &PyFiltration::operator[],  "access the simplex at the given index")
         .def("index",           &PyFiltration::index,       "find the ordered index of a simplex in the filtration")
