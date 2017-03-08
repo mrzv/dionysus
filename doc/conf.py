@@ -155,5 +155,4 @@ texinfo_documents = [
      'Miscellaneous'),
 ]
 
-
-
+add_module_names = False

@@ -4,9 +4,9 @@ namespace py = pybind11;
 void init_simplex(py::module&);
 void init_filtration(py::module&);
 
-PYBIND11_PLUGIN(dionysus)
+PYBIND11_PLUGIN(_dionysus)
 {
-    py::module m("dionysus", "Dionysus python bindings");
+    py::module m("_dionysus", "Dionysus python bindings");
 
     init_simplex(m);
     init_filtration(m);

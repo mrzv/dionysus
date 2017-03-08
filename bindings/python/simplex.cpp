@@ -49,6 +49,7 @@ void init_simplex(py::module& m)
         .def("join",            &PySimplex::join, "join two simplices, i.e., take the union of their vertices")
         .def_property("data",   [](const PySimplex& s) { return s.data(); },
                                 [](PySimplex& s, PySimplex::Data x) { s.data() = x; }, "access the data associated to the simplex")
+        .def("__hash__",        [](const PySimplex& s) { return hash_value(s); }, "hash simplex")
         .def(py::self == py::self)
         .def(py::self != py::self)
         .def(py::self <  py::self)
