@@ -15,17 +15,6 @@
 NAMESPACE_BEGIN(pybind11)
 NAMESPACE_BEGIN(detail)
 
-
-#if defined(__clang__)
-#  if __has_feature(cxx_return_type_deduction) && __has_feature(cxx_relaxed_constexpr)
-#    define PYBIND11_CPP14
-#  endif
-#elif defined(__GNUG__)
-#  if __cpp_constexpr >= 201304 && __cpp_decltype_auto >= 201304
-#    define PYBIND11_CPP14
-#  endif
-#endif
-
 #if defined(PYBIND11_CPP14) /* Concatenate type signatures at compile time using C++14 */
 
 template <size_t Size1, size_t Size2> class descr {
@@ -33,8 +22,8 @@ template <size_t Size1, size_t Size2> class descr {
 public:
     constexpr descr(char const (&text) [Size1+1], const std::type_info * const (&types)[Size2+1])
         : descr(text, types,
-                typename make_index_sequence<Size1>::type(),
-                typename make_index_sequence<Size2>::type()) { }
+                make_index_sequence<Size1>(),
+                make_index_sequence<Size2>()) { }
 
     constexpr const char *text() const { return m_text; }
     constexpr const std::type_info * const * types() const { return m_types; }
@@ -42,10 +31,10 @@ public:
     template <size_t OtherSize1, size_t OtherSize2>
     constexpr descr<Size1 + OtherSize1, Size2 + OtherSize2> operator+(const descr<OtherSize1, OtherSize2> &other) const {
         return concat(other,
-                      typename make_index_sequence<Size1>::type(),
-                      typename make_index_sequence<Size2>::type(),
-                      typename make_index_sequence<OtherSize1>::type(),
-                      typename make_index_sequence<OtherSize2>::type());
+                      make_index_sequence<Size1>(),
+                      make_index_sequence<Size2>(),
+                      make_index_sequence<OtherSize1>(),
+                      make_index_sequence<OtherSize2>());
     }
 
 protected:
@@ -83,7 +72,21 @@ template <size_t...Digits> struct int_to_str<0, Digits...> {
     static constexpr auto digits = descr<sizeof...(Digits), 0>({ ('0' + Digits)..., '\0' }, { nullptr });
 };
 
-template <size_t Size> auto constexpr _() {
+// Ternary description (like std::conditional)
+template <bool B, size_t Size1, size_t Size2>
+constexpr enable_if_t<B, descr<Size1 - 1, 0>> _(char const(&text1)[Size1], char const(&)[Size2]) {
+    return _(text1);
+}
+template <bool B, size_t Size1, size_t Size2>
+constexpr enable_if_t<!B, descr<Size2 - 1, 0>> _(char const(&)[Size1], char const(&text2)[Size2]) {
+    return _(text2);
+}
+template <bool B, size_t SizeA1, size_t SizeA2, size_t SizeB1, size_t SizeB2>
+constexpr enable_if_t<B, descr<SizeA1, SizeA2>> _(descr<SizeA1, SizeA2> d, descr<SizeB1, SizeB2>) { return d; }
+template <bool B, size_t SizeA1, size_t SizeA2, size_t SizeB1, size_t SizeB2>
+constexpr enable_if_t<!B, descr<SizeB1, SizeB2>> _(descr<SizeA1, SizeA2>, descr<SizeB1, SizeB2> d) { return d; }
+
+template <size_t Size> auto constexpr _() -> decltype(int_to_str<Size / 10, Size % 10>::digits) {
     return int_to_str<Size / 10, Size % 10>::digits;
 }
 
@@ -153,6 +156,11 @@ PYBIND11_NOINLINE inline descr _(const char *text) {
     return descr(text, types);
 }
 
+template <bool B> PYBIND11_NOINLINE enable_if_t<B, descr> _(const char *text1, const char *) { return _(text1); }
+template <bool B> PYBIND11_NOINLINE enable_if_t<!B, descr> _(char const *, const char *text2) { return _(text2); }
+template <bool B> PYBIND11_NOINLINE enable_if_t<B, descr> _(descr d, descr) { return d; }
+template <bool B> PYBIND11_NOINLINE enable_if_t<!B, descr> _(descr, descr d) { return d; }
+
 template <typename Type> PYBIND11_NOINLINE descr _() {
     const std::type_info *types[2] = { &typeid(Type), nullptr };
     return descr("%", types);
@@ -168,7 +176,7 @@ PYBIND11_NOINLINE inline descr concat(descr &&d) { return d; }
 template <typename... Args> PYBIND11_NOINLINE descr concat(descr &&d, Args&&... args) { return std::move(d) + _(", ") + concat(std::forward<Args>(args)...); }
 PYBIND11_NOINLINE inline descr type_descr(descr&& d) { return _("{") + std::move(d) + _("}"); }
 
-#define PYBIND11_DESCR descr
+#define PYBIND11_DESCR ::pybind11::detail::descr
 #endif
 
 NAMESPACE_END(detail)
