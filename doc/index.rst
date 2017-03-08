@@ -10,6 +10,7 @@ Welcome to Dionysus' documentation!
    :maxdepth: 2
    :caption: Contents:
 
+   tutorial
    API
 
 Indices and tables
