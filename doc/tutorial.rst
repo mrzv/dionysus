@@ -97,9 +97,30 @@ We can lookup the index of a given simplex. (Indexing starts from 0.)
     >>> print(f.index(Simplex([1,2])))
     4
 
-Homology
---------
+Persistent Homology
+-------------------
 
+.. doctest::
+   :options: +NORMALIZE_WHITESPACE
+
+    >>> m = homology_persistence(f)
+    >>> for i,c in enumerate(m):
+    ...     print(i,c)
+    0
+    1
+    2 1*0 + 1*1
+    3
+    4 1*1 + 1*3
+    5
+
+Alternatively:
+
+.. doctest::
+
+    >>> m = homology_persistence(f, method = 'column')
+
+
+**Homology.**
 Dionysus doesn’t compute homology directly, but we can get it as a by-product
 of persistent homology.
 
@@ -107,8 +128,8 @@ of persistent homology.
 
     >>> f = Filtration(sphere8)
     >>> f.sort()
-    >>> p = persistence(f, p=2)
-    >>> dgms = init_diagrams(p, f)
+    >>> m = homology_persistence(f, p=2)
+    >>> dgms = init_diagrams(m, f)
     >>> for i, dgm in enumerate(dgms):
     >>>     print("Dimension:", i)
     >>>     print(dgm)
@@ -124,15 +145,6 @@ of persistent homology.
     Dimension: 8
     0 inf
 
-
-Persistent Homology
--------------------
-
-::
-
-    >>> p = fast_persistence(f, p=2)
-    >>> p = fast_persistence(f, p=2)
-    >>> p = fast_persistence(f, p=2)
 
 Alpha shapes
 ------------

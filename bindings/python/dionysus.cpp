@@ -6,6 +6,7 @@ void init_filtration(py::module&);
 void init_rips(py::module&);
 
 void init_field(py::module&);
+void init_persistence(py::module&);
 
 PYBIND11_PLUGIN(_dionysus)
 {
@@ -16,6 +17,7 @@ PYBIND11_PLUGIN(_dionysus)
     init_rips(m);
 
     init_field(m);
+    init_persistence(m);
 
     return m.ptr();
 }

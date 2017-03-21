@@ -1,6 +1,8 @@
 #ifndef DIONYSUS_ROW_REDUCTION_H
 #define DIONYSUS_ROW_REDUCTION_H
 
+#include "reduced-matrix.h"
+
 namespace dionysus
 {
 

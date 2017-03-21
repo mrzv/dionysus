@@ -49,6 +49,13 @@ class ReducedMatrix
                                     cmp_(std::move(cmp)),
                                     visitors_(visitors...)                      {}
 
+        template<template<class Self> class... OtherVisitors>
+                                ReducedMatrix(ReducedMatrix<Field, Index, Comparison, OtherVisitors...>&& other):
+                                    field_(other.field_),
+                                    cmp_(other.cmp_),
+                                    reduced_(std::move(other.reduced_)),
+                                    pairs_(std::move(other.pairs_))             {}
+
         template<class ChainRange>
         Index                   add(const ChainRange& chain)                    { return add(Chain(std::begin(chain), std::end(chain))); }
         Index                   add(Chain&& chain);
@@ -86,6 +93,10 @@ class ReducedMatrix
         Visitor<I>&             visitor()                       { return std::get<I>(visitors_); }
 
         static const Index      unpaired()                      { return Reduction<Index>::unpaired; }
+
+    private:
+        template<class F, class I, class C, template<class S> class... Vs>
+        friend class ReducedMatrix;     // let's all be friends
 
     public:
         // Visitors::chain_initialized(c)
