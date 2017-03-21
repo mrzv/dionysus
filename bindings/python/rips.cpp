@@ -121,6 +121,9 @@ PyFiltration fill_rips(py::array a, unsigned k, double r)
 
 void init_rips(py::module& m)
 {
-    m.def("fill_rips",  &fill_rips, "returns (sorted) filtration filled with the k-skeleton of the clique complex built on the points at distance at most r from each other");
+    using namespace pybind11::literals;
+    m.def("fill_rips",  &fill_rips,
+          "data"_a, "k"_a, "r"_a,
+          "returns (sorted) filtration filled with the k-skeleton of the clique complex built on the points at distance at most r from each other");
 }
 

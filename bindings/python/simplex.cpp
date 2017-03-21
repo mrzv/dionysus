@@ -27,6 +27,8 @@ struct PySimplexBoundaryIterator
 
 void init_simplex(py::module& m)
 {
+    using namespace pybind11::literals;
+
     py::class_<PySimplexBoundaryIterator>(m, "SimplexBoundaryIterator")
         .def("__iter__", [](PySimplexBoundaryIterator& it) -> PySimplexBoundaryIterator& { return it; })
         .def("__next__", &PySimplexBoundaryIterator::next);
@@ -46,7 +48,7 @@ void init_simplex(py::module& m)
                                 "iterator over the vertices")
         .def("__contains__",    [](const PySimplex& s, PySimplex::Vertex v) { return std::find(s.begin(), s.end(), v) != s.end(); },
                                 "test whether the simplex contains given vertex")
-        .def("join",            &PySimplex::join, "join two simplices, i.e., take the union of their vertices")
+        .def("join",            &PySimplex::join, "v"_a, "join a simplex and a vertex")
         .def_property("data",   [](const PySimplex& s) { return s.data(); },
                                 [](PySimplex& s, PySimplex::Data x) { s.data() = x; }, "access the data associated to the simplex")
         .def("__hash__",        [](const PySimplex& s) { return hash_value(s); }, "hash simplex")

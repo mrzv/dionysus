@@ -190,6 +190,17 @@ Vietoris--Rips Complexes
    >>> print(f)
    Filtration with 5974 simplices
 
+SciPy provides a helper function `squareform <https://docs.scipy.org/doc/scipy/reference/generated/scipy.spatial.distance.squareform.html>`_ to convert between redundant ($n \times n$ square matrices) and condensed matrices.
+
+.. doctest::
+
+  >>> from scipy.spatial.distance import squareform
+  >>> sq_dist = squareform(dists)
+  >>> print(sq_dist.shape)
+  (100, 100)
+  >>> print(squareform(sq_dist).shape)
+  (4950,)
+
 Lower-star Filtrations
 ----------------------
 
