@@ -46,10 +46,13 @@ void init_persistence(py::module& m)
     m.def("homology_persistence",   &homology_persistence, "filtration"_a, py::arg("prime") = 2, py::arg("method") = "row",
           "compute homology persistence of the filtration (pair simplices); method is one of `row`, `column`, or `column_no_negative`");
 
-    py::class_<PyReducedMatrix>(m, "ReducedMatrix", "matrix, where each column has a lowest non-zero entry in a unique row")
+    py::class_<PyReducedMatrix>(m, "ReducedMatrix", "matrix, where each column has a lowest non-zero entry in a unique row; supports iteration and indexing")
         .def(py::init<PyZpField>())
         .def("__len__",     &PyReducedMatrix::size,         "size of the matrix")
         .def("__getitem__", &PyReducedMatrix::operator[],   "access the column at a given index")
+        .def("pair",        &PyReducedMatrix::pair,         "pair of the given index")
+        .def_property_readonly("unpaired",      [](const PyReducedMatrix&) { return PyReducedMatrix::unpaired(); },
+                               "index representing lack of pair")
         .def("__iter__",    [](const PyReducedMatrix& rm)   { return py::make_iterator(rm.columns().begin(), rm.columns().end()); },
                                 py::keep_alive<0, 1>() /* Essential: keep object alive while iterator exists */,
                                 "iterate over the columns of the matrix")

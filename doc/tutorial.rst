@@ -100,18 +100,34 @@ We can lookup the index of a given simplex. (Indexing starts from 0.)
 Persistent Homology
 -------------------
 
+Applying homology functor to the filtration, we get a sequence of homology groups, connected by linear maps:
+:math:`H(K_1) \to H(K_2) \to \ldots H(K_n)`.
+
+.. image:: figures/barcode.png
+
 .. doctest::
    :options: +NORMALIZE_WHITESPACE
 
     >>> m = homology_persistence(f)
     >>> for i,c in enumerate(m):
-    ...     print(i,c)
+    ...     print(i, c)
     0
     1
     2 1*0 + 1*1
     3
     4 1*1 + 1*3
     5
+    >>> for i in range(len(m)):
+    ...     if m.pair(i) < i: continue      # skip negative simplices
+    ...     dim = f[i].dimension()
+    ...     if m.pair(i) != m.unpaired:
+    ...         print(dim, i, m.pair(i))
+    ...     else:
+    ...         print(dim, i)
+    0 0
+    0 1 2
+    0 3 4
+    1 5
 
 Alternatively:
 
