@@ -101,9 +101,8 @@ Persistent Homology
 -------------------
 
 Applying homology functor to the filtration, we get a sequence of homology groups, connected by linear maps:
-:math:`H(K_1) \to H(K_2) \to \ldots H(K_n)`.
-
-.. image:: figures/barcode.png
+:math:`H_*(K_1) \to H_*(K_2) \to \ldots \to H_*(K_n)`. To compute decomposition of this sequence, i.e., persistence barcode,
+we use :func:`~dionysus._dionysus.homology_persistence`.
 
 .. doctest::
    :options: +NORMALIZE_WHITESPACE
@@ -117,6 +116,11 @@ Applying homology functor to the filtration, we get a sequence of homology group
     3
     4 1*1 + 1*3
     5
+
+.. image:: figures/barcode.png
+
+.. doctest::
+
     >>> for i in range(len(m)):
     ...     if m.pair(i) < i: continue      # skip negative simplices
     ...     dim = f[i].dimension()
@@ -218,7 +222,9 @@ Vietoris--Rips Complexes
    >>> print(f)
    Filtration with 5974 simplices
 
-SciPy provides a helper function `squareform <https://docs.scipy.org/doc/scipy/reference/generated/scipy.spatial.distance.squareform.html>`_ to convert between redundant ($n \times n$ square matrices) and condensed matrices.
+SciPy provides a helper function `squareform <https://docs.scipy.org/doc/scipy/reference/generated/scipy.spatial.distance.squareform.html>`_
+to convert between redundant square matrices (:math:`n \times n`) and condensed
+matrices (vectors with :math:`{n \choose 2}` elements).
 
 .. doctest::
 
