@@ -7,6 +7,7 @@ void init_rips(py::module&);
 
 void init_field(py::module&);
 void init_persistence(py::module&);
+void init_diagram(py::module&);
 
 PYBIND11_PLUGIN(_dionysus)
 {
@@ -18,6 +19,7 @@ PYBIND11_PLUGIN(_dionysus)
 
     init_field(m);
     init_persistence(m);
+    init_diagram(m);
 
     return m.ptr();
 }

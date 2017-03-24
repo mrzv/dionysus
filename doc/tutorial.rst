@@ -144,17 +144,18 @@ Alternatively:
 Dionysus doesn’t compute homology directly, but we can get it as a by-product
 of persistent homology.
 
-::
+.. doctest::
 
     >>> f = Filtration(sphere8)
     >>> f.sort()
-    >>> m = homology_persistence(f, p=2)
+    >>> m = homology_persistence(f, prime=2)
     >>> dgms = init_diagrams(m, f)
     >>> for i, dgm in enumerate(dgms):
-    >>>     print("Dimension:", i)
-    >>>     print(dgm)
+    ...     print("Dimension:", i)
+    ...     for p in dgm:
+    ...         print(p)
     Dimension: 0
-    0 inf
+    (0,inf)
     Dimension: 1
     Dimension: 2
     Dimension: 3
@@ -163,7 +164,7 @@ of persistent homology.
     Dimension: 6
     Dimension: 7
     Dimension: 8
-    0 inf
+    (0,inf)
 
 
 Alpha shapes
