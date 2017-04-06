@@ -4,6 +4,7 @@
 #include <vector>
 #include <unordered_map>
 
+#include "reduction.h"      // for unpaired
 #include "fields/q.h"
 #include "fields/zp.h"
 #include "chain.h"
@@ -38,6 +39,9 @@ class OmniFieldPersistence
         using   QLows       = std::unordered_map<Index, Index>;
         using   ZpLows      = std::unordered_map<Index, std::unordered_map<BaseElement, Index>>;
 
+        using   QPairs      = std::vector<Index>;
+        using   ZpPairs     = std::unordered_map<BaseElement, std::unordered_map<Index, Index>>;
+
         using   Factors     = std::vector<BaseElement>;
 
         const Field&        field() const                       { return q_; }
@@ -50,7 +54,8 @@ class OmniFieldPersistence
         void                add(const ChainRange& chain)        { return add(QChain(std::begin(chain), std::end(chain))); }
         void                add(QChain&& chain);
 
-        void                reserve(size_t s)                   { q_chains_.reserve(s); }
+        void                reserve(size_t s)                   { q_chains_.reserve(s); q_pairs_.reserve(s); }
+        size_t              size() const                        { return q_pairs_.size(); }
 
         void                reduce(ZpChain& zp_chain, BaseElement p);
         ZpChain             convert(const QChain& c, const Zp& field);
@@ -68,6 +73,11 @@ class OmniFieldPersistence
         // zps_ only if something special happened over the prime.
         Factors             primes() const                      { Factors result; result.reserve(zps_.size()); for (auto& x : zps_) result.push_back(x.first); return result; }
 
+        Index               pair(Index i, BaseElement p) const;
+        void                set_pair(Index i, Index j);
+        void                set_pair(Index i, Index j, BaseElement p);
+        static const Index  unpaired()                          { return Reduction<Index>::unpaired; }
+
     private:
         QChains     q_chains_;
         ZpChains    zp_chains_;
@@ -75,11 +85,41 @@ class OmniFieldPersistence
         QLows       q_lows_;
         ZpLows      zp_lows_;
 
+        QPairs      q_pairs_;
+        ZpPairs     zp_pairs_;
+
         Q           q_;
         Zps         zps_;
 
         Comparison  cmp_;
 };
+
+// Make OmniFieldPersistence act like a ReducedMatrix (e.g., for the purpose of constructing a persistence diagram)
+template<typename Index_, class Comparison_>
+struct PrimeAdapter
+{
+    using Persistence = OmniFieldPersistence<Index_, Comparison_>;
+    using Prime       = typename Persistence::BaseElement;
+    using Index       = typename Persistence::Index;
+
+                        PrimeAdapter(const Persistence& persistence, Prime p):
+                            persistence_(persistence), p_(p)    {}
+
+    size_t              size() const                            { return persistence_.size(); }
+    Index               pair(Index i) const                     { return persistence_.pair(i, p_); }
+    static const Index  unpaired()                              { return Persistence::unpaired(); }
+
+    const Persistence&  persistence_;
+    Prime               p_;
+};
+
+template<typename Index, class Comparison>
+PrimeAdapter<Index, Comparison>
+prime_adapter(const OmniFieldPersistence<Index, Comparison>&    persistence,
+              typename PrimeAdapter<Index, Comparison>::Prime   p)
+{
+    return PrimeAdapter<Index, Comparison>(persistence, p);
+}
 
 } // dionysus
 

@@ -4,6 +4,7 @@ dionysus::OmniFieldPersistence<Index_, Comparison_>::
 add(QChain&& chain)
 {
     q_chains_.emplace_back(std::move(chain));
+    q_pairs_.emplace_back(unpaired());
     Index i = q_chains_.size() - 1;
 
     QChain& c = q_chains_.back();
@@ -17,7 +18,11 @@ add(QChain&& chain)
         this->reduce(zp_chain, p);
 
         if (!zp_chain.empty())
-            zp_lows_[zp_chain.back().index()].emplace(p,i);
+        {
+            auto j = zp_chain.back().index();
+            zp_lows_[j].emplace(p,i);
+            set_pair(j,i,p);
+        }
 
         zp_chains_[i].emplace(p, std::move(zp_chain));        // empty chain is still a valid indicator that we don't need to bother with this field
     };
@@ -59,6 +64,7 @@ add(QChain&& chain)
         } else
         {
             q_lows_.emplace(j,i);
+            set_pair(j,i);
             break;
         }
     }
@@ -143,4 +149,62 @@ factor(BaseElement x)
         ++p;
     }
     return result;
+}
+
+template<typename Index_, class Comparison_>
+typename dionysus::OmniFieldPersistence<Index_,Comparison_>::Index
+dionysus::OmniFieldPersistence<Index_, Comparison_>::
+pair(Index i, BaseElement p) const
+{
+    if (p == 1)
+        return q_pairs_[i];
+    else
+    {
+        auto it = zp_pairs_.find(p);
+        if (it == zp_pairs_.end())
+            return q_pairs_[i];
+        else
+        {
+            auto pit = it->second.find(i);
+            if (pit == it->second.end())
+                return q_pairs_[i];
+            else
+                return pit->second;
+        }
+    }
+}
+
+template<typename Index_, class Comparison_>
+void
+dionysus::OmniFieldPersistence<Index_, Comparison_>::
+set_pair(Index i, Index j, BaseElement p)
+{
+    auto& pairs = zp_pairs_[p];
+    pairs[i] = j;
+    pairs[j] = i;
+}
+
+template<typename Index_, class Comparison_>
+void
+dionysus::OmniFieldPersistence<Index_, Comparison_>::
+set_pair(Index i, Index j)
+{
+    q_pairs_[i] = j;
+    q_pairs_[j] = i;
+
+    auto it = zp_chains_.find(j);
+    if (it == zp_chains_.end())
+        return;
+
+    auto& chains = it->second;
+    for (auto& x : chains)
+    {
+        auto  p     = x.first;
+        auto& chain = x.second;
+        if (chain.empty())
+        {
+            zp_pairs_[p][j] = unpaired();
+            zp_pairs_[p][i] = unpaired();
+        }
+    }
 }

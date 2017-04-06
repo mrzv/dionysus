@@ -7,6 +7,7 @@ namespace ba = boost::adaptors;
 #include <dionysus/simplex.h>
 #include <dionysus/filtration.h>
 #include <dionysus/omni-field-persistence.h>
+#include <dionysus/diagram.h>
 
 namespace d = dionysus;
 
@@ -84,5 +85,25 @@ int main()
                 fmt::print(" + {} * {}", ce.element(), ce.index());
         }
         fmt::print("\n");
+    }
+
+    auto primes = persistence.primes();
+    primes.insert(primes.begin(), 1);
+    for (unsigned p : primes)
+    {
+        if (p == 1)
+            fmt::print("Over Z_p (for all p, except those specified explicitly)\n");
+        else
+            fmt::print("Over Z_{}:\n", p);
+        auto diagrams = init_diagrams(prime_adapter(persistence, p), filtration,
+                                      [&](const Simplex& s) -> float  { return filtration.index(s); },        // inefficient, but works
+                                      [](Persistence::Index i)        { return i; });
+        i = 0;
+        for (auto& dgm : diagrams)
+        {
+            fmt::print("  Dimension {}:\n", i++);
+            for (auto& pt : dgm)
+                fmt::print("    {} {}\n", pt.birth, pt.death);
+        }
     }
 }
