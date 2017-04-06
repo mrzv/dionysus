@@ -13,34 +13,9 @@ namespace py = pybind11;
 std::vector<PyDiagram>
 py_init_diagrams(const PyReducedMatrix& m, const PyFiltration& f)
 {
-    std::vector<PyDiagram> diagrams;
-
-    for (PyReducedMatrix::Index i = 0; i < m.size(); ++i)
-    {
-        auto& s = f[i];
-        auto  d = s.dimension();
-
-        while (d + 1 > diagrams.size())
-            diagrams.emplace_back(PyDiagram());
-
-        auto pair = m.pair(i);
-        if (pair == m.unpaired())
-        {
-            auto  birth = s.data();
-            using Value = decltype(birth);
-            Value death = std::numeric_limits<Value>::infinity();
-            diagrams[d].emplace_back(birth, death, i);
-        } else if (pair > i)       // positive
-        {
-            auto birth = s.data();
-            auto death = f[pair].data();
-
-            if (birth != death)         // skip diagonal
-                diagrams[d].emplace_back(birth, death, i);
-        } // else negative: do nothing
-    }
-
-    return diagrams;
+    return init_diagrams(m, f,
+                         [](const PySimplex& s)                     { return s.data(); },       // value
+                         [](PyReducedMatrix::Index i) -> size_t     { return i; });             // data
 }
 
 void init_diagram(py::module& m)
