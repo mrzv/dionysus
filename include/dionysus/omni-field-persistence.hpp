@@ -138,6 +138,8 @@ typename dionysus::OmniFieldPersistence<Index_,Comparison_>::Factors
 dionysus::OmniFieldPersistence<Index_, Comparison_>::
 factor(BaseElement x)
 {
+    if (x < 0)
+        x = -x;
     Factors result;
     BaseElement p = 2;
     while (p <= x)
