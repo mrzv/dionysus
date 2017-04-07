@@ -12,3 +12,11 @@ Filtrations
    rips
    lower-star
    alpha-shapes
+
+Persistence
+-----------
+
+.. toctree::
+   :maxdepth: 2
+
+   omni-field

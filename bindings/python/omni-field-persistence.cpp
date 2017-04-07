@@ -44,7 +44,7 @@ void init_omnifield_persistence(py::module& m)
 
     using Index         = PyOmniFieldPersistence::Index;
     using BaseElement   = PyOmniFieldPersistence::BaseElement;
-    py::class_<PyOmniFieldPersistence>(m, "OmniFieldPersistence")
+    py::class_<PyOmniFieldPersistence>(m, "OmniFieldPersistence", "compact composition of multiple reduced matrices")
         .def("primes",  &PyOmniFieldPersistence::primes,    "primes over which the matrix differs from the rest")
         .def("column",  [](const PyOmniFieldPersistence& ofp, Index i, BaseElement p)
                         {
@@ -58,6 +58,7 @@ void init_omnifield_persistence(py::module& m)
                             return ofp.convert(ofp.q_chains()[i], ofp.zp(p));
                         },                                  "get the column over a specific prime")
         .def("special", &PyOmniFieldPersistence::special,   "test whether the column has a special value over the given prime")
+        .def("__len__", &PyOmniFieldPersistence::size,      "size of the persistence object")
         .def("__repr__",    [](const PyOmniFieldPersistence& ofp)
                             { std::ostringstream oss; oss << "OmniFieldPersistence with " << ofp.size() << " columns"; return oss.str(); })
     ;
