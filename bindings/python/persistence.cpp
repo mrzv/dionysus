@@ -1,4 +1,5 @@
 #include <pybind11/pybind11.h>
+#include <pybind11/stl.h>
 namespace py = pybind11;
 
 #include <dionysus/row-reduction.h>
@@ -8,6 +9,7 @@ namespace py = pybind11;
 #include "field.h"
 #include "filtration.h"
 #include "persistence.h"
+#include "diagram.h"
 
 PyReducedMatrix
 homology_persistence(const PyFiltration& filtration, PyZpField::Element prime, std::string method)
@@ -58,11 +60,23 @@ bool chain_ne(const PyReducedMatrix::Chain& c1, const PyReducedMatrix::Chain& c2
     return !chain_eq(c1, c2);
 }
 
+std::vector<PyDiagram>
+py_init_diagrams(const PyReducedMatrix& m, const PyFiltration& f)
+{
+    return init_diagrams(m, f,
+                         [](const PySimplex& s)                     { return s.data(); },       // value
+                         [](PyReducedMatrix::Index i) -> size_t     { return i; });             // data
+}
+
+PYBIND11_MAKE_OPAQUE(PyReducedMatrix::Chain);      // we want to provide our own binding for Chain
+
 void init_persistence(py::module& m)
 {
     using namespace pybind11::literals;
     m.def("homology_persistence",   &homology_persistence, "filtration"_a, py::arg("prime") = 2, py::arg("method") = "row",
           "compute homology persistence of the filtration (pair simplices); method is one of `row`, `column`, or `column_no_negative`");
+
+    m.def("init_diagrams",      &py_init_diagrams,  "m"_a, "f"_a,  "initialize diagrams from reduced matrix and filtration");
 
     py::class_<PyReducedMatrix>(m, "ReducedMatrix", "matrix, where each column has a lowest non-zero entry in a unique row; supports iteration and indexing")
         .def(py::init<PyZpField>())

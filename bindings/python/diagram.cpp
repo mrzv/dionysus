@@ -3,20 +3,9 @@
 #include <iostream>
 
 #include <pybind11/pybind11.h>
-#include <pybind11/stl.h>
 namespace py = pybind11;
 
 #include "diagram.h"
-#include "persistence.h"
-#include "filtration.h"
-
-std::vector<PyDiagram>
-py_init_diagrams(const PyReducedMatrix& m, const PyFiltration& f)
-{
-    return init_diagrams(m, f,
-                         [](const PySimplex& s)                     { return s.data(); },       // value
-                         [](PyReducedMatrix::Index i) -> size_t     { return i; });             // data
-}
 
 void init_diagram(py::module& m)
 {
@@ -38,7 +27,5 @@ void init_diagram(py::module& m)
         .def_readwrite("data",   &Point::data)
         .def("__repr__",        [](const Point& p)              { std::ostringstream oss; oss << '(' << p.birth << ',' << p.death << ')'; return oss.str(); })
     ;
-
-    m.def("init_diagrams",      &py_init_diagrams,  "m"_a, "f"_a,  "initialize diagrams from reduced matrix and filtration");
 }
 
