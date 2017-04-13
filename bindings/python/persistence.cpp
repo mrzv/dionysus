@@ -10,6 +10,7 @@ namespace py = pybind11;
 #include "filtration.h"
 #include "persistence.h"
 #include "diagram.h"
+#include "chain.h"
 
 PyReducedMatrix
 homology_persistence(const PyFiltration& filtration, PyZpField::Element prime, std::string method)
@@ -40,24 +41,6 @@ homology_persistence(const PyFiltration& filtration, PyZpField::Element prime, s
         return std::move(reduce.persistence());
     } else
         throw std::runtime_error("Unknown method: " + method);
-}
-
-bool chain_eq(const PyReducedMatrix::Chain& c1, const PyReducedMatrix::Chain& c2)
-{
-    if (c1.size() != c2.size())
-        return false;
-
-    for (size_t i = 0; i < c1.size(); ++i)
-    {
-        if (c1[i].index() != c2[i].index() || c1[i].element() != c2[i].element())
-            return false;
-    }
-    return true;
-}
-
-bool chain_ne(const PyReducedMatrix::Chain& c1, const PyReducedMatrix::Chain& c2)
-{
-    return !chain_eq(c1, c2);
 }
 
 std::vector<PyDiagram>
@@ -92,32 +75,5 @@ void init_persistence(py::module& m)
                             { std::ostringstream oss; oss << "Reduced matrix with " << rm.size() << " columns"; return oss.str(); })
     ;
 
-    py::class_<PyReducedMatrix::Chain>(m, "Chain", "chain of indices (formal sum with coefficients in Zp)")
-        .def("__len__",     &PyReducedMatrix::Chain::size,                                  "size of the chain")
-        .def("__getitem__", [](const PyReducedMatrix::Chain& c, size_t i) { return c[i]; }, "access the entry at a given index")
-        .def("__iter__",    [](const PyReducedMatrix::Chain& c) { return py::make_iterator(c.begin(), c.end()); },
-                                py::keep_alive<0, 1>() /* Essential: keep object alive while iterator exists */,
-                                "iterate over the entries of the chain")
-        .def("__eq__",      &chain_eq, "equality comparison")
-        .def("__ne__",      &chain_ne, "nonequal comparison")
-        .def("__repr__",    [](const PyReducedMatrix::Chain& c)
-                            {
-                                std::ostringstream oss;
-                                auto it = c.begin();
-                                if (it == c.end())
-                                    return oss.str();
-                                oss << it->e << '*' << it->i;
-                                while (++it != c.end())
-                                    oss << " + " << it->e << '*' << it->i;
-                                return oss.str();
-                            })
-    ;
-
-    py::class_<PyReducedMatrix::Entry>(m, "ChainEntry", "(coefficient, index) entry in a chain)")
-        .def_property_readonly("element",   [](const PyReducedMatrix::Entry& x) { return x.element(); },
-                                            "coefficient of the chain element")
-        .def_readonly("index",              &PyReducedMatrix::Entry::i,   "index of the chain element")
-        .def("__repr__",                    [](const PyReducedMatrix::Entry& e)
-                                            { std::ostringstream oss; oss << e.e << '*' << e.i; return oss.str(); })
-    ;
+    init_chain<PyReducedMatrix::Chain>(m);
 }
