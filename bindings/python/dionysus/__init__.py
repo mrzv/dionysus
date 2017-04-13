@@ -1,4 +1,4 @@
-from _dionysus import *
+from ._dionysus import *
 
 def closure(simplices, k):
     """Compute the `k`-skeleton of the closure of the list of `simplices`."""
