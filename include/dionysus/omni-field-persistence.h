@@ -58,10 +58,10 @@ class OmniFieldPersistence
         size_t              size() const                        { return q_pairs_.size(); }
 
         void                reduce(ZpChain& zp_chain, BaseElement p);
-        ZpChain             convert(const QChain& c, const Zp& field);
+        ZpChain             convert(const QChain& c, const Zp& field) const;
         bool                special(Index i, BaseElement p) const   { auto it = zp_chains_.find(i); if (it == zp_chains_.end()) return false; if (it->second.find(p) == it->second.end()) return false; return true; }
 
-        const Zp&           zp(BaseElement p)                   { auto it = zps_.find(p); if (it != zps_.end()) return it->second; return zps_.emplace(p, Zp(p)).first->second; }
+        const Zp&           zp(BaseElement p) const             { auto it = zps_.find(p); if (it != zps_.end()) return it->second; return zps_.emplace(p, Zp(p)).first->second; }
 
         static Factors      factor(BaseElement x);
 
@@ -89,7 +89,7 @@ class OmniFieldPersistence
         ZpPairs     zp_pairs_;
 
         Q           q_;
-        Zps         zps_;
+        mutable Zps zps_;
 
         Comparison  cmp_;
 };

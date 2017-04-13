@@ -113,7 +113,7 @@ reduce(ZpChain& zp_chain, BaseElement p)
 template<typename Index_, class Comparison_>
 typename dionysus::OmniFieldPersistence<Index_,Comparison_>::ZpChain
 dionysus::OmniFieldPersistence<Index_,Comparison_>::
-convert(const QChain& c, const Zp& field)
+convert(const QChain& c, const Zp& field) const
 {
     ZpChain result;
     result.reserve(c.size());
@@ -124,6 +124,8 @@ convert(const QChain& c, const Zp& field)
         if (num != 0)
         {
             auto denom = x.element().denominator % p;
+            while (denom < 0)
+                denom += p;
             result.emplace_back(field.div(num, denom), x.index());
         }
     }

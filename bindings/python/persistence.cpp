@@ -40,6 +40,24 @@ homology_persistence(const PyFiltration& filtration, PyZpField::Element prime, s
         throw std::runtime_error("Unknown method: " + method);
 }
 
+bool chain_eq(const PyReducedMatrix::Chain& c1, const PyReducedMatrix::Chain& c2)
+{
+    if (c1.size() != c2.size())
+        return false;
+
+    for (size_t i = 0; i < c1.size(); ++i)
+    {
+        if (c1[i].index() != c2[i].index() || c1[i].element() != c2[i].element())
+            return false;
+    }
+    return true;
+}
+
+bool chain_ne(const PyReducedMatrix::Chain& c1, const PyReducedMatrix::Chain& c2)
+{
+    return !chain_eq(c1, c2);
+}
+
 void init_persistence(py::module& m)
 {
     using namespace pybind11::literals;
@@ -66,6 +84,8 @@ void init_persistence(py::module& m)
         .def("__iter__",    [](const PyReducedMatrix::Chain& c) { return py::make_iterator(c.begin(), c.end()); },
                                 py::keep_alive<0, 1>() /* Essential: keep object alive while iterator exists */,
                                 "iterate over the entries of the chain")
+        .def("__eq__",      &chain_eq, "equality comparison")
+        .def("__ne__",      &chain_ne, "nonequal comparison")
         .def("__repr__",    [](const PyReducedMatrix::Chain& c)
                             {
                                 std::ostringstream oss;
