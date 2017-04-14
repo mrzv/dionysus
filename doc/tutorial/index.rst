@@ -20,3 +20,4 @@ Persistence
    :maxdepth: 2
 
    omni-field
+   cohomology

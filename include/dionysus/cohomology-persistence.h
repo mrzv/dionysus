@@ -7,6 +7,7 @@
 #include <boost/intrusive/list.hpp>
 namespace bi = boost::intrusive;
 
+#include "reduction.h"
 #include "chain.h"
 
 namespace dionysus
@@ -31,7 +32,6 @@ class CohomologyPersistence
         typedef     std::list<ColumnHead>                                   Columns;
         typedef     typename Columns::iterator                              ColumnsIterator;
 
-
                                 CohomologyPersistence(const Field& field,
                                                       const Comparison& cmp = Comparison()):
                                     field_(field), cmp_(cmp)                {}
@@ -40,6 +40,12 @@ class CohomologyPersistence
                                                       const Comparison& cmp = Comparison()):
                                     field_(std::move(field)),
                                     cmp_(cmp)                               {}
+
+                                CohomologyPersistence(CohomologyPersistence&& other):
+                                    field_(std::move(other.field_)),
+                                    cmp_(std::move(other.cmp_)),
+                                    columns_(std::move(other.columns_)),
+                                    rows_(std::move(other.rows_))           {}
 
         template<class ChainRange>
         Index                   add(const ChainRange& chain);

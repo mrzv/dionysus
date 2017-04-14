@@ -22,14 +22,14 @@ template<class Chain_>
 void init_chain(py::module& m, std::string prefix = "")
 {
     py::class_<Chain_>(m, (prefix + "Chain").c_str(), "chain of indices (formal sum with coefficients in Zp)")
-        .def("__len__",     &PyReducedMatrix::Chain::size,                                  "size of the chain")
-        .def("__getitem__", [](const PyReducedMatrix::Chain& c, size_t i) { return c[i]; }, "access the entry at a given index")
-        .def("__iter__",    [](const PyReducedMatrix::Chain& c) { return py::make_iterator(c.begin(), c.end()); },
+        .def("__len__",     &Chain_::size,                                  "size of the chain")
+        .def("__getitem__", [](const Chain_& c, size_t i) { return c[i]; }, "access the entry at a given index")
+        .def("__iter__",    [](const Chain_& c) { return py::make_iterator(c.begin(), c.end()); },
                                 py::keep_alive<0, 1>() /* Essential: keep object alive while iterator exists */,
                                 "iterate over the entries of the chain")
         .def("__eq__",      &chain_eq<Chain_>, "equality comparison")
         .def("__ne__",      &chain_ne<Chain_>, "nonequal comparison")
-        .def("__repr__",    [](const PyReducedMatrix::Chain& c)
+        .def("__repr__",    [](const Chain_& c)
                             {
                                 std::ostringstream oss;
                                 auto it = c.begin();
