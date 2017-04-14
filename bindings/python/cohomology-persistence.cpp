@@ -53,7 +53,7 @@ void init_cohomology_persistence(py::module& m)
                                "index representing lack of pair")
         .def("__iter__",    [](const PyCohomologyPersistence& rm)   { return py::make_iterator(rm.columns().begin(), rm.columns().end()); },
                                 py::keep_alive<0, 1>() /* Essential: keep object alive while iterator exists */,
-                                "iterate over the columns of the matrix")
+                                "iterate over the column heads of the matrix")
         .def("__repr__",    [](const PyCohomologyPersistence& rm)
                             { std::ostringstream oss; oss << "Cohomology persistence of " << rm.size() << " cells"; return oss.str(); })
     ;
