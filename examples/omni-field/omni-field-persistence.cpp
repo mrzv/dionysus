@@ -103,7 +103,7 @@ int main()
         {
             fmt::print("  Dimension {}:\n", i++);
             for (auto& pt : dgm)
-                fmt::print("    {} {}\n", pt.birth, pt.death);
+                fmt::print("    {} {}\n", pt.birth(), pt.death());
         }
     }
 }

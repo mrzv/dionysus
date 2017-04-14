@@ -13,18 +13,23 @@ class Diagram
     public:
         using Value = Value_;
         using Data  = Data_;
-        struct Point
+        struct Point: public std::pair<Value, Value>
         {
-                  Point(Value b, Value d, Data dd):
-                      birth(b), death(d), data(dd)      {}
+            using Parent = std::pair<Value, Value>;
 
-            Value birth, death;
-            Data  data;
+                  Point(Value b, Value d, Data dd):
+                      Parent(b,d), data(dd)     {}
+
+            Value   birth() const               { return Parent::first; }
+            Value   death() const               { return Parent::second; }
+
+            Data    data;
         };
 
         using Points         = std::vector<Point>;
         using iterator       = typename Points::iterator;
         using const_iterator = typename Points::const_iterator;
+        using value_type     = Point;
 
     public:
         const_iterator  begin() const           { return points.begin(); }
