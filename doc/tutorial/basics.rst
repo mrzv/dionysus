@@ -162,3 +162,26 @@ of persistent homology.
     Dimension: 7
     Dimension: 8
     (0,inf)
+
+
+Diagram Distances
+-----------------
+
+:func:`~dionysus._dionysus.wasserstein_distance` can compute `q`-th Wasserstein distance between a pair of persistence diagrams.
+
+.. testsetup::
+
+    import numpy as np
+    np.random.seed(0)
+
+.. doctest::
+
+    >>> f1 = fill_rips(np.random.random((20, 2)), 2, 1)
+    >>> m1 = homology_persistence(f1)
+    >>> dgms1 = init_diagrams(m1, f1)
+    >>> f2 = fill_rips(np.random.random((20, 2)), 2, 1)
+    >>> m2 = homology_persistence(f2)
+    >>> dgms2 = init_diagrams(m2, f2)
+    >>> dist = wasserstein_distance(dgms1[1], dgms2[1], q=2)
+    >>> print("Distance between 1-dimensional persistence diagrams:", dist)
+    Distance between 1-dimensional persistence diagrams: 0.037361082536

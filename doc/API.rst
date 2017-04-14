@@ -40,6 +40,7 @@ Diagrams
 .. autoclass:: dionysus._dionysus.DiagramPoint
     :members:
 
+.. autofunction:: dionysus._dionysus.wasserstein_distance
 
 Matrices
 ~~~~~~~~
