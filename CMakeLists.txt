@@ -55,4 +55,8 @@ endif                       (debug)
 
 add_subdirectory            (examples)
 
+# hera/wasserstein
+add_subdirectory            ("${CMAKE_CURRENT_SOURCE_DIR}/ext/hera/wasserstein" "ext_build/hera/wasserstein")
+
 add_subdirectory            (bindings/python)
+
