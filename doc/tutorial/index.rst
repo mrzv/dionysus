@@ -21,6 +21,7 @@ Persistence
 
    omni-field
    cohomology
+   zigzags
 
 Plotting
 --------

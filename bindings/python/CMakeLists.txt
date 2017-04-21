@@ -123,6 +123,7 @@ pybind11_add_module         (_dionysus dionysus.cpp
                                        diagram.cpp
                                        omni-field-persistence.cpp
                                        cohomology-persistence.cpp
+                                       zigzag-persistence.cpp
                                        distances.cpp)
 target_link_libraries       (_dionysus PRIVATE wasserstein)     # CMake will find the target in hera/wasserstein;
                                                                 # PRIVATE to keep consistent with target_link_libraries in pybind11_add_module

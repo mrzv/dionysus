@@ -30,6 +30,8 @@ Persistence
 
 .. autofunction:: dionysus._dionysus.omnifield_homology_persistence
 
+.. autofunction:: dionysus._dionysus.zigzag_homology_persistence
+
 
 Diagrams
 ~~~~~~~~
@@ -76,6 +78,10 @@ Matrices
     Wrapper around columns in `CohomologyPersistence`.
 
 .. autoclass:: dionysus._dionysus.CohomologyPersistence
+    :members:
+    :special-members: __len__, __iter__
+
+.. autoclass:: dionysus._dionysus.ZigzagPersistence
     :members:
     :special-members: __len__, __iter__
 

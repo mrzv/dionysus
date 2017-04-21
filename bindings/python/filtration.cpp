@@ -11,6 +11,8 @@ void init_filtration(py::module& m)
     using namespace pybind11::literals;
     py::class_<PyFiltration>(m, "Filtration", "store an ordered sequence of simplices, providing lookup")
         .def(py::init<>(),      "initialize empty filtration")
+        .def(py::init<std::vector<std::vector<PySimplex::Vertex>>>(),
+                                "initialize filtration from a list of lists")
         .def(py::init<std::vector<PySimplex>>(),      "initialize filtration from a list")
         .def("append",          [](PyFiltration* f, const PySimplex& s) { f->push_back(s); },  "s"_a, "append simplex to the filtration")
         .def("add",             [](PyFiltration* f, const PySimplex& s) { return f->add(s); }, "s"_a,

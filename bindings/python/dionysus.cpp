@@ -10,6 +10,7 @@ void init_field(py::module&);
 void init_persistence(py::module&);
 void init_omnifield_persistence(py::module&);
 void init_cohomology_persistence(py::module&);
+void init_zigzag_persistence(py::module&);
 void init_diagram(py::module&);
 void init_distances(py::module&);
 
@@ -26,6 +27,7 @@ PYBIND11_PLUGIN(_dionysus)
     init_persistence(m);
     init_cohomology_persistence(m);
     init_omnifield_persistence(m);
+    init_zigzag_persistence(m);
     init_diagram(m);
     init_distances(m);
 

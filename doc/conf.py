@@ -33,6 +33,7 @@
 extensions = ['sphinx.ext.autodoc',
     'sphinx.ext.doctest',
     'sphinx.ext.todo',
+    'sphinx.ext.napoleon',
     'sphinx.ext.mathjax',
     'nb2plots']
 

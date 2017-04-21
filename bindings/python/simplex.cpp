@@ -42,12 +42,12 @@ void init_simplex(py::module& m)
                                 "returns iterator over the boundary of the simplex")
         .def("dimension",       &PySimplex::dimension, "simplex dimension, one less than cardinality")
         .def("__len__",         &PySimplex::size, "simplex cardinality")
-        .def("__getitem__",     &PySimplex::operator[], "access $i$-th vertex")
+        .def("__getitem__",     &PySimplex::operator[], "access `i`-th vertex", "i"_a)
         .def("__iter__",        [](const PySimplex& s) { return py::make_iterator(s.begin(), s.end()); },
                                 py::keep_alive<0, 1>() /* Essential: keep object alive while iterator exists */,
                                 "iterator over the vertices")
         .def("__contains__",    [](const PySimplex& s, PySimplex::Vertex v) { return std::find(s.begin(), s.end(), v) != s.end(); },
-                                "test whether the simplex contains given vertex")
+                                "test whether the simplex contains given vertex", "v"_a)
         .def("join",            &PySimplex::join, "v"_a, "join a simplex and a vertex")
         .def_property("data",   [](const PySimplex& s) { return s.data(); },
                                 [](PySimplex& s, PySimplex::Data x) { s.data() = x; }, "access the data associated to the simplex")

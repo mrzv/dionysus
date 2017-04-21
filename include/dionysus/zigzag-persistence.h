@@ -68,14 +68,20 @@ class ZigzagPersistence
 
         struct IsAlive
         {
-                    IsAlive(const ZigzagPersistence& zz_): zz(zz_)      {}
-            bool    operator()(const std::pair<Index,Index>& x) const   { return !zz.B.is_low(x.first); }
-            const   ZigzagPersistence&  zz;
+                    IsAlive(const ZigzagPersistence& zz_): zz(&zz_)      {}
+            bool    operator()(const std::pair<Index,Index>& x) const   { return zz->is_alive(x.first); }
+            const   ZigzagPersistence*  zz;
         };
 
-        auto                alive() const -> decltype(BirthIndexMap() | ba::filtered(IsAlive(*this)) | ba::map_values)
+        bool                is_alive(Index x) const                 { return !B.is_low(x); }
+
+        auto                alive_ops() const -> decltype(BirthIndexMap() | ba::filtered(IsAlive(*this)) | ba::map_values)
         { return birth_index | ba::filtered(IsAlive(*this)) | ba::map_values; }
 
+        auto                alive_cycles() const -> decltype(BirthIndexMap() | ba::filtered(IsAlive(*this)) | ba::map_keys)
+        { return birth_index | ba::filtered(IsAlive(*this)) | ba::map_keys; }
+
+        size_t              alive_size() const                      { return Z.columns().size() - B.columns().size(); }
 
         void                reserve(size_t)                         {}              // here for compatibility only
         const Field&        field() const                           { return Z.field(); }
@@ -88,6 +94,8 @@ class ZigzagPersistence
 
         static
         const Index     unpaired()                                  { return Reduction<Index>::unpaired; }
+
+        const Column&   cycle(Index i) const                        { return Z.col(i); }
 
         // debug
         void            check_b_cols() const;

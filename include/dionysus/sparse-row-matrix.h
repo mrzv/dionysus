@@ -72,6 +72,9 @@ class SparseRowMatrix
                                         const Comparison&   cmp = Comparison()):
                             field_(field), cmp_(cmp)                            {}
 
+                        SparseRowMatrix(SparseRowMatrix&& other)                = default;
+
+
         template<class ChainRange>
         Column          reduce(const ChainRange& chain, IndexChain& trail);
 
