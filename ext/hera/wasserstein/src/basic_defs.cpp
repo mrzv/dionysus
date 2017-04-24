@@ -104,6 +104,20 @@ double distLp(const DiagramPoint& a, const DiagramPoint& b, const double p)
 }
 
 
+double DiagramPoint::persistenceLp(const double p) const
+{
+    if (isDiagonal())
+        return 0.0;
+    else {
+        double u { 0.5 * (getRealY() + getRealX()) };
+        DiagramPoint a_proj(u, u, DiagramPoint::DIAG);
+        return distLp(*this, a_proj, p);
+    }
+
+
+}
+
+
 #ifndef FOR_R_TDA
 std::ostream& operator<<(std::ostream& output, const DiagramPoint p)
 {

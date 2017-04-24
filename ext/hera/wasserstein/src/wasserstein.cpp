@@ -74,6 +74,25 @@ double wassersteinDistVec(const std::vector<DiagramPoint>& A,
         throw std::runtime_error("Bad epsilon factor in Wasserstein " + std::to_string(_epsFactor));
     }
 
+    if (A.empty() && B.empty())
+        return 0.0;
+
+    if (A.empty()) {
+        double result { 0.0 } ;
+        for(const auto& pt : B) {
+            result += pt.persistenceLp(_internal_p);
+        }
+        return result;
+    }
+
+    if (B.empty()) {
+        double result { 0.0 } ;
+        for(const auto& pt : A) {
+            result += pt.persistenceLp(_internal_p);
+        }
+        return result;
+    }
+
 
 #ifdef GAUSS_SEIDEL_AUCTION
     AuctionRunnerGS auction(A, B, q,  delta, _internal_p, _initialEpsilon, _epsFactor);

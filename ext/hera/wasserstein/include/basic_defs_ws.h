@@ -77,6 +77,7 @@ struct DiagramPoint
     bool isNormal(void) const { return type == NORMAL; }
     double getRealX() const; // return the x-coord
     double getRealY() const; // return the y-coord
+    double persistenceLp(const double p) const;
 #ifndef FOR_R_TDA
     friend std::ostream& operator<<(std::ostream& output, const DiagramPoint p);
 #endif
@@ -92,6 +93,7 @@ double sqrDist(const Point& a, const Point& b);
 double dist(const Point& a, const Point& b);
 double distLInf(const DiagramPoint& a, const DiagramPoint& b);
 double distLp(const DiagramPoint& a, const DiagramPoint& b, const double p);
+double persistenceLp(const DiagramPoint& a, const double p);
 
 template<typename DiagPointContainer>
 double getFurthestDistance3Approx(DiagPointContainer& A, DiagPointContainer& B)
