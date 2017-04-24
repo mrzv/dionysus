@@ -3,6 +3,7 @@
 #include <iostream>
 
 #include <pybind11/pybind11.h>
+#include <pybind11/stl.h>
 namespace py = pybind11;
 
 #include "diagram.h"
@@ -11,7 +12,13 @@ void init_diagram(py::module& m)
 {
     using namespace pybind11::literals;
     py::class_<PyDiagram>(m, "Diagram", "persistence diagram")
-        .def(py::init<>(),      "initialize empty filtration")
+        .def(py::init<>(),      "initialize empty diagram")
+        .def("__init__",        [](PyDiagram& dgm, const std::vector<std::tuple<PySimplex::Data, PySimplex::Data>>& pts)
+                                {
+                                    new (&dgm) PyDiagram;
+                                    for (auto& pt : pts)
+                                        dgm.emplace_back(std::get<0>(pt), std::get<1>(pt), 0);
+                                }, "initialize diagram from a list of (birth,death) points")
         .def("append",          &PyDiagram::push_back, "p"_a,   "append point to the diagram")
         .def("__len__",         &PyDiagram::size,               "size of the diagram")
         .def("__iter__",        [](const PyDiagram& dgm) { return py::make_iterator(dgm.begin(), dgm.end()); },

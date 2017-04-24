@@ -46,19 +46,22 @@ class Diagram
         std::vector<Point>      points;
 };
 
-template<class ReducedMatrix, class Filtration, class GetValue, class GetData>
-struct Diagrams
+namespace detail
 {
-    using Value = decltype(std::declval<GetValue>()(std::declval<typename Filtration::Cell>()));
-    using Data  = decltype(std::declval<GetData>()(std::declval<typename ReducedMatrix::Index>()));
-    using type  = std::vector<Diagram<Value, Data>>;
-};
+    template<class ReducedMatrix, class Filtration, class GetValue, class GetData>
+    struct Diagrams
+    {
+        using Value = decltype(std::declval<GetValue>()(std::declval<typename Filtration::Cell>()));
+        using Data  = decltype(std::declval<GetData>()(std::declval<typename ReducedMatrix::Index>()));
+        using type  = std::vector<Diagram<Value, Data>>;
+    };
+}
 
 template<class ReducedMatrix, class Filtration, class GetValue, class GetData>
-typename Diagrams<ReducedMatrix, Filtration, GetValue, GetData>::type
+typename detail::Diagrams<ReducedMatrix, Filtration, GetValue, GetData>::type
 init_diagrams(const ReducedMatrix& m, const Filtration& f, const GetValue& get_value, const GetData& get_data)
 {
-    using Result  = typename Diagrams<ReducedMatrix, Filtration, GetValue, GetData>::type;
+    using Result  = typename detail::Diagrams<ReducedMatrix, Filtration, GetValue, GetData>::type;
 
     Result diagrams;
     for (typename ReducedMatrix::Index i = 0; i < m.size(); ++i)
