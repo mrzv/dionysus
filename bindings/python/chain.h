@@ -46,7 +46,8 @@ void init_chain(py::module& m, std::string prefix = "")
     py::class_<Entry>(m, (prefix + "ChainEntry").c_str(), "(coefficient, index) entry in a chain)")
         .def_property_readonly("element",   [](const Entry& x) { return x.element(); },
                                             "coefficient of the chain element")
-        .def_readonly("index",              &Entry::i,   "index of the chain element")
+        .def_property_readonly("index",     [](const Entry& x) { return x.index(); },
+                                            "index of the chain element")
         .def("__repr__",                    [](const Entry& e)
                                             { std::ostringstream oss; oss << e.e << '*' << e.i; return oss.str(); })
     ;
