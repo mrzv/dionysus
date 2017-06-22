@@ -20,6 +20,7 @@ void init_diagram(py::module& m)
                                         dgm.emplace_back(std::get<0>(pt), std::get<1>(pt), 0);
                                 }, "initialize diagram from a list of (birth,death) points")
         .def("append",          &PyDiagram::push_back, "p"_a,   "append point to the diagram")
+        .def("__getitem__",     &PyDiagram::operator[],         "access `i`-th point")
         .def("__len__",         &PyDiagram::size,               "size of the diagram")
         .def("__iter__",        [](const PyDiagram& dgm) { return py::make_iterator(dgm.begin(), dgm.end()); },
                                 py::keep_alive<0, 1>() /* Essential: keep object alive while iterator exists */,

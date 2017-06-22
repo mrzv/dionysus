@@ -37,6 +37,8 @@ class Diagram
         iterator        begin()                 { return points.begin(); }
         iterator        end()                   { return points.end(); }
 
+        const Point&    operator[](size_t i) const  { return points[i]; }
+
         size_t  size() const                    { return points.size(); }
         void    push_back(const Point& p)       { points.push_back(p); }
         template<class... Args>

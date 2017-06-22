@@ -4,4 +4,5 @@
 
 #include "simplex.h"
 
-using PyDiagram = dionysus::Diagram<PySimplex::Data, size_t>;
+using PyIndex   = unsigned;
+using PyDiagram = dionysus::Diagram<PySimplex::Data, PyIndex>;

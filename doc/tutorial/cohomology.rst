@@ -52,3 +52,5 @@ while `cocycle` stores the cocycle itself.
     ...     print(c.index, c.cocycle)
     0 1*0 + 1*1 + 1*3
     5 1*5
+
+

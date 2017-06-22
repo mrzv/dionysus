@@ -3,4 +3,4 @@
 
 #include "field.h"
 
-using PyCohomologyPersistence = dionysus::PairRecorder<dionysus::CohomologyPersistence<PyZpField>>;
+using PyCohomologyPersistence = dionysus::PairChainRecorder<dionysus::CohomologyPersistence<PyZpField>>;

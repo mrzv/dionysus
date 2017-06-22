@@ -48,7 +48,7 @@ py_init_diagrams(const PyReducedMatrix& m, const PyFiltration& f)
 {
     return init_diagrams(m, f,
                          [](const PySimplex& s)                     { return s.data(); },       // value
-                         [](PyReducedMatrix::Index i) -> size_t     { return i; });             // data
+                         [](PyReducedMatrix::Index i) -> PyIndex    { return i; });             // data
 }
 
 PYBIND11_MAKE_OPAQUE(PyReducedMatrix::Chain);      // we want to provide our own binding for Chain

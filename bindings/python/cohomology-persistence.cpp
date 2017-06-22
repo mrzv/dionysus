@@ -13,7 +13,7 @@ namespace py = pybind11;
 #include "diagram.h"
 
 PyCohomologyPersistence
-cohomology_persistence(const PyFiltration& filtration, PyZpField::Element prime)
+cohomology_persistence(const PyFiltration& filtration, PyZpField::Element prime, bool keep_cocycles)
 {
     PyZpField field(prime);
 
@@ -21,6 +21,8 @@ cohomology_persistence(const PyFiltration& filtration, PyZpField::Element prime)
     using Reduction   = dionysus::StandardReduction<Persistence>;
 
     Persistence persistence(field);
+    persistence.keep_cocycles = keep_cocycles;
+
     Reduction   reduce(persistence);
     reduce(filtration);
 
@@ -32,7 +34,7 @@ py_init_diagrams(const PyCohomologyPersistence& m, const PyFiltration& f)
 {
     return init_diagrams(m, f,
                          [](const PySimplex& s)                             { return s.data(); },       // value
-                         [](PyCohomologyPersistence::Index i) -> size_t     { return i; });             // data
+                         [](PyCohomologyPersistence::Index i) -> PyIndex    { return i; });             // data
 }
 
 PYBIND11_MAKE_OPAQUE(PyCohomologyPersistence::Column);      // we want to provide our own binding for the cochain
@@ -40,7 +42,7 @@ PYBIND11_MAKE_OPAQUE(PyCohomologyPersistence::Column);      // we want to provid
 void init_cohomology_persistence(py::module& m)
 {
     using namespace pybind11::literals;
-    m.def("cohomology_persistence",   &cohomology_persistence, "filtration"_a, py::arg("prime") = 2,
+    m.def("cohomology_persistence",   &cohomology_persistence, "filtration"_a, "prime"_a = 2, "keep_cocycles"_a = false,
           "compute cohomology persistence of the filtration");
 
     m.def("init_diagrams",      &py_init_diagrams,  "m"_a, "f"_a,  "initialize diagrams from cohomology persistence and filtration");
@@ -54,6 +56,16 @@ void init_cohomology_persistence(py::module& m)
         .def("__iter__",    [](const PyCohomologyPersistence& rm)   { return py::make_iterator(rm.columns().begin(), rm.columns().end()); },
                                 py::keep_alive<0, 1>() /* Essential: keep object alive while iterator exists */,
                                 "iterate over the column heads of the matrix")
+        .def("cocycle",     [](const PyCohomologyPersistence& rm, PyCohomologyPersistence::Index idx)
+                            {
+                                if (rm.pair(idx) != rm.unpaired())
+                                    return rm.chain(idx);
+                                else        // search through the alive cocycles
+                                    for (auto& x : rm.columns())
+                                        if (x.index() == idx)
+                                            return x.chain;
+                                throw py::index_error();
+                            },                                      "cocycle that died with the addition of the cell at the given index")
         .def("__repr__",    [](const PyCohomologyPersistence& rm)
                             { std::ostringstream oss; oss << "Cohomology persistence of " << rm.size() << " cells"; return oss.str(); })
     ;

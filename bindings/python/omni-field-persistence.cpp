@@ -29,7 +29,7 @@ py_init_omni_diagrams(const PyOmniFieldPersistence& persistence, const PyFiltrat
 {
     return init_diagrams(prime_adapter(persistence, p), f,
                          [](const PySimplex& s)                         { return s.data(); },        // value
-                         [](PyOmniFieldPersistence::Index i) -> size_t  { return i; });              // data
+                         [](PyOmniFieldPersistence::Index i) -> PyIndex { return i; });              // data
 }
 
 PYBIND11_MAKE_OPAQUE(PyOmniFieldPersistence::ZpChain);      // persistence.cpp provides a binding for Chain, which is exactly what this is

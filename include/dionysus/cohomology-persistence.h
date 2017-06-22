@@ -31,6 +31,9 @@ class CohomologyPersistence
         typedef     bi::list<Entry, bi::constant_time_size<false>>          Row;
         typedef     std::list<ColumnHead>                                   Columns;
         typedef     typename Columns::iterator                              ColumnsIterator;
+        typedef     Column                                                  Chain;
+
+        using       IndexColumn = std::tuple<Index, Column>;
 
                                 CohomologyPersistence(const Field& field,
                                                       const Comparison& cmp = Comparison()):
@@ -49,6 +52,9 @@ class CohomologyPersistence
 
         template<class ChainRange>
         Index                   add(const ChainRange& chain);
+
+        template<class ChainRange>
+        IndexColumn             add(const ChainRange& chain, bool keep_cocycle);
 
         const Field&            field() const                               { return field_; }
         const Columns&          columns() const                             { return columns_; }
