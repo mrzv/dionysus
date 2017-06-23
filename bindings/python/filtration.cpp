@@ -22,11 +22,12 @@ void init_filtration(py::module& m)
         .def("__iter__",        [](const PyFiltration& f) { return py::make_iterator(f.begin(), f.end()); },
                                 py::keep_alive<0, 1>() /* Essential: keep object alive while iterator exists */,
                                 "iterate over the simplices in sorted order")
-        .def("sort",            [](PyFiltration& f) { f.sort(data_dim_cmp); },
+        .def("sort",            [](PyFiltration& f, bool reverse) { f.sort(DataDimCmp(reverse)); },
+                                "reverse"_a = false,
                                 "sort the filtration with respect to data, breaking ties using dimension, and then lexicographically")
-        .def("sort",            [](PyFiltration& f, std::function<int (const PySimplex&, const PySimplex&)> cmp)
-                                { f.sort([cmp](const PySimplex& s1, const PySimplex& s2) { return cmp(s1, s2) < 0; }); },
-                                "cmp"_a,
+        .def("sort",            [](PyFiltration& f, std::function<int (const PySimplex&, const PySimplex&)> cmp, bool reverse)
+                                { f.sort([cmp,reverse](const PySimplex& s1, const PySimplex& s2) { return reverse ? cmp(s1, s2) > 0 : cmp(s1, s2) < 0; }); },
+                                "cmp"_a, "reverse"_a = false,
                                 "sort the filtration with respect to the given functor")
         .def("__repr__",        [](const PyFiltration& f) { std::ostringstream oss; oss << "Filtration with " << f.size() << " simplices"; return oss.str(); })
     ;

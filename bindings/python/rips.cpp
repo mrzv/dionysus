@@ -91,7 +91,7 @@ PyFiltration fill_rips_(py::array a, unsigned k, double r)
         PySimplex& s_ = const_cast<PySimplex&>(s);
         s_.data() = eval(s);
     }
-    filtration.sort(data_dim_cmp);
+    filtration.sort(DataDimCmp());
 
     return filtration;
 }

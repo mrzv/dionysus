@@ -43,14 +43,13 @@ class Filtration
                             Filtration(const std::initializer_list<Cell>& cells):
                                 Filtration(std::begin(cells), std::end(cells))  {}
 
-        template<class Iterator, class Cmp = std::less<Cell>>
-                            Filtration(Iterator bg, Iterator end,
-                                       const Cmp& cmp = Cmp()):
-                                cells_(bg, end)                                 { sort(cmp); }
+        template<class Iterator>
+                            Filtration(Iterator bg, Iterator end):
+                                cells_(bg, end)                                 {}
 
-        template<class CellRange, class Cmp = std::less<Cell>>
-                            Filtration(const CellRange& cells, const Cmp& cmp = Cmp()):
-                                Filtration(std::begin(cells), std::end(cells), cmp) {}
+        template<class CellRange>
+                            Filtration(const CellRange& cells):
+                                Filtration(std::begin(cells), std::end(cells))  {}
 
         // Lookup
         const Cell&         operator[](size_t i) const                          { return cells_.template get<order>()[i]; }
