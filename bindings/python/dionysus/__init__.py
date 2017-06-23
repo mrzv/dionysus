@@ -37,16 +37,23 @@ def smooth(f, z, prime, show = False):
                 row.append(i)
                 col.append(f.index(sb))
 
-    z_data = [x.element if x.element < prime/2 else x.element - prime for x in z]
-    z_row  = [x.index for x in z]
-    z_col  = [0 for x in z]
+    row_max = max(row)           # x.index <= row_max condition below projects the cocycle to the filtration
+    z_data = [x.element if x.element < prime/2 else x.element - prime for x in z if x.index <= row_max]
+    z_row  = [x.index for x in z if x.index <= row_max]
+    z_col  = [0 for x in z if x.index <= row_max]
 
-    dim = max(max(row),max(col),max(z_row)) + 1     # max(z_row) implicitly projects the cocycle down to f
+    dim = max(row_max,max(col)) + 1
     D = csc_matrix((np.array(data), (np.array(row), np.array(col))), shape=(dim, dim))
     z = csc_matrix((z_data, (z_row, z_col)), shape=(dim, 1)).toarray()
 
     tol = 1e-10
     solution = lsqr(D, z, atol = tol, btol = tol, show = show)
 
-    vertex_values = { f[i][0] : x for i,x in enumerate(solution[0]) if x != 0}
+    max_vrt = max(s[0] for s in f if s.dimension() == 0)
+
+    vertex_values = [0. for _ in range(max_vrt + 1)]
+    for i,x in enumerate(solution[0]):
+        if f[i].dimension() == 0:
+            vertex_values[f[i][0]] = x
+
     return vertex_values

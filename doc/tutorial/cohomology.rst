@@ -117,7 +117,7 @@ complex in the filtration that exists at the midvalue of the persistence bar, :c
 
 Now we can plot the points using hue to show the circular coordinate::
 
-    >>> plt.scatter(points[:,0], points[:,1], c = [vertex_values[x] for x in range(points.shape[0])], cmap = 'hsv')
+    >>> plt.scatter(points[:,0], points[:,1], c = vertex_values, cmap = 'hsv')
     >>> plt.show()
 
 .. image:: figures/parameterized-annulus.png
