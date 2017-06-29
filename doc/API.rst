@@ -1,6 +1,7 @@
 API
 ===
 
+The following classes and functions live in the ``dionysus`` module.
 
 Filtration
 ----------
@@ -77,6 +78,18 @@ Matrices
     :special-members: __len__, __iter__
 
 .. autoclass:: dionysus._dionysus.Zp
+
+
+Plotting
+~~~~~~~~
+
+The following functions live in ``dionysus.plot`` module.
+
+.. autofunction:: dionysus.plot.plot_diagram
+
+.. autofunction:: dionysus.plot.plot_bars
+
+.. autofunction:: dionysus.plot.plot_diagram_density
 
 
 .. Auto

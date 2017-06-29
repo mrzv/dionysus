@@ -21,3 +21,11 @@ Persistence
 
    omni-field
    cohomology
+
+Plotting
+--------
+
+.. toctree::
+   :maxdepth: 2
+
+   plotting
