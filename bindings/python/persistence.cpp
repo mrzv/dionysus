@@ -12,8 +12,9 @@ namespace py = pybind11;
 #include "diagram.h"
 #include "chain.h"
 
+template<class Relative>
 PyReducedMatrix
-homology_persistence(const PyFiltration& filtration, PyZpField::Element prime, std::string method)
+compute_homology_persistence(const PyFiltration& filtration, const Relative& relative, PyZpField::Element prime, std::string method)
 {
     PyZpField field(prime);
 
@@ -21,7 +22,7 @@ homology_persistence(const PyFiltration& filtration, PyZpField::Element prime, s
     {
         using Reduction = dionysus::RowReduction<PyZpField>;
         Reduction   reduce(field);
-        reduce(filtration);
+        reduce(filtration, relative, &Reduction::no_report_pair);
         return reduce.persistence();
     } else if (method == "column")
     {
@@ -29,7 +30,7 @@ homology_persistence(const PyFiltration& filtration, PyZpField::Element prime, s
         using Reduction   = dionysus::StandardReduction<Persistence>;
         Persistence persistence(field);
         Reduction   reduce(persistence);
-        reduce(filtration);
+        reduce(filtration, relative, &Reduction::no_report_pair);
         return std::move(reduce.persistence());
     } else if (method == "column_no_negative")
     {
@@ -37,10 +38,24 @@ homology_persistence(const PyFiltration& filtration, PyZpField::Element prime, s
         using Reduction   = dionysus::StandardReduction<Persistence>;
         Persistence persistence(field);
         Reduction   reduce(persistence);
-        reduce(filtration);
+        reduce(filtration, relative, &Reduction::no_report_pair);
         return std::move(reduce.persistence());
     } else
         throw std::runtime_error("Unknown method: " + method);
+}
+
+PyReducedMatrix
+homology_persistence(const PyFiltration& filtration, PyZpField::Element prime, std::string method)
+{
+    using Cell = PyFiltration::Cell;
+    return compute_homology_persistence(filtration, [](const Cell&) { return false; }, prime, method);
+}
+
+PyReducedMatrix
+relative_homology_persistence(const PyFiltration& filtration, const PyFiltration& relative, PyZpField::Element prime, std::string method)
+{
+    using Cell = PyFiltration::Cell;
+    return compute_homology_persistence(filtration, [&relative](const Cell& c) { return relative.contains(c); }, prime, method);
 }
 
 std::vector<PyDiagram>
@@ -56,8 +71,12 @@ PYBIND11_MAKE_OPAQUE(PyReducedMatrix::Chain);      // we want to provide our own
 void init_persistence(py::module& m)
 {
     using namespace pybind11::literals;
-    m.def("homology_persistence",   &homology_persistence, "filtration"_a, py::arg("prime") = 2, py::arg("method") = "row",
+    m.def("homology_persistence",   &homology_persistence,
+          "filtration"_a, "prime"_a = 2, "method"_a = "row",
           "compute homology persistence of the filtration (pair simplices); method is one of `row`, `column`, or `column_no_negative`");
+    m.def("homology_persistence",   &relative_homology_persistence,
+          "filtration"_a, "relative"_a, "prime"_a = 2, "method"_a = "row",
+          "compute homology persistence of the filtration, relative to a subcomplex; method is one of `row`, `column`, or `column_no_negative`");
 
     m.def("init_diagrams",      &py_init_diagrams,  "m"_a, "f"_a,  "initialize diagrams from reduced matrix and filtration");
 

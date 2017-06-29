@@ -56,6 +56,11 @@ class CohomologyPersistence
         template<class ChainRange>
         IndexColumn             add(const ChainRange& chain, bool keep_cocycle);
 
+        // TODO: no skip support for now
+        bool                    skip(Index) const                   { return false; }
+        void                    add_skip()                          {}
+        void                    set_skip(Index, bool flag = true)   {}
+
         const Field&            field() const                               { return field_; }
         const Columns&          columns() const                             { return columns_; }
         void                    reserve(size_t s)                           { rows_.reserve(s); }

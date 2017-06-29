@@ -7,6 +7,16 @@ void
 dionysus::RowReduction<F,I,C,V...>::
 operator()(const Filtration& filtration, const ReportPair& report_pair)
 {
+    using Cell = typename Filtration::Cell;
+    (*this)(filtration, [](const Cell&) { return false; }, report_pair);
+}
+
+template<class F, typename I, class C, template<class Self> class... V>
+template<class Filtration, class Relative, class ReportPair>
+void
+dionysus::RowReduction<F,I,C,V...>::
+operator()(const Filtration& filtration, const Relative& relative, const ReportPair& report_pair)
+{
     persistence_.resize(filtration.size());
 
     typedef     typename Persistence::Index                     Index;
@@ -24,7 +34,15 @@ operator()(const Filtration& filtration, const ReportPair& report_pair)
     Index i = 0;
     for(auto& c : filtration)
     {
+        if (relative(c))
+        {
+            persistence_.set_skip(i);
+            ++i;
+            continue;
+        }
+
         persistence_.set(i, c.boundary(field) |
+                                       ba::filtered([relative](const CellChainEntry& e) { return !relative(e.index()); }) |
                                        ba::transformed([this,&filtration](const CellChainEntry& e)
                                        { return ChainEntry(e.element(), filtration.index(e.index())); }));
         if (!persistence_[i].empty())

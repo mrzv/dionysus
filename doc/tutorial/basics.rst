@@ -163,6 +163,27 @@ of persistent homology.
     Dimension: 8
     (0,inf)
 
+**Relative persistent homology:**
+:func:`~dionysus._dionysus.homology_persistence` takes an extra argument
+``relative`` that allows one to specify a subcomplex (as a :class:`~dionysus._dionysus.Filtration`):
+For example, homology of a triangle relative to its boundary has a single class in dimension 2:
+
+.. doctest::
+
+    >>> f = Filtration(closure([Simplex([0,1,2])], 2))
+    >>> f.sort()
+    >>> f1 = Filtration([s for s in f if s.dimension() <= 1])
+
+    >>> m = homology_persistence(f, relative = f1)
+    >>> dgms = init_diagrams(m, f)
+    >>> for i, dgm in enumerate(dgms):
+    ...     print("Dimension:", i)
+    ...     for p in dgm:
+    ...         print(p)
+    Dimension: 0
+    Dimension: 1
+    Dimension: 2
+    (0,inf)
 
 Diagram Distances
 -----------------

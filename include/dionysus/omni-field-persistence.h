@@ -73,6 +73,11 @@ class OmniFieldPersistence
         // zps_ only if something special happened over the prime.
         Factors             primes() const                      { Factors result; result.reserve(zps_.size()); for (auto& x : zps_) result.push_back(x.first); return result; }
 
+        // TODO: no skip support for now
+        bool                skip(Index) const                   { return false; }
+        void                add_skip()                          {}
+        void                set_skip(Index, bool flag = true)   {}
+
         Index               pair(Index i, BaseElement p) const;
         void                set_pair(Index i, Index j);
         void                set_pair(Index i, Index j, BaseElement p);
@@ -104,6 +109,8 @@ struct PrimeAdapter
 
                         PrimeAdapter(const Persistence& persistence, Prime p):
                             persistence_(persistence), p_(p)    {}
+
+    bool                skip(Index i) const                     { return persistence_.skip(i); }
 
     size_t              size() const                            { return persistence_.size(); }
     Index               pair(Index i) const                     { return persistence_.pair(i, p_); }

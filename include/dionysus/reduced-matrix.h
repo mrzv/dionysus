@@ -30,6 +30,7 @@ class ReducedMatrix
 
         typedef                 std::vector<Chain>              Chains;
         typedef                 std::vector<Index>              Indices;
+        typedef                 std::vector<bool>               SkipFlags;
 
     public:
                                 ReducedMatrix(const Field&                field):
@@ -82,6 +83,10 @@ class ReducedMatrix
 
         Chain&                  column(Index i)                 { return reduced_[i]; }
 
+        bool                    skip(Index i) const             { return skip_[i]; }
+        void                    add_skip();
+        void                    set_skip(Index i, bool flag = true) { skip_[i] = flag; }
+
         const Field&            field() const                   { return field_; }
         const Comparison&       cmp() const                     { return cmp_; }
         void                    reserve(size_t s)               { reduced_.reserve(s); pairs_.reserve(s); }
@@ -131,6 +136,7 @@ class ReducedMatrix
         Comparison              cmp_;
         Chains                  reduced_;       // matrix R
         Indices                 pairs_;
+        SkipFlags               skip_;          // indicates whether the column should be skipped (e.g., for relative homology)
         VisitorsTuple           visitors_;
 };
 

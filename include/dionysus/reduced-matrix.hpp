@@ -5,6 +5,7 @@ resize(size_t s)
 {
     reduced_.resize(s);
     pairs_.resize(s, unpaired());
+    skip_.resize(s, false);
 }
 
 template<class F, typename I, class C, template<class Self> class... V>
@@ -16,10 +17,21 @@ add(Chain&& chain)
     Index i = pairs_.size();
     pairs_.emplace_back(unpaired());
     reduced_.emplace_back();
+    skip_.emplace_back(false);
 
     set(i, std::move(chain));
 
     return reduce(i);
+}
+
+template<class F, typename I, class C, template<class Self> class... V>
+void
+dionysus::ReducedMatrix<F,I,C,V...>::
+add_skip()
+{
+    pairs_.emplace_back(unpaired());
+    reduced_.emplace_back();
+    skip_.emplace_back(true);
 }
 
 template<class F, typename I, class C, template<class Self> class... V>

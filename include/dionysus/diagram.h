@@ -68,6 +68,9 @@ init_diagrams(const ReducedMatrix& m, const Filtration& f, const GetValue& get_v
     Result diagrams;
     for (typename ReducedMatrix::Index i = 0; i < m.size(); ++i)
     {
+        if (m.skip(i))
+            continue;
+
         auto& s = f[i];
         auto  d = s.dimension();
 
