@@ -4,15 +4,19 @@ from   matplotlib.colors import LogNorm, Normalize
 def plot_diagram(dgm, show = False):
     """Plot the persistence diagram."""
 
-    min_birth = min(p.birth for p in dgm)
-    #max_birth = max(p.birth for p in dgm)
-    #min_death = min(p.death for p in dgm)
-    max_death = max(p.death for p in dgm)
+    inf = float('inf')
+    min_birth = min(p.birth for p in dgm if p.birth != inf)
+    max_birth = max(p.birth for p in dgm if p.birth != inf)
+    min_death = min(p.death for p in dgm if p.death != inf)
+    max_death = max(p.death for p in dgm if p.death != inf)
 
     plt.axes().set_aspect('equal', 'datalim')
 
+    min_diag = min(min_birth, min_death)
+    max_diag = max(max_birth, max_death)
+
     plt.scatter([p.birth for p in dgm], [p.death for p in dgm])
-    plt.plot([min_birth, max_death], [min_birth, max_death])        # diagonal
+    plt.plot([min_diag, max_diag], [min_diag, max_diag])        # diagonal
 
     ## clip the view
     #plt.axes().set_xlim([min_birth, max_birth])

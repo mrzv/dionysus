@@ -18,6 +18,8 @@ Filtration
 
 .. autofunction:: dionysus.closure
 
+.. autofunction:: dionysus._dionysus.fill_freudenthal
+
 
 Persistence
 -----------

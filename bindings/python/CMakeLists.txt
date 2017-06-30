@@ -118,6 +118,7 @@ pybind11_add_module         (_dionysus dionysus.cpp
                                        simplex.cpp
                                        field.cpp
                                        rips.cpp
+                                       freudenthal.cpp
                                        persistence.cpp
                                        diagram.cpp
                                        omni-field-persistence.cpp
