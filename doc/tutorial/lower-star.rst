@@ -27,10 +27,10 @@ upper-star filtrations of the Freudenthal triangulation on a grid, with values g
 .. nbplot::
     :include-source: False
 
-    from dionysus import *
-    import dionysus.plot as dp
-    import numpy as np
-    np.random.seed(0)
+    >>> from dionysus import *
+    >>> import numpy as np
+    >>> import matplotlib.pyplot as plt
+    >>> np.random.seed(0)
 
 Take a random NumPy array:
 
@@ -38,7 +38,9 @@ Take a random NumPy array:
 
     >>> a = np.random.random((10,10))
     >>> plt.matshow(a)
+    <...>
     >>> plt.colorbar()
+    <...>
 
 Use :func:`~dionysus._dionysus.fill_freudenthal` to construct the triangulation:
 
@@ -58,5 +60,5 @@ Use :ref:`plotting` functionality to plot the diagrams:
 
 .. nbplot::
 
-    >>> dp.plot_diagram(dgms[0])
-    >>> dp.plot_diagram(dgms[1])
+    >>> plot.plot_diagram(dgms[0])
+    >>> plot.plot_diagram(dgms[1])

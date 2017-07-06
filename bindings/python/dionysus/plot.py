@@ -1,8 +1,7 @@
-import matplotlib.pyplot as plt
-from   matplotlib.colors import LogNorm, Normalize
-
 def plot_diagram(dgm, show = False):
     """Plot the persistence diagram."""
+
+    import matplotlib.pyplot as plt
 
     inf = float('inf')
     min_birth = min(p.birth for p in dgm if p.birth != inf)
@@ -28,6 +27,8 @@ def plot_diagram(dgm, show = False):
 def plot_bars(dgm, order = 'birth', show = False):
     """Plot the barcode."""
 
+    import matplotlib.pyplot as plt
+
     if order == 'death':
         generator = enumerate(sorted(dgm, key = lambda p: p.death))
     else:
@@ -43,6 +44,9 @@ def plot_bars(dgm, order = 'birth', show = False):
 
 def plot_diagram_density(dgm, bins = 200, lognorm = True, diagonal = True, show = False):
     """Plot the histogram of point density."""
+
+    import matplotlib.pyplot as plt
+    from   matplotlib.colors import LogNorm, Normalize
 
     if lognorm:
         norm = LogNorm()

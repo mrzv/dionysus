@@ -1,4 +1,5 @@
 from ._dionysus import *
+import plot     # make it available without an explicit import
 
 def closure(simplices, k):
     """Compute the `k`-skeleton of the closure of the list of `simplices`."""
