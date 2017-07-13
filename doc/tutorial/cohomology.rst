@@ -1,14 +1,15 @@
 Cohomology Persistence
 ----------------------
 
-.. testsetup::
+.. nbplot::
+    :include-source: False
 
-    from __future__ import print_function   # if you are using Python 2
-    from dionysus import *
-    import numpy as np
-    np.random.seed(0)
+    >>> from __future__ import print_function   # if you are using Python 2
+    >>> from dionysus import *
+    >>> import numpy as np
+    >>> np.random.seed(0)
 
-.. doctest::
+.. nbplot::
 
     >>> simplices = [([2], 4), ([1,2], 5), ([0,2], 6),
     ...              ([0], 1),   ([1], 2), ([0,1], 3)]
@@ -21,7 +22,7 @@ Applying cohomology functor to the filtration, we get a sequence of cohomology g
 :math:`H^*(K_1) \to H^*(K_2) \to \ldots \to H^*(K_n)`. To compute decomposition of this sequence, i.e., persistence barcode,
 we use :func:`~dionysus._dionysus.cohomology_persistence`.
 
-.. doctest::
+.. nbplot::
 
     >>> p = cohomology_persistence(f, prime=2)
 
@@ -30,7 +31,7 @@ alive at the end of the filtration (i.e., a basis for :math:`H^*(K_n)`). To
 extract persistence diagrams, we use, as before,
 :func:`~dionysus._dionysus.init_diagrams`:
 
-.. doctest::
+.. nbplot::
 
     >>> dgms = init_diagrams(p, f)
     >>> for i,dgm in enumerate(dgms):
@@ -48,7 +49,7 @@ To access the alive cocycles, we iterate over the returned object. For each
 element, `index` stores the index in the filtration when the cocycle was born,
 while `cocycle` stores the cocycle itself.
 
-.. doctest::
+.. nbplot::
 
     >>> for c in p:
     ...     print(c.index, c.cocycle)
@@ -68,7 +69,7 @@ a map.
 
 As our sample, we generate 100 points on an annulus:
 
-.. doctest::
+.. nbplot::
 
     >>> points = np.random.normal(size = (100,2))
     >>> for i in range(points.shape[0]):
@@ -78,48 +79,42 @@ As our sample, we generate 100 points on an annulus:
 We construct the Vietoris--Rips filtration on the points and compute its
 persistence diagrams, using coefficients in :math:`\mathbb{Z}_{11}`:
 
-.. doctest::
+.. nbplot::
 
     >>> prime = 11
     >>> f = fill_rips(points, 2, 2.)
     >>> p = cohomology_persistence(f, prime, True)
     >>> dgms = init_diagrams(p, f)
 
-The 1-dimensional persistence diagram reflects that we've sampled an annulus::
+The 1-dimensional barcode, plotted below using the built-in :ref:`plotting` functionality, reflects that we've sampled an annulus:
 
-    >>> import matplotlib.pyplot as plt
-    >>> plt.scatter([pt.birth for pt in dgms[1]], [pt.death for pt in dgms[1]])
-    >>> ...
-    >>> plt.show()
+.. nbplot::
 
-.. image:: figures/annulus-dgm.png
-   :scale: 50 %
-   :align: center
+    >>> plot.plot_bars(dgms[1], show = True)
 
-We select the highest persistence point and take its corresponding cocycle:
+We select the longest bar and take its corresponding cocycle:
 
-.. doctest::
+.. nbplot::
 
     >>> pt = max(dgms[1], key = lambda pt: pt.death - pt.birth)
     >>> print(pt)
     (0.164409,3.38459)
-
     >>> cocycle = p.cocycle(pt.data)
 
 To smooth the cocycle and convert it to the corresponding circular coordinates,
 we need to choose a complex, in which we do the smoothing. Here we select the
 complex in the filtration that exists at the midvalue of the persistence bar, :code:`(pt.death + pt.birth)/2`:
 
-.. doctest::
+.. nbplot::
 
     >>> f = Filtration([s for s in f if s.data <= (pt.death + pt.birth)/2])
     >>> vertex_values = smooth(f, cocycle, prime)
 
-Now we can plot the points using hue to show the circular coordinate::
+Now we can plot the points using hue to show the circular coordinate:
 
+.. nbplot::
+
+    >>> import matplotlib.pyplot as plt
     >>> plt.scatter(points[:,0], points[:,1], c = vertex_values, cmap = 'hsv')
+    <...>
     >>> plt.show()
-
-.. image:: figures/parameterized-annulus.png
-   :scale: 50 %
-   :align: center

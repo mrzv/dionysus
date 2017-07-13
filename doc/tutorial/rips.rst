@@ -10,6 +10,17 @@ Vietoris--Rips Complexes
    :scale: 50 %
    :align: center
 
+Dionysus can compute Vietoris--Rips complexes. Given a point set :math:`P`,
+a Vietoris--Rips complex consists of all those simplices whose vertices are at
+pairwise distance no more than :math:`r`,
+:math:`VR_r(P) = \{ \sigma \subseteq P \mid \forall~u,v \in \sigma, \| u - v \| \leq r \}`.
+
+:func:`~dionysus._dionysus.fill_rips` computes Vietoris--Rips filtrations (up
+to a specified skeleton dimension and distance :math:`r`). It accepts points as
+`NumPy <http://www.numpy.org/>`_ arrays, following the standard convention
+that rows of a 2-dimensional array are interpreted as points in Euclidean
+space:
+
 .. testsetup::
 
    import numpy as np

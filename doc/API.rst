@@ -34,7 +34,7 @@ Persistence
 
 
 Diagrams
-~~~~~~~~
+--------
 
 .. autofunction:: dionysus._dionysus.init_diagrams
 
@@ -48,7 +48,7 @@ Diagrams
 .. autofunction:: dionysus._dionysus.wasserstein_distance
 
 Matrices
-~~~~~~~~
+--------
 
 .. autoclass:: dionysus._dionysus.Chain
     :members:
@@ -89,7 +89,7 @@ Matrices
 
 
 Plotting
-~~~~~~~~
+--------
 
 The following functions live in ``dionysus.plot`` module.
 

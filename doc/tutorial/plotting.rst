@@ -42,5 +42,8 @@ of point density, using :func:`~dionysus.plot.plot_diagram_density`:
 
 .. nbplot::
 
+    >>> a = np.random.random((800,800))
+    >>> f_lower_star = fill_freudenthal(a)
+    >>> p = homology_persistence(f_lower_star)
+    >>> dgms = init_diagrams(p, f_lower_star)
     >>> plot.plot_diagram_density(dgms[1], show = True)
-

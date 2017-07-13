@@ -1,3 +1,6 @@
+Basics
+======
+
 First, we import everything from Dionysus:
 
 .. doctest::
@@ -5,13 +8,10 @@ First, we import everything from Dionysus:
     >>> from __future__ import print_function   # if you are using Python 2
     >>> from dionysus import *
 
-
-.. todo::
-
-    Explain where to get the sample data from.
-
 Simplices
 ---------
+
+A simplex is simply a list of vertices. It's represented by the :class:`~dionysus._dionysus.Simplex` class:
 
 .. doctest::
 
@@ -39,7 +39,13 @@ Or over the boundary:
     <0,2> 0
     <0,1> 0
 
-Simplices can store optional data, and the 0 reported after each boundary edge is the default value of the data.
+Simplices can store optional data, and the 0 reported after each boundary edge is the default value of the data:
+
+.. doctest::
+
+    >>> s.data = 5
+    >>> print(s)
+    <0,1,2> 5
 
 We can use :func:`~dionysus.closure` to generate all faces of a set of
 simplices. For example, an 8-sphere is the 8-dimensional skeleton of the
@@ -58,13 +64,13 @@ Filtration
 A filtration is a nested sequence of simplicial complexes,
 :math:`K_1 \subseteq K_2 \subseteq \ldots \subseteq K_n`.
 Without loss of generality, we can assume that
-two consecutive filtrations differ by a single simplex, so we can think of
+two consecutive complexes in the filtration differ by a single simplex, so we can think of
 a filtration as a sequence of simplices.
 
 .. image:: figures/filtration.png
 
-In Dionysus, a filtration is represented by a special class
-:class:`~dionysus._dionysus.Filtration` that supports both iterating over the
+In Dionysus, a filtration is represented by a special class,
+:class:`~dionysus._dionysus.Filtration`, that supports both iterating over the
 simplices and looking up an index given a simplex. A filtration can be
 :meth:`~dionysus._dionysus.Filtration.sort`\ ed. By default this orders
 simplices by their data, breaking ties by dimension, and then
@@ -99,7 +105,7 @@ Persistent Homology
 
 Applying homology functor to the filtration, we get a sequence of homology groups, connected by linear maps:
 :math:`H_*(K_1) \to H_*(K_2) \to \ldots \to H_*(K_n)`. To compute decomposition of this sequence, i.e., persistence barcode,
-we use :func:`~dionysus._dionysus.homology_persistence`.
+we use :func:`~dionysus._dionysus.homology_persistence`, which returns its internal representation of the reduced boundary matrix:
 
 .. doctest::
    :options: +NORMALIZE_WHITESPACE
@@ -116,6 +122,8 @@ we use :func:`~dionysus._dionysus.homology_persistence`.
 
 .. image:: figures/barcode.png
 
+We can manually extract the persistence pairing from the reduced matrix:
+
 .. doctest::
 
     >>> for i in range(len(m)):
@@ -130,7 +138,28 @@ we use :func:`~dionysus._dionysus.homology_persistence`.
     0 3 4
     1 5
 
-Alternatively:
+But we can also use the :func:`~dionysus._dionysus.init_diagrams` function, by providing it access to the filtration:
+
+.. doctest::
+
+    >>> dgms = init_diagrams(m, f)
+    >>> print(dgms)
+    [Diagram with 3 points, Diagram with 1 points]
+    >>> for i, dgm in enumerate(dgms):
+    ...     for pt in dgm:
+    ...         print(i, pt.birth, pt.death)
+    0 1.0 inf
+    0 2.0 3.0
+    0 4.0 5.0
+    1 6.0 inf
+
+Notice that :func:`~dionysus._dionysus.init_diagrams` uses the data stored in
+the simplices, instead of the index pairing we printed out in the previous
+example.
+
+:func:`~dionysus._dionysus.homology_persistence` knows several methods of
+persistence computation. These can be specified with the `method` keyword
+argument:
 
 .. doctest::
 
@@ -163,9 +192,16 @@ of persistent homology.
     Dimension: 8
     (0,inf)
 
-**Relative persistent homology:**
-:func:`~dionysus._dionysus.homology_persistence` takes an extra argument
-``relative`` that allows one to specify a subcomplex (as a :class:`~dionysus._dionysus.Filtration`):
+Relative persistent homology
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+It's possible to compute relative persistent homology of a filtration, with respect to a subcomplex:
+:math:`H_*(K_1, L_1) \to H_*(K_2, L_2) \to \ldots \to H_*(K_n, L_n)`, where :math:`L_i = K_i \cap L_n`.
+To accomplish this,
+:func:`~dionysus._dionysus.homology_persistence` takes an extra argument,
+`relative`, to specify the subcomplex, :math:`L_n`. This subcomplex is
+represented by a :class:`~dionysus._dionysus.Filtration`, but the ordering of
+the simplices in it doesn't matter, only their presence.
 For example, homology of a triangle relative to its boundary has a single class in dimension 2:
 
 .. doctest::
