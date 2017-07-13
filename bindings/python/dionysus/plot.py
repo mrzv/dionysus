@@ -53,12 +53,13 @@ def plot_diagram_density(dgm, bins = 200, lognorm = True, diagonal = True, show 
     else:
         norm = Normalize()
 
-    min_birth = min(p.birth for p in dgm)
-    #max_birth = max(p.birth for p in dgm)
-    #min_death = min(p.death for p in dgm)
-    max_death = max(p.death for p in dgm)
+    inf = float('inf')
+    min_birth = min(p.birth for p in dgm if p.birth != inf)
+    #max_birth = max(p.birth for p in dgm if p.birth != inf)
+    #min_death = min(p.death for p in dgm if p.death != inf)
+    max_death = max(p.death for p in dgm if p.death != inf)
 
-    plt.hist2d([p.birth for p in dgm], [p.death for p in dgm], bins = bins, norm = norm)
+    plt.hist2d([p.birth for p in dgm if p.birth != inf and p.death != inf], [p.death for p in dgm if p.birth != inf and p.death != inf], bins = bins, norm = norm)
     plt.axes().set_aspect('equal', 'datalim')
 
     if diagonal:
