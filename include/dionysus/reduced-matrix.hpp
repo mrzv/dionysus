@@ -17,7 +17,7 @@ add(Chain&& chain)
     Index i = pairs_.size();
     pairs_.emplace_back(unpaired());
     reduced_.emplace_back();
-    skip_.emplace_back(false);
+    skip_.push_back(false);
 
     set(i, std::move(chain));
 
@@ -31,7 +31,7 @@ add_skip()
 {
     pairs_.emplace_back(unpaired());
     reduced_.emplace_back();
-    skip_.emplace_back(true);
+    skip_.push_back(true);
 }
 
 template<class F, typename I, class C, template<class Self> class... V>
