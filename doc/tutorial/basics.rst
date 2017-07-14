@@ -192,6 +192,8 @@ of persistent homology.
     Dimension: 8
     (0,inf)
 
+.. _relative-persistence:
+
 Relative persistent homology
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -220,6 +222,8 @@ For example, homology of a triangle relative to its boundary has a single class 
     Dimension: 1
     Dimension: 2
     (0,inf)
+
+.. _diagram-distances:
 
 Diagram Distances
 -----------------

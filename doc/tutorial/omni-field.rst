@@ -1,3 +1,5 @@
+.. _omni-field:
+
 Omni-field Persistence
 ----------------------
 

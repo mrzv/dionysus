@@ -3,15 +3,59 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to Dionysus' documentation!
-===================================
+Welcome to Dionysus 2 documentation!
+====================================
 
-.. toctree::
-   :maxdepth: 3
-   :caption: Contents:
+.. sidebar:: Contents
 
-   tutorial/index
-   API
+    .. toctree::
+       :maxdepth: 3
+
+       tutorial/index
+       API
+
+Dionysus 2.0 is the second incarnation of the library for computing
+persistent homology. As before, it's written in C++, with Python bindings.
+The second version is re-written from scratch, which helps it accomplish a few goals:
+
+  * `BSD-style license <https://github.com/mrzv/dionysus/blob/master/LICENSE.txt>`_ (because GPL has no place in academic software).
+  * No dependency on Boost.Python; Dionysus 2 uses (and includes) `PyBind11 <https://github.com/pybind/pybind11>`_ instead, which greatly simplifies installation.
+  * Cleaner, more consistent internal design (for example, all algorithms support arbitrary fields).
+  * Some new algorithms, e.g., :ref:`omni-field` and :ref:`Wasserstein distance computation <diagram-distances>` from `Hera <https://bitbucket.org/grey_narn/hera>`_.
+  * A few :ref:`plotting` routines, based on `Matplotlib <https://matplotlib.org/>`_.
+  * Better integration with `NumPy <http://www.numpy.org/>`_.
+
+Features that haven't (yet) made it over from `Dionysus 1 <http://mrzv.org/software/dionysus>`_ include vineyards, alpha shapes, bottleneck distance.
+
+Dionysus 2 depends on:
+
+  * `Boost <http://www.boost.org/>`_, although it doesn't link any libraries, so it's considerably easier to build the project.
+  * (Optional) `SciPy <https://www.scipy.org/>`_ for the LSQR routine used in :ref:`circular`.
+  * (Optional) `Maplotlib <https://matplotlib.org/>`_ for :ref:`plotting`.
+
+Get, Build, Install
+-------------------
+
+To get Dionysus 2, either clone its `repository <https://github.com/mrzv/dionysus>`_:
+
+.. parsed-literal::
+
+    git clone `<https://github.com/mrzv/dionysus.git>`_
+
+or download it as a `Zip archive <https://github.com/mrzv/dionysus/archive/master.zip>`_.
+
+To build the project::
+
+    mkdir build
+    cd build
+    cmake ..
+    make
+
+To use the Python bindings, either launch Python from ``.../build/bindings/python`` or add this directory to your ``PYTHONPATH`` variable, by adding::
+
+    export PYTHONPATH=.../build/bindings/python:PYTHONPATH
+
+to your ``~/.bashrc`` or ``~/.zshrc``.
 
 Indices and tables
 ==================

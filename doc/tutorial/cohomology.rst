@@ -56,6 +56,7 @@ while `cocycle` stores the cocycle itself.
     0 1*0 + 1*1 + 1*3
     5 1*5
 
+.. _circular:
 
 Circular Coordinates
 ~~~~~~~~~~~~~~~~~~~~

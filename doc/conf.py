@@ -106,6 +106,7 @@ html_static_path = ['_static']
 # Output file base name for HTML help builder.
 htmlhelp_basename = 'Dionysusdoc'
 
+html_title = 'Dionysus 2'
 
 # -- Options for LaTeX output ---------------------------------------------
 
