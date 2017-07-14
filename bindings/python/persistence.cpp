@@ -5,6 +5,7 @@ namespace py = pybind11;
 #include <dionysus/row-reduction.h>
 #include <dionysus/ordinary-persistence.h>
 #include <dionysus/standard-reduction.h>
+#include <dionysus/clearing-reduction.h>
 
 #include "field.h"
 #include "filtration.h"
@@ -18,7 +19,16 @@ compute_homology_persistence(const PyFiltration& filtration, const Relative& rel
 {
     PyZpField field(prime);
 
-    if (method == "row")
+    if (method == "clearing")
+    {
+        using Persistence = dionysus::OrdinaryPersistence<PyZpField>;
+        using Reduction   = dionysus::ClearingReduction<Persistence>;
+        Persistence persistence(field);
+        Reduction   reduce(persistence);
+        reduce(filtration, relative, &Reduction::no_report_pair);
+        return std::move(reduce.persistence());
+    }
+    else if (method == "row")
     {
         using Reduction = dionysus::RowReduction<PyZpField>;
         Reduction   reduce(field);
@@ -72,11 +82,11 @@ void init_persistence(py::module& m)
 {
     using namespace pybind11::literals;
     m.def("homology_persistence",   &homology_persistence,
-          "filtration"_a, "prime"_a = 2, "method"_a = "row",
-          "compute homology persistence of the filtration (pair simplices); method is one of `row`, `column`, or `column_no_negative`");
+          "filtration"_a, "prime"_a = 2, "method"_a = "clearing",
+          "compute homology persistence of the filtration (pair simplices); method is one of `clearing`, `row`, `column`, or `column_no_negative`");
     m.def("homology_persistence",   &relative_homology_persistence,
-          "filtration"_a, "relative"_a, "prime"_a = 2, "method"_a = "row",
-          "compute homology persistence of the filtration, relative to a subcomplex; method is one of `row`, `column`, or `column_no_negative`");
+          "filtration"_a, "relative"_a, "prime"_a = 2, "method"_a = "clearing",
+          "compute homology persistence of the filtration, relative to a subcomplex; method is one of `clearing`, `row`, `column`, or `column_no_negative`");
 
     m.def("init_diagrams",      &py_init_diagrams,  "m"_a, "f"_a,  "initialize diagrams from reduced matrix and filtration");
 

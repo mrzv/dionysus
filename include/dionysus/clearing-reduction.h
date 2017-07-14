@@ -9,14 +9,28 @@ template<class Persistence_>
 class ClearingReduction
 {
     public:
-        typedef     Persistence_                Persistence;
+        using Persistence = Persistence_;
+        using Field       = typename Persistence::Field;
+        using Index       = typename Persistence::Index;
 
     public:
                     ClearingReduction(Persistence& persistence):
                         persistence_(persistence)               {}
 
+        template<class Filtration, class Relative, class ReportPair>
+        void            operator()(const Filtration& f, const Relative& relative, const ReportPair& report_pair);
+
+        template<class Filtration, class ReportPair>
+        void            operator()(const Filtration& f, const ReportPair& report_pair);
+
         template<class Filtration>
-        void        operator()(const Filtration& f);
+        void            operator()(const Filtration& f)             { return (*this)(f, &no_report_pair); }
+
+        static void     no_report_pair(int, Index, Index)           {}
+
+        const Persistence&
+                        persistence() const                         { return persistence_; }
+        Persistence&    persistence()                               { return persistence_; }
 
     private:
         Persistence&  persistence_;
