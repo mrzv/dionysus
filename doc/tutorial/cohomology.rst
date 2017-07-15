@@ -19,7 +19,7 @@ Cohomology Persistence
     >>> f.sort()
 
 Applying cohomology functor to the filtration, we get a sequence of cohomology groups, connected by linear maps:
-:math:`H^*(K_1) \to H^*(K_2) \to \ldots \to H^*(K_n)`. To compute decomposition of this sequence, i.e., persistence barcode,
+:math:`H^*(K_1) \leftarrow H^*(K_2) \leftarrow \ldots \leftarrow H^*(K_n)`. To compute decomposition of this sequence, i.e., persistence barcode,
 we use :func:`~dionysus._dionysus.cohomology_persistence`.
 
 .. nbplot::
@@ -108,8 +108,8 @@ complex in the filtration that exists at the midvalue of the persistence bar, :c
 
 .. nbplot::
 
-    >>> f = Filtration([s for s in f if s.data <= (pt.death + pt.birth)/2])
-    >>> vertex_values = smooth(f, cocycle, prime)
+    >>> f_restricted = Filtration([s for s in f if s.data <= (pt.death + pt.birth)/2])
+    >>> vertex_values = smooth(f_restricted, cocycle, prime)
 
 Now we can plot the points using hue to show the circular coordinate:
 

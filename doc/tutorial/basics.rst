@@ -197,7 +197,7 @@ of persistent homology.
 Relative persistent homology
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-It's possible to compute relative persistent homology of a filtration, with respect to a subcomplex:
+It's possible to compute persistent homology of a filtration relative to a subcomplex:
 :math:`H_*(K_1, L_1) \to H_*(K_2, L_2) \to \ldots \to H_*(K_n, L_n)`, where :math:`L_i = K_i \cap L_n`.
 To accomplish this,
 :func:`~dionysus._dionysus.homology_persistence` takes an extra argument,

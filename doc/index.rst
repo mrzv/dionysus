@@ -14,7 +14,7 @@ Welcome to Dionysus 2 documentation!
        tutorial/index
        API
 
-Dionysus 2.0 is the second incarnation of the library for computing
+Dionysus 2 is the second incarnation of the library for computing
 persistent homology. As before, it's written in C++, with Python bindings.
 The second version is re-written from scratch, which helps it accomplish a few goals:
 
@@ -27,11 +27,16 @@ The second version is re-written from scratch, which helps it accomplish a few g
 
 Features that haven't (yet) made it over from `Dionysus 1 <http://mrzv.org/software/dionysus>`_ include vineyards, alpha shapes, bottleneck distance.
 
-Dionysus 2 depends on:
-
-  * `Boost <http://www.boost.org/>`_, although it doesn't link any libraries, so it's considerably easier to build the project.
+**Dependencies:**
+  * `Boost <http://www.boost.org/>`_, although Dionysus 2 doesn't link any of its libraries, so it's considerably easier to build the project.
   * (Optional) `SciPy <https://www.scipy.org/>`_ for the LSQR routine used in :ref:`circular`.
   * (Optional) `Maplotlib <https://matplotlib.org/>`_ for :ref:`plotting`.
+
+**Contact:**
+  * please use the `dionysus mailing list <https://groups.io/g/dionysus/>`_
+    for all questions and discussion related to the library;
+  * GitHub's `issue tracker <https://github.com/mrzv/dionysus/issues>`_
+    is a central location for bug reports and feature requests.
 
 Get, Build, Install
 -------------------
