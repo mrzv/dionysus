@@ -41,6 +41,13 @@ Features that haven't (yet) made it over from `Dionysus 1 <http://mrzv.org/softw
 Get, Build, Install
 -------------------
 
+The simplest way to install Dionysus as a Python package:
+
+.. parsed-literal::
+
+    pip install --verbose `git+https://github.com/mrzv/dionysus.git <https://github.com/mrzv/dionysus.git>`_
+
+Alternatively, you can clone and build everything by hand.
 To get Dionysus 2, either clone its `repository <https://github.com/mrzv/dionysus>`_:
 
 .. parsed-literal::

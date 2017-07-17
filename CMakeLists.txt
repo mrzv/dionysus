@@ -7,9 +7,11 @@ if                          (NOT CMAKE_BUILD_TYPE)
     set_property            (CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release" "MinSizeRel" "RelWithDebInfo")
 endif                       (NOT CMAKE_BUILD_TYPE)
 
-option                      (trace              "Build Dionysus with trace logging"             OFF)
-option                      (counters           "Build Dionysus with counters"                  OFF)
-option                      (debug_zigzag       "Turn on debug routines for zigzags"            OFF)
+option                      (trace                  "Build Dionysus with trace logging"             OFF)
+option                      (counters               "Build Dionysus with counters"                  OFF)
+option                      (debug_zigzag           "Turn on debug routines for zigzags"            OFF)
+option                      (build_examples         "Build examples"                                ON)
+option                      (build_python_bindings  "Build Python bindings"                         ON)
 mark_as_advanced            (debug_zigzag)
 
 find_package                (Boost)
@@ -53,11 +55,15 @@ if                          (debug)
     endif                   (LIBDW_LIBRARY)
 endif                       (debug)
 
-add_subdirectory            (examples)
+if                          (build_examples)
+    add_subdirectory        (examples)
+endif                       (build_examples)
 
 # hera/wasserstein
 add_subdirectory            ("${CMAKE_CURRENT_SOURCE_DIR}/ext/hera/wasserstein" "ext_build/hera/wasserstein")
 set_property                (TARGET wasserstein PROPERTY POSITION_INDEPENDENT_CODE ON)      # need -fPIC to link Hera into the Python bindings on Linux
 
-add_subdirectory            (bindings/python)
+if                          (build_python_bindings)
+    add_subdirectory        (bindings/python)
+endif                       (build_python_bindings)
 

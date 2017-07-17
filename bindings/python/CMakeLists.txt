@@ -109,9 +109,16 @@ function(pybind11_add_module target_name)
   endif()
 endfunction()
 
-file                        (MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/dionysus")
+
+if                          (CMAKE_LIBRARY_OUTPUT_DIRECTORY)        # to work with pip
+    set                     (MODULE_OUTPUT_DIRECTORY ${CMAKE_LIBRARY_OUTPUT_DIRECTORY})
+else                        ()
+    set                     (MODULE_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+endif                       ()
+
+file                        (MAKE_DIRECTORY "${MODULE_OUTPUT_DIRECTORY}/dionysus")
 file                        (GLOB DIONYSUS_PYTHON "${CMAKE_CURRENT_SOURCE_DIR}/dionysus/*.py")
-add_custom_target           (dionysus ALL ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/dionysus ${CMAKE_CURRENT_BINARY_DIR}/dionysus DEPENDS ${DIONYSUS_PYTHON})
+add_custom_target           (dionysus ALL ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/dionysus ${MODULE_OUTPUT_DIRECTORY}/dionysus DEPENDS ${DIONYSUS_PYTHON})
 
 pybind11_add_module         (_dionysus dionysus.cpp
                                        filtration.cpp
