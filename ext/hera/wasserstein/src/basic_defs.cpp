@@ -27,6 +27,7 @@ derivative works thereof, in binary and source code form.
 
 #include <algorithm>
 #include <cfloat>
+#include <cmath>
 #include <set>
 #include "basic_defs_ws.h"
 

@@ -138,7 +138,7 @@ zigzag_homology_persistence(const PyFiltration& f, const std::vector<std::vector
         diagrams[dim].emplace_back(t_birth, inf, birth_idx);
     }
 
-    return { std::move(persistence), std::move(diagrams) };
+    return std::make_tuple(std::move(persistence), std::move(diagrams));
 }
 
 PYBIND11_MAKE_OPAQUE(PyZigzagPersistence::Column);
