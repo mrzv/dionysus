@@ -5,7 +5,7 @@ Cohomology Persistence
     :include-source: False
 
     >>> from __future__ import print_function   # if you are using Python 2
-    >>> from dionysus import *
+    >>> import dionysus as d
     >>> import numpy as np
     >>> np.random.seed(0)
 
@@ -13,9 +13,9 @@ Cohomology Persistence
 
     >>> simplices = [([2], 4), ([1,2], 5), ([0,2], 6),
     ...              ([0], 1),   ([1], 2), ([0,1], 3)]
-    >>> f = Filtration()
+    >>> f = d.Filtration()
     >>> for vertices, time in simplices:
-    ...     f.append(Simplex(vertices, time))
+    ...     f.append(d.Simplex(vertices, time))
     >>> f.sort()
 
 Applying cohomology functor to the filtration, we get a sequence of cohomology groups, connected by linear maps:
@@ -24,7 +24,7 @@ we use :func:`~dionysus._dionysus.cohomology_persistence`.
 
 .. nbplot::
 
-    >>> p = cohomology_persistence(f, prime=2)
+    >>> p = d.cohomology_persistence(f, prime=2)
 
 The returned object stores the persistence pairs as well as the cocycles still
 alive at the end of the filtration (i.e., a basis for :math:`H^*(K_n)`). To
@@ -33,7 +33,7 @@ extract persistence diagrams, we use, as before,
 
 .. nbplot::
 
-    >>> dgms = init_diagrams(p, f)
+    >>> dgms = d.init_diagrams(p, f)
     >>> for i,dgm in enumerate(dgms):
     ...     print(i)
     ...     for pt in dgm:
@@ -83,15 +83,15 @@ persistence diagrams, using coefficients in :math:`\mathbb{Z}_{11}`:
 .. nbplot::
 
     >>> prime = 11
-    >>> f = fill_rips(points, 2, 2.)
-    >>> p = cohomology_persistence(f, prime, True)
-    >>> dgms = init_diagrams(p, f)
+    >>> f = d.fill_rips(points, 2, 2.)
+    >>> p = d.cohomology_persistence(f, prime, True)
+    >>> dgms = d.init_diagrams(p, f)
 
 The 1-dimensional barcode, plotted below using the built-in :ref:`plotting` functionality, reflects that we've sampled an annulus:
 
 .. nbplot::
 
-    >>> plot.plot_bars(dgms[1], show = True)
+    >>> d.plot.plot_bars(dgms[1], show = True)
 
 We select the longest bar and take its corresponding cocycle:
 
@@ -108,8 +108,8 @@ complex in the filtration that exists at the midvalue of the persistence bar, :c
 
 .. nbplot::
 
-    >>> f_restricted = Filtration([s for s in f if s.data <= (pt.death + pt.birth)/2])
-    >>> vertex_values = smooth(f_restricted, cocycle, prime)
+    >>> f_restricted = d.Filtration([s for s in f if s.data <= (pt.death + pt.birth)/2])
+    >>> vertex_values = d.smooth(f_restricted, cocycle, prime)
 
 Now we can plot the points using hue to show the circular coordinate:
 

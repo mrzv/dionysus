@@ -4,7 +4,7 @@ Vietoris--Rips Complexes
 .. testsetup::
 
     from __future__ import print_function   # if you are using Python 2
-    from dionysus import *
+    import dionysus as d
 
 .. image:: figures/vietoris-rips.png
    :scale: 50 %
@@ -31,7 +31,7 @@ space:
 
    >>> import numpy as np
    >>> points = np.random.random((100,2))
-   >>> f = fill_rips(points, 2, .3)
+   >>> f = d.fill_rips(points, 2, .3)
    >>> print(f)
    Filtration with 5974 simplices
    >>> for s in f:
@@ -49,7 +49,7 @@ space:
 
    >>> from scipy.spatial.distance import pdist
    >>> dists = pdist(points)
-   >>> f = fill_rips(dists, 2, .3)
+   >>> f = d.fill_rips(dists, 2, .3)
    >>> print(f)
    Filtration with 5974 simplices
 

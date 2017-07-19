@@ -27,7 +27,7 @@ upper-star filtrations of the Freudenthal triangulation on a grid, with values g
 .. nbplot::
     :include-source: False
 
-    >>> from dionysus import *
+    >>> import dionysus as d
     >>> import numpy as np
     >>> import matplotlib.pyplot as plt
     >>> np.random.seed(0)
@@ -46,19 +46,19 @@ Use :func:`~dionysus._dionysus.fill_freudenthal` to construct the triangulation:
 
 .. nbplot::
 
-    >>> f_lower_star = fill_freudenthal(a)
-    >>> f_upper_star = fill_freudenthal(a, reverse = True)
+    >>> f_lower_star = d.fill_freudenthal(a)
+    >>> f_upper_star = d.fill_freudenthal(a, reverse = True)
 
 Compute persistence as usual:
 
 .. nbplot::
 
-    >>> p = homology_persistence(f_lower_star)
-    >>> dgms = init_diagrams(p, f_lower_star)
+    >>> p = d.homology_persistence(f_lower_star)
+    >>> dgms = d.init_diagrams(p, f_lower_star)
 
 Use :ref:`plotting` functionality to plot the diagrams:
 
 .. nbplot::
 
-    >>> plot.plot_diagram(dgms[0])
-    >>> plot.plot_diagram(dgms[1])
+    >>> d.plot.plot_diagram(dgms[0])
+    >>> d.plot.plot_diagram(dgms[1])

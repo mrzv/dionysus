@@ -6,7 +6,7 @@ Omni-field Persistence
 .. testsetup::
 
     from __future__ import print_function   # if you are using Python 2
-    from dionysus import *
+    import dionysus as d
 
 It's possible to compute persistence over all fields :math:`\mathbb{Z}_p` at once, by doing
 some extra bookkeeping. :class:`~dionysus._dionysus.OmniFieldPersistence`
@@ -24,9 +24,7 @@ Klein bottle:
     ...       [0,3,5], [0,1,5], [1,5,7], [1,2,7], [2,7,3], [2,3,0],
     ...       [3,4,6], [3,5,6], [5,6,8], [5,7,8], [7,8,4], [7,3,4],
     ...       [4,0,2], [4,6,2], [6,2,1], [6,8,1], [8,1,0], [8,4,0]]
-    >>> f = Filtration()
-    >>> for s in klein_bottle:
-    ...     f.append(Simplex(s))
+    >>> f = d.Filtration(klein_bottle)
     >>> print(f)
     Filtration with 54 simplices
 
@@ -34,7 +32,7 @@ We can compute persistence over all fields :math:`\mathbb{Z}_p` at once:
 
 .. doctest::
 
-    >>> ofp = omnifield_homology_persistence(f)
+    >>> ofp = d.omnifield_homology_persistence(f)
 
 We can examine which primes produce special results. This does not necessarily
 mean that persistence diagram over the respective finite fields looks
@@ -53,7 +51,7 @@ To access the results, we can construct persistence diagrams over a particular
 
 .. doctest::
 
-    >>> dgms = init_diagrams(ofp, f, 2)
+    >>> dgms = d.init_diagrams(ofp, f, 2)
     >>> for i, dgm in enumerate(dgms):
     ...     print("Dimension:", i)
     ...     for pt in dgm:
@@ -72,7 +70,7 @@ But over :math:`\mathbb{Z}_3` (as well as over any other :math:`\mathbb{Z}_p`), 
 
 .. doctest::
 
-    >>> dgms = init_diagrams(ofp, f, 3)
+    >>> dgms = d.init_diagrams(ofp, f, 3)
     >>> for i, dgm in enumerate(dgms):
     ...     print("Dimension:", i)
     ...     for pt in dgm:

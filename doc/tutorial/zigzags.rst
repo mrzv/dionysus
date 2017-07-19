@@ -4,7 +4,7 @@ Zigzag Persistence
 .. testsetup::
 
     from __future__ import print_function   # if you are using Python 2
-    from dionysus import *
+    import dionysus as d
 
 Carlsson and de Silva introduced `zigzag persistence
 <https://arxiv.org/abs/0812.0197>`_, a generalization of ordinary persistent
@@ -16,7 +16,7 @@ a :class:`~dionysus._dionysus.Filtration`:
 
 .. doctest::
 
-    >>> f = Filtration([[0], [1], [0,1], [2], [0,2], [1,2]])
+    >>> f = d.Filtration([[0], [1], [0,1], [2], [0,2], [1,2]])
 
 For each simplex in the complex, we specify a list of times when it enters and
 leaves the filtration. This information is provided as a list of lists,
@@ -34,7 +34,7 @@ of the corresponding sequence of simplicial complexes, using
 
 .. doctest::
 
-    >>> zz, dgms = zigzag_homology_persistence(f, times)
+    >>> zz, dgms = d.zigzag_homology_persistence(f, times)
 
 The function returns a pair: an internal representation of
 :class:`~dionysus._dionysus.ZigzagPersistence`, which stores cycles still alive

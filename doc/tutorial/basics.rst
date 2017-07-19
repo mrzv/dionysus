@@ -6,7 +6,7 @@ First, we import everything from Dionysus:
 .. doctest::
 
     >>> from __future__ import print_function   # if you are using Python 2
-    >>> from dionysus import *
+    >>> import dionysus as d
 
 Simplices
 ---------
@@ -15,7 +15,7 @@ A simplex is simply a list of vertices. It's represented by the :class:`~dionysu
 
 .. doctest::
 
-    >>> s = Simplex([0,1,2])
+    >>> s = d.Simplex([0,1,2])
     >>> print("Dimension:", s.dimension())
     Dimension: 2
 
@@ -53,8 +53,8 @@ closure of the 9-simplex.
 
 .. doctest::
 
-    >>> simplex9 = Simplex([0,1,2,3,4,5,6,7,8,9])
-    >>> sphere8  = closure([simplex9], 8)
+    >>> simplex9 = d.Simplex([0,1,2,3,4,5,6,7,8,9])
+    >>> sphere8  = d.closure([simplex9], 8)
     >>> print(len(sphere8))
     1022
 
@@ -80,9 +80,9 @@ lexicographically.
 
     >>> simplices = [([2], 4), ([1,2], 5), ([0,2], 6),
     ...              ([0], 1),   ([1], 2), ([0,1], 3)]
-    >>> f = Filtration()
+    >>> f = d.Filtration()
     >>> for vertices, time in simplices:
-    ...     f.append(Simplex(vertices, time))
+    ...     f.append(d.Simplex(vertices, time))
     >>> f.sort()
     >>> for s in f:
     ...    print(s)
@@ -97,7 +97,7 @@ We can lookup the index of a given simplex. (Indexing starts from 0.)
 
 .. doctest::
 
-    >>> print(f.index(Simplex([1,2])))
+    >>> print(f.index(d.Simplex([1,2])))
     4
 
 Persistent Homology
@@ -110,7 +110,7 @@ we use :func:`~dionysus._dionysus.homology_persistence`, which returns its inter
 .. doctest::
    :options: +NORMALIZE_WHITESPACE
 
-    >>> m = homology_persistence(f)
+    >>> m = d.homology_persistence(f)
     >>> for i,c in enumerate(m):
     ...     print(i, c)
     0
@@ -142,7 +142,7 @@ But we can also use the :func:`~dionysus._dionysus.init_diagrams` function, by p
 
 .. doctest::
 
-    >>> dgms = init_diagrams(m, f)
+    >>> dgms = d.init_diagrams(m, f)
     >>> print(dgms)
     [Diagram with 3 points, Diagram with 1 points]
     >>> for i, dgm in enumerate(dgms):
@@ -163,7 +163,7 @@ argument:
 
 .. doctest::
 
-    >>> m = homology_persistence(f, method = 'column')
+    >>> m = d.homology_persistence(f, method = 'column')
 
 
 **Homology.**
@@ -172,10 +172,10 @@ of persistent homology.
 
 .. doctest::
 
-    >>> f = Filtration(sphere8)
+    >>> f = d.Filtration(sphere8)
     >>> f.sort()
-    >>> m = homology_persistence(f, prime=2)
-    >>> dgms = init_diagrams(m, f)
+    >>> m = d.homology_persistence(f, prime=2)
+    >>> dgms = d.init_diagrams(m, f)
     >>> for i, dgm in enumerate(dgms):
     ...     print("Dimension:", i)
     ...     for p in dgm:
@@ -208,12 +208,12 @@ For example, homology of a triangle relative to its boundary has a single class 
 
 .. doctest::
 
-    >>> f = Filtration(closure([Simplex([0,1,2])], 2))
+    >>> f = d.Filtration(d.closure([d.Simplex([0,1,2])], 2))
     >>> f.sort()
-    >>> f1 = Filtration([s for s in f if s.dimension() <= 1])
+    >>> f1 = d.Filtration([s for s in f if s.dimension() <= 1])
 
-    >>> m = homology_persistence(f, relative = f1)
-    >>> dgms = init_diagrams(m, f)
+    >>> m = d.homology_persistence(f, relative = f1)
+    >>> dgms = d.init_diagrams(m, f)
     >>> for i, dgm in enumerate(dgms):
     ...     print("Dimension:", i)
     ...     for p in dgm:
@@ -237,12 +237,12 @@ Diagram Distances
 
 .. doctest::
 
-    >>> f1 = fill_rips(np.random.random((20, 2)), 2, 1)
-    >>> m1 = homology_persistence(f1)
-    >>> dgms1 = init_diagrams(m1, f1)
-    >>> f2 = fill_rips(np.random.random((20, 2)), 2, 1)
-    >>> m2 = homology_persistence(f2)
-    >>> dgms2 = init_diagrams(m2, f2)
-    >>> dist = wasserstein_distance(dgms1[1], dgms2[1], q=2)
+    >>> f1 = d.fill_rips(np.random.random((20, 2)), 2, 1)
+    >>> m1 = d.homology_persistence(f1)
+    >>> dgms1 = d.init_diagrams(m1, f1)
+    >>> f2 = d.fill_rips(np.random.random((20, 2)), 2, 1)
+    >>> m2 = d.homology_persistence(f2)
+    >>> dgms2 = d.init_diagrams(m2, f2)
+    >>> dist = d.wasserstein_distance(dgms1[1], dgms2[1], q=2)
     >>> print("Distance between 1-dimensional persistence diagrams:", dist)
     Distance between 1-dimensional persistence diagrams: 0.037361082536
