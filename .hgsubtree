@@ -1,0 +1,11 @@
+[pybind11]
+source = gh://pybind/pybind11
+collapse = True
+rev = v2.1
+destination:
+    mkdir bindings/python/pybind11
+    mv LICENSE bindings/python/pybind11
+    mv include bindings/python/pybind11
+    mv CMakeLists.txt bindings/python/pybind11
+    mkdir bindings/python/pybind11/tools
+    mv glob:tools/*.cmake bindings/python/pybind11/tools
