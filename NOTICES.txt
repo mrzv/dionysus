@@ -1,6 +1,6 @@
 Dionysus includes the following libraries:
 
-  * http://github.com/pybind/pybind11 in bindings/python/include/pybind11
+  * http://github.com/pybind/pybind11 in bindings/python/pybind11
 
     Copyright (c) 2016 Wenzel Jakob <wenzel.jakob@epfl.ch>, All rights reserved.
 
