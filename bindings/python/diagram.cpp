@@ -1,6 +1,7 @@
 #include <memory>
 #include <limits>
 #include <iostream>
+#include <cmath>
 
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
@@ -35,5 +36,13 @@ void init_diagram(py::module& m)
         .def_readwrite("data",           &Point::data,  "auxiliary data associated to the point (e.g., birth index)")
         .def("__repr__",        [](const Point& p)              { std::ostringstream oss; oss << '(' << p.birth() << ',' << p.death() << ')'; return oss.str(); })
     ;
+
+    m.def("log", [](const PyDiagram& dgm)
+                 {
+                    PyDiagram result;
+                    for (auto& pt : dgm)
+                        result.emplace_back(std::log(pt.birth()), std::log(pt.death()), pt.data);
+                    return result;
+                 }, "dgm"_a, "take log of persistence diagram");
 }
 
