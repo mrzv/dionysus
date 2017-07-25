@@ -19,6 +19,7 @@ void init_filtration(py::module& m)
                                 "append simplex to the filtration, if not already in the filtration; either way return the index of the simplex")
         .def("__len__",         &PyFiltration::size,        "size of the filtration")
         .def("__getitem__",     &PyFiltration::operator[],  "access the simplex at the given index")
+        .def("__setitem__",     &PyFiltration::replace,     "replace the simplex at the given index")
         .def("index",           &PyFiltration::index,       "s"_a, "find the ordered index of a simplex in the filtration")
         .def("__contains__",    &PyFiltration::contains,    "test whether filtration contains the simplex")
         .def("__iter__",        [](const PyFiltration& f) { return py::make_iterator(f.begin(), f.end()); },

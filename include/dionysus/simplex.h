@@ -60,7 +60,7 @@ class Simplex
 
                         Simplex(const Simplex& other):
                             Simplex(other.dim_, other.begin(), other.end(), other.data_)        {}
-        Simplex&        operator=(const Simplex& other)             { dim_ = other.dim_; vertices_ = new Vertex[dim_+1]; std::copy(other.begin(), other.end(), begin()); data_ = other.data_; }
+        Simplex&        operator=(const Simplex& other)             { dim_ = other.dim_; vertices_ = Vertices(new Vertex[dim_+1]); std::copy(other.begin(), other.end(), begin()); data_ = other.data_; return *this; }
 
                         Simplex(Simplex&& other) noexcept:
                             dim_(other.dim_),
