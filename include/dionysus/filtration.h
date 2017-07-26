@@ -66,7 +66,6 @@ class Filtration
         size_t              add(const Cell& s)                                  { size_t i = index(s); if (i == size()) emplace_back(s); return i; }
         size_t              add(Cell&& s)                                       { size_t i = index(s); if (i == size()) emplace_back(std::move(s)); return i; }
 
-        // TODO: this is possibly incomplete (it seems to have trouble with multiple arguments); double-check
         template<class... Args>
         void                emplace_back(Args&&... args)                        { cells_.template get<order>().emplace_back(std::forward<Args>(args)...); }
 
