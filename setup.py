@@ -65,6 +65,8 @@ setup(
     description='Library for computing persistent homology',
     long_description='',
     ext_modules=[CMakeExtension('dionysus')],
+    packages=['dionysus'],
+    package_dir = { 'dionysus' : 'bindings/python/dionysus' },
     cmdclass=dict(build_ext=CMakeBuild),
     zip_safe=False,
 )
