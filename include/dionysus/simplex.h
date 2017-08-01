@@ -200,17 +200,17 @@ struct Simplex<V,D>::BoundaryChainIterator:
 
                     BoundaryChainIterator()                                      {}
         explicit    BoundaryChainIterator(const Field& field, Iterator iter):
-                        Parent(iter), field_(field)                         {}
+                        Parent(iter), field_(&field)                         {}
 
     private:
         friend class    boost::iterator_core_access;
         Value    dereference() const
         {
-            return      Value(((this->base().base() - this->base().begin()) % 2 == 0)? field_.id() : field_.neg(field_.id()),
+            return      Value(((this->base().base() - this->base().begin()) % 2 == 0)? field_->id() : field_->neg(field_->id()),
                               *(this->base()));
         }
 
-        const Field&    field_;
+        const Field*    field_ = nullptr;
 };
 
 
