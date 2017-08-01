@@ -129,8 +129,8 @@ operator()(const ReportPair& report_pair)
         ops.push_back(op);
     }
 
-    //fmt::print("Left alive: {}\n", zz.size_alive());
-    assert(zz.size_alive() == 0);
+    //fmt::print("Left alive: {}\n", zz.alive_size());
+    assert(zz.alive_size() == 0);
 }
 
 template<class K, class T, class F>
