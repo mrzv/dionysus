@@ -1,0 +1,8 @@
+matplotlib
+numpy
+pyparsing
+pyqt
+scipy
+setuptools
+six
+sqlite
