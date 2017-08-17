@@ -1,0 +1,11 @@
+include CMakeLists.txt
+include NOTICES.txt
+include LICENSE.txt
+include README.rst
+include requirements.txt
+
+recursive-include testing *
+recursive-exclude * __pycache__
+recursive-exclude * *.py[co]
+
+recursive-include docs *.rst conf.py Makefile make.bat
