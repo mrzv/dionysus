@@ -1,7 +1,7 @@
-Dionysus
-========
+Dionysus 2
+==========
 
-Dionysus is a computational topology Python package for computing
+Dionysus is a computational topology package focused on
 persistent homology. It is written in C++, with Python bindings.
 The second version (`previous version <http://mrzv.org/software/dionysus/>`_)
 is re-written from scratch, which helps it accomplish a few goals:
