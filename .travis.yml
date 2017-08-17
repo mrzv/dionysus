@@ -11,28 +11,26 @@ before_install:
 - hash -r
 - conda config --set always_yes yes --set changeps1 no
 - conda update -q conda
-
 install:
 - conda env create --file testing/environment_no_python.yml python=$TRAVIS_PYTHON_VERSION
 - source activate dionysus
 - pip install .
-
 script:
 - echo "Unit tests go here"
-
 before_deploy:
-- # Auto-increment the version with every commit
+- 
 - pip install bumpversion
 - bumpversion minor setup.py
-
 deploy:
   provider: pypi
-  user: "obot"
+  user: obot
   password:
     secure: Em6hKWDR8TnMQni3Fjne4UJW+uf3Q/83b4ycH3Ryu/VYTUx2aLCAxpwVCE6TT1JB2oYz7smae8ErEVQA2Tq15zFou7l1t2GDJZl78zSytvdamgPDPP30UGwQD898Ysje4S+n+haCMwOadWGN2FJQw1rTN+88oEYiD77FR/dR3ObCfe+zzgM8RXvn2fD7idduqy7IzBohoBXskSB0C8+tI3GmUJlhWTMS9akAItJ+Sr2zijuZtTYMw1Am4Ka5ZxtZt6+p/vuchAfq7sI2862IuNKcrnYwVNHE8CI7pX2jJV0FzYB+6jW5MkCs1L54CaFF+DQogT2QiaH2KkMclk+C3Dr1uOPDVW2Acgy96viZobzojKBPDRPt1CYQGU1uvidYKbwdJ4AEdZ3sWIVgvsgm2SgD1x+HNhuqc0Rf5Pq7h2zz6I+jhw0F6jC9vG6sGXS0idr3wYUxuWmFi3/XteQjFk2FbXvUcp+1J3ccWjzMxdhjX6JYQCfHmP2y8hlqZAj0ursI9Suraqx998a7ieiwCMTSeBGvxn0+pmYI0qpyYNp+S9CmLEo7+2a+VOFNrVVpvA9URIs2D02wsfasCowbZqKxGeVjl6uvF3zQ9/TmWB5ePq2mq7B0PL6n8wmWLMIvdDQddggkykO3CBy4cCPA4nutLwcJfoEFGS4FA2v3Q8g=
   on:
     branch: master
-
 after_deploy:
-- # `bumpversion` makes a commit and this needs to be sent back to GitHub
+- 
 - git push origin master
+env:
+  global:
+    secure: QMOhM8GwYd1983o/bK1ffKkWJkB3bBLrpofsFaNNbpMAna+vr0ZxCrPRj8bKkQMtfvhhDMC26gOa7r2pTU9x1zTEVZK0m0se8XkAyGeptM4/NAiYb6/BE+5yBh9U4Lcws+QAaSNWpC/XZrsjFuGxIKDkcl88Kx9gU2mTM+XVmQjfq+YRwT1pYkZIid371xXUFnwp+xP+eRO1NNkAX3V/6SLuOs6Y3pfLP5+2S3KcDvRZOInMGXZ799lP8k/D6iRm1oFdSaN+5oCpObE+yKL9pJmso3KsS5DvfD0Vu546KY9UP8XKJ1WhBrw2foixEYt61Q1e3JebM/4BbPITddSLEwcMs5j3lFW/4yLg/eVNX1ujulYTIV9Y4bHwHymQDavkcERttqsrpsIduurL8nB7HkvyglhSsD8EEg8E+hn3u+BjOjni/kgjmm5jf6BHXsr2Spz9hChUDwmfxTzTTnQPCrXV+cKOF44fZP9hsiRvnR+GjOGgJiUhzis3z1Vk6V7cbzi5NUzxPlvnBhx/uWtPQn27yboReY6u+m+cPIexfF2Yvk2y5USruvFnIx6Fdclyzln99mHNZ7BJcoNJFAyMG73EE0a9lKarJk10fPl4F5/kX8MvA3e8zLWBUQCvoMAYrDnBnU6Bc9XwWqGpQe5XlLZVkXnxVaIR66QVZLmQwTg=
