@@ -63,7 +63,7 @@ class CMakeBuild(build_ext):
 
 setup(
     name='dionysus',
-    version='2.0',
+    version='2.1',
     author='Dmitriy Morozov',
     author_email='dmitriy@mrzv.org',
     description='Library for computing persistent homology',
