@@ -1,0 +1,33 @@
+name: dionysus
+channels:
+- r
+- defaults
+- conda-forge
+dependencies:
+- boost
+- cycler
+- freetype
+- icu
+- libpng
+- matplotlib
+- mkl
+- numpy
+- openssl
+- pip
+- pyparsing
+- pyqt
+- python
+- python-dateutil
+- pytz
+- qt
+- readline
+- scipy
+- setuptools
+- sip
+- six
+- sqlite
+- tk
+- wheel
+- xz
+- zlib
+
