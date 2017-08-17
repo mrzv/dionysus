@@ -1,36 +1,24 @@
-.. Dionysus documentation master file, created by
-   sphinx-quickstart on Tue Mar  7 10:16:22 2017.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
+Dionysus 2
+==========
 
-Welcome to Dionysus 2 documentation!
-====================================
-
-.. sidebar:: Contents
-
-    .. toctree::
-       :maxdepth: 3
-
-       tutorial/index
-       API
-
-Dionysus 2 is the second incarnation of the library for computing
-persistent homology. As before, it's written in C++, with Python bindings.
-The second version is re-written from scratch, which helps it accomplish a few goals:
+Dionysus is a computational topology package focused on
+persistent homology. It is written in C++, with Python bindings.
+The second version (`previous version <http://mrzv.org/software/dionysus/>`_)
+is re-written from scratch, which helps it accomplish a few goals:
 
   * `Modified BSD license <https://github.com/mrzv/dionysus/blob/master/LICENSE.txt>`_ (because GPL causes too many problems in academic software).
   * No dependency on Boost.Python; Dionysus 2 uses (and includes) `PyBind11 <https://github.com/pybind/pybind11>`_ instead, which greatly simplifies installation.
   * Cleaner, more consistent internal design (for example, all algorithms support arbitrary fields).
-  * Some new algorithms, e.g., :ref:`omni-field` and :ref:`Wasserstein distance computation <diagram-distances>` from `Hera <https://bitbucket.org/grey_narn/hera>`_.
-  * A few :ref:`plotting` routines, based on `Matplotlib <https://matplotlib.org/>`_.
+  * Some new algorithms, e.g., `omni-field persistence <http://mrzv.org/software/dionysus2/tutorial/omni-field.html#omni-field>`_ and `wasserstein distance computation <http://mrzv.org/software/dionysus2/tutorial/basics.html#diagram-distances>`_ from `Hera <https://bitbucket.org/grey_narn/hera>`_.
+  * A few `plotting <http://mrzv.org/software/dionysus2/tutorial/plotting.html#plotting>`_ routines, based on `Matplotlib <https://matplotlib.org/>`_.
   * Better integration with `NumPy <http://www.numpy.org/>`_.
 
 Features that haven't (yet) made it over from `Dionysus 1 <http://mrzv.org/software/dionysus>`_ include vineyards, alpha shapes, bottleneck distance.
 
 **Dependencies:**
   * `Boost <http://www.boost.org/>`_, although Dionysus 2 doesn't link any of its libraries, so it's considerably easier to build the project.
-  * (Optional) `SciPy <https://www.scipy.org/>`_ for the LSQR routine used in :ref:`circular`.
-  * (Optional) `Maplotlib <https://matplotlib.org/>`_ for :ref:`plotting`.
+  * (Optional) `SciPy <https://www.scipy.org/>`_ for the LSQR routine used in `circular coordinates <http://mrzv.org/software/dionysus2/tutorial/cohomology.html#circular>`_.
+  * (Optional) `Maplotlib <https://matplotlib.org/>`_ for plotting.
 
 **Contact:**
   * please use the `dionysus mailing list <https://groups.io/g/dionysus/>`_
@@ -69,9 +57,7 @@ To use the Python bindings, either launch Python from ``.../build/bindings/pytho
 
 to your ``~/.bashrc`` or ``~/.zshrc``.
 
-Indices and tables
-==================
+Documentation
+-------------
 
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
+Documentation for Dionysus can be found `here <http://mrzv.org/software/dionysus2/>`_.
