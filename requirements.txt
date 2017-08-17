@@ -1,8 +1,8 @@
+cycler
 matplotlib
 numpy
 pyparsing
-pyqt
+python-dateutil
+pytz
 scipy
-setuptools
 six
-sqlite
