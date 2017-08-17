@@ -12,6 +12,9 @@ from distutils.version import LooseVersion
 with open('requirements.txt') as requirements_file:
     requirements = requirements_file.read()
 
+with open('README.txt') as long_description_file:
+    long_description = long_description_file.read()
+
 
 class CMakeExtension(Extension):
     def __init__(self, name, sourcedir=''):
@@ -67,7 +70,7 @@ setup(
     author='Dmitriy Morozov',
     author_email='dmitriy@mrzv.org',
     description='Library for computing persistent homology',
-    long_description='',
+    long_description=long_description,
     ext_modules=[CMakeExtension('dionysus')],
     packages=['dionysus'],
     package_dir = { 'dionysus' : 'bindings/python/dionysus' },
