@@ -76,5 +76,5 @@ setup(
     package_dir = { 'dionysus' : 'bindings/python/dionysus' },
     cmdclass=dict(build_ext=CMakeBuild),
     zip_safe=False,
-    requirements=requirements
+    install_requires=requirements
 )
