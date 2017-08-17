@@ -9,6 +9,10 @@ from setuptools.command.build_ext import build_ext
 from distutils.version import LooseVersion
 
 
+with open('requirements.txt') as requirements_file:
+    requirements = requirements_file.read()
+
+
 class CMakeExtension(Extension):
     def __init__(self, name, sourcedir=''):
         Extension.__init__(self, name, sources=[])
@@ -69,4 +73,5 @@ setup(
     package_dir = { 'dionysus' : 'bindings/python/dionysus' },
     cmdclass=dict(build_ext=CMakeBuild),
     zip_safe=False,
+    requirements=requirements
 )
