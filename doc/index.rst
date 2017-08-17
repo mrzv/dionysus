@@ -65,7 +65,7 @@ To build the project::
 
 To use the Python bindings, either launch Python from ``.../build/bindings/python`` or add this directory to your ``PYTHONPATH`` variable, by adding::
 
-    export PYTHONPATH=.../build/bindings/python:PYTHONPATH
+    export PYTHONPATH=.../build/bindings/python:$PYTHONPATH
 
 to your ``~/.bashrc`` or ``~/.zshrc``.
 
