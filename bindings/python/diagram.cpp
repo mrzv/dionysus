@@ -3,8 +3,11 @@
 #include <iostream>
 #include <cmath>
 
+#include <boost/functional/hash.hpp>
+
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
+#include <pybind11/operators.h>
 namespace py = pybind11;
 
 #include "diagram.h"
@@ -34,6 +37,8 @@ void init_diagram(py::module& m)
         .def_property_readonly("birth",  &Point::birth, "birth value")
         .def_property_readonly("death",  &Point::death, "death value")
         .def_readwrite("data",           &Point::data,  "auxiliary data associated to the point (e.g., birth index)")
+        .def(py::self == py::self)
+        .def("__hash__",        [](const Point& p)              { return boost::hash<Point::Parent>()(p); },        "hash of the point")
         .def("__repr__",        [](const Point& p)              { std::ostringstream oss; oss << '(' << p.birth() << ',' << p.death() << ')'; return oss.str(); })
     ;
 
