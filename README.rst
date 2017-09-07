@@ -13,7 +13,8 @@ is re-written from scratch, which helps it accomplish a few goals:
   * A few `plotting <http://mrzv.org/software/dionysus2/tutorial/plotting.html#plotting>`_ routines, based on `Matplotlib <https://matplotlib.org/>`_.
   * Better integration with `NumPy <http://www.numpy.org/>`_.
 
-Features that haven't (yet) made it over from `Dionysus 1 <http://mrzv.org/software/dionysus>`_ include vineyards, alpha shapes, bottleneck distance.
+Features that haven't (yet) made it over from `Dionysus 1 <http://mrzv.org/software/dionysus>`_ include vineyards, bottleneck distance.
+Alpha shape filtrations are available via `DioDe <https://github.com/mrzv/diode>`_.
 
 **Dependencies:**
   * `Boost <http://www.boost.org/>`_, although Dionysus 2 doesn't link any of its libraries, so it's considerably easier to build the project.
