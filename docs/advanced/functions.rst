@@ -162,14 +162,16 @@ Additional call policies
 ========================
 
 In addition to the above return value policies, further *call policies* can be
-specified to indicate dependencies between parameters. In general, call policies
-are required when the C++ object is any kind of container and another object is being
-added to the container.
+specified to indicate dependencies between parameters or ensure a certain state
+for the function call.
 
-There is currently just
-one policy named ``keep_alive<Nurse, Patient>``, which indicates that the
-argument with index ``Patient`` should be kept alive at least until the
-argument with index ``Nurse`` is freed by the garbage collector. Argument
+Keep alive
+----------
+
+In general, this policy is required when the C++ object is any kind of container
+and another object is being added to the container. ``keep_alive<Nurse, Patient>``
+indicates that the argument with index ``Patient`` should be kept alive at least
+until the argument with index ``Nurse`` is freed by the garbage collector. Argument
 indices start at one, while zero refers to the return value. For methods, index
 ``1`` refers to the implicit ``this`` pointer, while regular arguments begin at
 index ``2``. Arbitrarily many call policies can be specified. When a ``Nurse``
@@ -194,10 +196,36 @@ container:
     Patient != 0) and ``with_custodian_and_ward_postcall`` (if Nurse/Patient ==
     0) policies from Boost.Python.
 
+Call guard
+----------
+
+The ``call_guard<T>`` policy allows any scope guard type ``T`` to be placed
+around the function call. For example, this definition:
+
+.. code-block:: cpp
+
+    m.def("foo", foo, py::call_guard<T>());
+
+is equivalent to the following pseudocode:
+
+.. code-block:: cpp
+
+    m.def("foo", [](args...) {
+        T scope_guard;
+        return foo(args...); // forwarded arguments
+    });
+
+The only requirement is that ``T`` is default-constructible, but otherwise any
+scope guard will work. This is very useful in combination with `gil_scoped_release`.
+See :ref:`gil`.
+
+Multiple guards can also be specified as ``py::call_guard<T1, T2, T3...>``. The
+constructor order is left to right and destruction happens in reverse.
+
 .. seealso::
 
-    The file :file:`tests/test_keep_alive.cpp` contains a complete example
-    that demonstrates using :class:`keep_alive` in more detail.
+    The file :file:`tests/test_call_policies.cpp` contains a complete example
+    that demonstrates using `keep_alive` and `call_guard` in more detail.
 
 .. _python_objects_as_args:
 
@@ -377,6 +405,55 @@ name, i.e. by specifying ``py::arg().noconvert()``.
     enable no-convert behaviour for just one of several arguments, you will
     need to specify a ``py::arg()`` annotation for each argument with the
     no-convert argument modified to ``py::arg().noconvert()``.
+
+.. _none_arguments:
+
+Allow/Prohibiting None arguments
+================================
+
+When a C++ type registered with :class:`py::class_` is passed as an argument to
+a function taking the instance as pointer or shared holder (e.g. ``shared_ptr``
+or a custom, copyable holder as described in :ref:`smart_pointers`), pybind
+allows ``None`` to be passed from Python which results in calling the C++
+function with ``nullptr`` (or an empty holder) for the argument.
+
+To explicitly enable or disable this behaviour, using the
+``.none`` method of the :class:`py::arg` object:
+
+.. code-block:: cpp
+
+    py::class_<Dog>(m, "Dog").def(py::init<>());
+    py::class_<Cat>(m, "Cat").def(py::init<>());
+    m.def("bark", [](Dog *dog) -> std::string {
+        if (dog) return "woof!"; /* Called with a Dog instance */
+        else return "(no dog)"; /* Called with None, d == nullptr */
+    }, py::arg("dog").none(true));
+    m.def("meow", [](Cat *cat) -> std::string {
+        // Can't be called with None argument
+        return "meow";
+    }, py::arg("cat").none(false));
+
+With the above, the Python call ``bark(None)`` will return the string ``"(no
+dog)"``, while attempting to call ``meow(None)`` will raise a ``TypeError``:
+
+.. code-block:: pycon
+
+    >>> from animals import Dog, Cat, bark, meow
+    >>> bark(Dog())
+    'woof!'
+    >>> meow(Cat())
+    'meow'
+    >>> bark(None)
+    '(no dog)'
+    >>> meow(None)
+    Traceback (most recent call last):
+      File "<stdin>", line 1, in <module>
+    TypeError: meow(): incompatible function arguments. The following argument types are supported:
+        1. (cat: animals.Cat) -> str
+
+    Invoked with: None
+
+The default behaviour when the tag is unspecified is to allow ``None``.
 
 Overload resolution order
 =========================
