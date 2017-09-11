@@ -11,8 +11,12 @@ void init_filtration(py::module& m)
     using namespace pybind11::literals;
     py::class_<PyFiltration>(m, "Filtration", "store an ordered sequence of simplices, providing lookup")
         .def(py::init<>(),      "initialize empty filtration")
-        .def(py::init<std::vector<std::vector<PySimplex::Vertex>>>(),
-                                "initialize filtration from a list of lists")
+        .def("__init__",        [](PyFiltration& f, const std::vector<std::vector<PySimplex::Vertex>>& simplices)
+                                {
+                                    new (&f) PyFiltration;
+                                    for (auto& s : simplices)
+                                        f.emplace_back(s);
+                                }, "initialize filtration from a list of lists")
         .def("__init__",        [](PyFiltration& f, const std::vector<std::tuple<std::vector<PySimplex::Vertex>, PySimplex::Data>>& simplices)
                                 {
                                     new (&f) PyFiltration;
@@ -20,7 +24,12 @@ void init_filtration(py::module& m)
                                         f.emplace_back(std::get<0>(s), std::get<1>(s));
                                 },
                                 "initialize filtration from a list of tuples of vertices and values")
-        .def(py::init<std::vector<PySimplex>>(),      "initialize filtration from a list")
+        .def("__init__",        [](PyFiltration& f, const std::vector<PySimplex>& simplices)
+                                {
+                                    new (&f) PyFiltration;
+                                    for (auto& s : simplices)
+                                        f.emplace_back(s);
+                                }, "initialize filtration from a list of simplices")
         .def("append",          [](PyFiltration* f, const PySimplex& s) { f->push_back(s); },  "s"_a, "append simplex to the filtration")
         .def("add",             [](PyFiltration* f, const PySimplex& s) { return f->add(s); }, "s"_a,
                                 "append simplex to the filtration, if not already in the filtration; either way return the index of the simplex")

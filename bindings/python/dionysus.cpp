@@ -14,9 +14,9 @@ void init_zigzag_persistence(py::module&);
 void init_diagram(py::module&);
 void init_distances(py::module&);
 
-PYBIND11_PLUGIN(_dionysus)
+PYBIND11_MODULE(_dionysus, m)
 {
-    py::module m("_dionysus", "Dionysus python bindings");
+    m.doc() = "Dionysus python bindings";
 
     init_simplex(m);
     init_filtration(m);
@@ -30,6 +30,4 @@ PYBIND11_PLUGIN(_dionysus)
     init_zigzag_persistence(m);
     init_diagram(m);
     init_distances(m);
-
-    return m.ptr();
 }
