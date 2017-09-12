@@ -243,6 +243,9 @@ Diagram Distances
     >>> f2 = d.fill_rips(np.random.random((20, 2)), 2, 1)
     >>> m2 = d.homology_persistence(f2)
     >>> dgms2 = d.init_diagrams(m2, f2)
-    >>> dist = d.wasserstein_distance(dgms1[1], dgms2[1], q=2)
-    >>> print("Distance between 1-dimensional persistence diagrams:", dist)
-    Distance between 1-dimensional persistence diagrams: 0.037361082536
+    >>> wdist = d.wasserstein_distance(dgms1[1], dgms2[1], q=2)
+    >>> print("2-Wasserstein distance between 1-dimensional persistence diagrams:", wdist)
+    2-Wasserstein distance between 1-dimensional persistence diagrams: 0.037361082536
+    >>> bdist = d.bottleneck_distance(dgms1[1], dgms2[1])
+    >>> print("Bottleneck distance between 1-dimensional persistence diagrams:", bdist)
+    Bottleneck distance between 1-dimensional persistence diagrams: 0.0336918905377
