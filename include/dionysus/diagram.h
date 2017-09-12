@@ -23,6 +23,9 @@ class Diagram
             Value   birth() const               { return Parent::first; }
             Value   death() const               { return Parent::second; }
 
+            // FIXME: temporary hack
+            Value   operator[](size_t i) const  { if (i == 0) return birth(); else if (i > 0) return death(); }
+
             Data    data;
         };
 
