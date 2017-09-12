@@ -47,6 +47,8 @@ Diagrams
 
 .. autofunction:: dionysus._dionysus.wasserstein_distance
 
+.. autofunction:: dionysus._dionysus.bottleneck_distance
+
 Matrices
 --------
 

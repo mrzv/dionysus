@@ -228,7 +228,8 @@ For example, homology of a triangle relative to its boundary has a single class 
 Diagram Distances
 -----------------
 
-:func:`~dionysus._dionysus.wasserstein_distance` can compute `q`-th Wasserstein distance between a pair of persistence diagrams.
+:func:`~dionysus._dionysus.wasserstein_distance` computes `q`-th Wasserstein distance between a pair of persistence diagrams.
+:func:`~dionysus._dionysus.bottleneck_distance` computes the bottleneck distance.
 
 .. testsetup::
 
