@@ -401,7 +401,7 @@ void addProjections(DiagramPointSet<Real_>& A, DiagramPointSet<Real_>& B)
     for(auto& pA : A) {
         if (pA.isNormal()) {
             DgmPoint dpA {pA.getRealX(), pA.getRealY(), DgmPoint::NORMAL, uniqueId++};
-            DgmPoint dpB {0.5*(pA.getRealX() +pA.getRealY()), 0.5 *(pA.getRealX() +pA.getRealY()), DgmPoint::DIAG, uniqueId++};
+            DgmPoint dpB {(pA.getRealX() +pA.getRealY())/2, (pA.getRealX() +pA.getRealY())/2, DgmPoint::DIAG, uniqueId++};
             newA.insert(dpA);
             newB.insert(dpB);
         }
@@ -410,7 +410,7 @@ void addProjections(DiagramPointSet<Real_>& A, DiagramPointSet<Real_>& B)
     for(auto& pB : B) {
         if (pB.isNormal()) {
             DgmPoint dpB {pB.getRealX(), pB.getRealY(), DgmPoint::NORMAL, uniqueId++};
-            DgmPoint dpA {0.5*(pB.getRealX() +pB.getRealY()), 0.5 *(pB.getRealX() +pB.getRealY()), DgmPoint::DIAG, uniqueId++};
+            DgmPoint dpA {(pB.getRealX() +pB.getRealY())/2, (pB.getRealX() +pB.getRealY())/2, DgmPoint::DIAG, uniqueId++};
             newB.insert(dpB);
             newA.insert(dpA);
         }
