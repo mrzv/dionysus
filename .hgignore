@@ -1,3 +1,5 @@
 syntax: glob
 
 doc/_build
+dist
+dionysus.egg-info

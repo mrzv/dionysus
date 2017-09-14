@@ -1,0 +1,5 @@
+recursive-include . *
+recursive-exclude ./.hg *
+recursive-exclude ./doc/_build *
+exclude .hgignore .hgsubtree tags 
+recursive-exclude . *.orig

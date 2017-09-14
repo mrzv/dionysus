@@ -1,6 +1,7 @@
 from __future__ import absolute_import
 from ._dionysus import *
 from . import plot     # make it available without an explicit import
+from ._version import version_info, __version__
 
 def closure(simplices, k):
     """Compute the `k`-skeleton of the closure of the list of `simplices`."""

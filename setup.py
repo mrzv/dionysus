@@ -8,6 +8,10 @@ from setuptools import setup, Extension
 from setuptools.command.build_ext import build_ext
 from distutils.version import LooseVersion
 
+# ugly hack with paths to export __version__ directly from dionysus
+sys.path.append(os.path.dirname(os.path.abspath(sys.argv[0])) + '/bindings/python/dionysus')
+from _version import __version__
+sys.path.pop()
 
 class CMakeExtension(Extension):
     def __init__(self, name, sourcedir=''):
@@ -59,14 +63,32 @@ class CMakeBuild(build_ext):
 
 setup(
     name='dionysus',
-    version='2.0',
+    version=__version__,
     author='Dmitriy Morozov',
     author_email='dmitriy@mrzv.org',
     description='Library for computing persistent homology',
+    license='BSD',
     long_description='',
     ext_modules=[CMakeExtension('dionysus')],
     packages=['dionysus'],
     package_dir = { 'dionysus' : 'bindings/python/dionysus' },
     cmdclass=dict(build_ext=CMakeBuild),
+    classifiers=[
+        'Development Status :: 5 - Production/Stable',
+        'Intended Audience :: Developers',
+        'Intended Audience :: Education',
+        'Intended Audience :: Science/Research',
+        'Topic :: Software Development :: Libraries :: Python Modules',
+        'Topic :: Utilities',
+        'Programming Language :: C++',
+        'Programming Language :: Python :: 2.7',
+        'Programming Language :: Python :: 3',
+        'Programming Language :: Python :: 3.2',
+        'Programming Language :: Python :: 3.3',
+        'Programming Language :: Python :: 3.4',
+        'Programming Language :: Python :: 3.5',
+        'Programming Language :: Python :: 3.6',
+        'License :: OSI Approved :: BSD License'
+    ],
     zip_safe=False,
 )
