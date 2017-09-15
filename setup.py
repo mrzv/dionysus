@@ -67,6 +67,8 @@ class CMakeBuild(build_ext):
 setup(
     name='dionysus',
     version='2.1',
+    maintainer="Dmitriy Morozov, Olga Botvinnik",
+    maintainer_email="dmitriy@mrzv.org, olga.botvinnik@gmail.com",
     author='Dmitriy Morozov',
     author_email='dmitriy@mrzv.org',
     description='Library for computing persistent homology',
