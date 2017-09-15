@@ -9,6 +9,13 @@ from setuptools.command.build_ext import build_ext
 from distutils.version import LooseVersion
 
 
+with open('requirements.txt') as requirements_file:
+    requirements = requirements_file.read()
+
+with open('README.rst') as long_description_file:
+    long_description = long_description_file.read()
+
+
 class CMakeExtension(Extension):
     def __init__(self, name, sourcedir=''):
         Extension.__init__(self, name, sources=[])
@@ -59,14 +66,17 @@ class CMakeBuild(build_ext):
 
 setup(
     name='dionysus',
-    version='2.0',
+    version='2.1',
+    maintainer="Dmitriy Morozov, Olga Botvinnik",
+    maintainer_email="dmitriy@mrzv.org, olga.botvinnik@gmail.com",
     author='Dmitriy Morozov',
     author_email='dmitriy@mrzv.org',
     description='Library for computing persistent homology',
-    long_description='',
+    long_description=long_description,
     ext_modules=[CMakeExtension('dionysus')],
     packages=['dionysus'],
     package_dir = { 'dionysus' : 'bindings/python/dionysus' },
     cmdclass=dict(build_ext=CMakeBuild),
     zip_safe=False,
+    install_requires=requirements
 )
