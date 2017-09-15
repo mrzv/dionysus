@@ -2,6 +2,7 @@
 #define DIONYSUS_ZIGZAG_PERSISTENCE_H
 
 #include <tuple>
+#include <type_traits>
 
 #include <boost/range/adaptor/filtered.hpp>
 #include <boost/range/adaptor/map.hpp>
@@ -16,6 +17,8 @@ namespace ba = boost::adaptors;
 template<class Field_, class Index_ = int, class Comparison_ = std::less<Index_>>
 class ZigzagPersistence
 {
+    static_assert(std::is_signed<Index_>::value, "Index type used in ZigzagPersistence must be a *signed* integer");
+
     public:
         typedef         Field_                                      Field;
         typedef         Index_                                      Index;

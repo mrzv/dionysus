@@ -2,4 +2,4 @@
 
 #include "field.h"
 
-using PyZigzagPersistence = dionysus::ZigzagPersistence<PyZpField, unsigned>;
+using PyZigzagPersistence = dionysus::ZigzagPersistence<PyZpField, int>;
