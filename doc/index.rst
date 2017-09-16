@@ -42,7 +42,15 @@ Alpha shape filtrations are available via `DioDe <https://github.com/mrzv/diode>
 Get, Build, Install
 -------------------
 
-The simplest way to install Dionysus as a Python package:
+The simplest way to install Dionysus, as a Python package, is from `PyPI <https://pypi.org/project/dionysus/>`_:
+
+.. parsed-literal::
+
+    pip install --verbose dionysus
+
+Pass ``--upgrade`` to ``pip``, if you have already installed some version of Dionysus.
+
+Alternatively, you can install it directly from the development repository (this gives you the latest version):
 
 .. parsed-literal::
 

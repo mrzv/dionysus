@@ -69,6 +69,7 @@ setup(
     version=__version__,
     author='Dmitriy Morozov',
     author_email='dmitriy@mrzv.org',
+    url='http://mrzv.org/software/dionysus2',
     description='Library for computing persistent homology',
     license='BSD',
     long_description=long_description,
