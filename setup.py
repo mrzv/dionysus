@@ -13,6 +13,9 @@ sys.path.append(os.path.dirname(os.path.abspath(sys.argv[0])) + '/bindings/pytho
 from _version import __version__
 sys.path.pop()
 
+with open('README.rst') as long_description_file:
+    long_description = long_description_file.read()
+
 class CMakeExtension(Extension):
     def __init__(self, name, sourcedir=''):
         Extension.__init__(self, name, sources=[])
@@ -68,7 +71,7 @@ setup(
     author_email='dmitriy@mrzv.org',
     description='Library for computing persistent homology',
     license='BSD',
-    long_description='',
+    long_description=long_description,
     ext_modules=[CMakeExtension('dionysus')],
     packages=['dionysus'],
     package_dir = { 'dionysus' : 'bindings/python/dionysus' },
