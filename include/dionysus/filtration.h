@@ -15,7 +15,8 @@ namespace dionysus
 // Filtration stores a filtered cell complex as boost::multi_index_container<...>.
 // It allows for bidirectional translation between a cell and its index.
 template<class Cell_,
-         class CellLookupIndex_ = bmi::hashed_unique<bmi::identity<Cell_>>>
+         class CellLookupIndex_ = bmi::hashed_unique<bmi::identity<Cell_>>,
+         bool  checked_index = false>
 class Filtration
 {
     public:
@@ -54,7 +55,7 @@ class Filtration
         // Lookup
         const Cell&         operator[](size_t i) const                          { return cells_.template get<order>()[i]; }
         OrderConstIterator  iterator(const Cell& s) const                       { return bmi::project<order>(cells_, cells_.find(s)); }
-        size_t              index(const Cell& s) const                          { return iterator(s) - begin(); }
+        size_t              index(const Cell& s) const;
         bool                contains(const Cell& s) const                       { return cells_.find(s) != cells_.end(); }
 
         void                push_back(const Cell& s)                            { cells_.template get<order>().push_back(s); }
@@ -86,6 +87,21 @@ class Filtration
         Container           cells_;
 };
 
+}
+
+template<class C, class CLI, bool checked_index>
+size_t
+dionysus::Filtration<C,CLI,checked_index>::
+index(const Cell& s) const
+{
+    auto it = iterator(s);
+    if (checked_index && it == end())
+    {
+        std::ostringstream oss;
+        oss << "Trying to access non-existent cell: " << s;
+        throw std::runtime_error(oss.str());
+    }
+    return it - begin();
 }
 
 #endif
