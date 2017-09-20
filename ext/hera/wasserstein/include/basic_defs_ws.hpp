@@ -1,5 +1,5 @@
 /*
- 
+
 Copyright (c) 2015, M. Kerber, D. Morozov, A. Nigmetov
 All rights reserved.
 
@@ -12,7 +12,7 @@ Redistribution and use in source and binary forms, with or without modification,
 3. Neither the name of the copyright holder nor the names of its contributors may be used to endorse or promote products derived from this software without specific prior written permission.
 
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- 
+
 You are under no obligation whatsoever to provide any bug fixes, patches, or
 upgrades to the features, functionality or performance of the source code
 (Enhancements) to anyone; however, if you choose to make your Enhancements
@@ -27,7 +27,6 @@ derivative works thereof, in binary and source code form.
 
 #include <algorithm>
 #include <cfloat>
-#include <cmath>
 #include <set>
 #include "basic_defs_ws.h"
 
@@ -35,94 +34,66 @@ derivative works thereof, in binary and source code form.
 #include <iostream>
 #endif
 
-namespace geom_ws {
+#include <sstream>
+
+namespace hera {
+namespace ws {
 // Point
 
-bool Point::operator==(const Point& other) const
+template <class Real>
+bool Point<Real>::operator==(const Point<Real>& other) const
 {
     return ((this->x == other.x) and (this->y == other.y));
 }
 
-bool Point::operator!=(const Point& other) const
+template <class Real>
+bool Point<Real>::operator!=(const Point<Real>& other) const
 {
     return !(*this == other);
 }
 
 
 #ifndef FOR_R_TDA
-std::ostream& operator<<(std::ostream& output, const Point p)
+template <class Real>
+std::ostream& operator<<(std::ostream& output, const Point<Real> p)
 {
     output << "(" << p.x << ", " << p.y << ")";
     return output;
 }
 #endif
 
-double sqrDist(const Point& a, const Point& b)
+template <class Real>
+Real sqr_dist(const Point<Real>& a, const Point<Real>& b)
 {
     return (a.x - b.x) * (a.x - b.x) + (a.y - b.y) * (a.y - b.y);
 }
 
-double dist(const Point& a, const Point& b)
+template <class Real>
+Real dist(const Point<Real>& a, const Point<Real>& b)
 {
-    return sqrt(sqrDist(a, b));
-}
-
-// DiagramPoint
-
-// compute l-inf distance between two diagram points
-double distLInf(const DiagramPoint& a, const DiagramPoint& b)
-{
-    if (a.isDiagonal() and b.isDiagonal()) {
-        return 0.0;
-    } else {
-        return std::max(fabs(a.getRealX() - b.getRealX()), fabs(a.getRealY() - b.getRealY()));
-    }
-}
-
-double distLp(const DiagramPoint& a, const DiagramPoint& b, const double p)
-{
-    // infinity: special case
-    if ( std::isinf(p) )
-        return distLInf(a, b);
-
-    // check p
-    assert( p >= 1.0 );
-
-    // avoid calling pow function
-    if ( p == 1.0 ) {
-        if ( a.isNormal() or b.isNormal() ) {
-            // distance between normal points is a usual l-inf distance
-            return fabs(a.getRealX() - b.getRealX()) + fabs(a.getRealY() - b.getRealY());
-        } else 
-            return 0.0;
-    } 
-
-    if ( a.isNormal() or b.isNormal() ) {
-        // distance between normal points is a usual l-inf distance
-        return std::pow(std::pow(fabs(a.getRealX() - b.getRealX()), p) + std::pow(fabs(a.getRealY() - b.getRealY()), p), 1.0/p );
-    } else 
-        return 0.0;
+    return sqrt(sqr_dist(a, b));
 }
 
 
-double DiagramPoint::persistenceLp(const double p) const
+template <class Real>
+Real DiagramPoint<Real>::persistence_lp(const Real p) const
 {
-    if (isDiagonal())
+    if (is_diagonal())
         return 0.0;
     else {
-        double u { 0.5 * (getRealY() + getRealX()) };
-        DiagramPoint a_proj(u, u, DiagramPoint::DIAG);
-        return distLp(*this, a_proj, p);
+        Real u { (getRealY() + getRealX())/2 };
+        int dim = 2;
+        DiagramPoint<Real> a_proj(u, u, DiagramPoint<Real>::DIAG);
+        return dist_lp(*this, a_proj, p, dim);
     }
-
-
 }
 
 
 #ifndef FOR_R_TDA
-std::ostream& operator<<(std::ostream& output, const DiagramPoint p)
+template <class Real>
+std::ostream& operator<<(std::ostream& output, const DiagramPoint<Real> p)
 {
-    if ( p.type == DiagramPoint::DIAG ) {
+    if ( p.type == DiagramPoint<Real>::DIAG ) {
         output << "(" << p.x << ", " << p.y << ", " <<  0.5 * (p.x + p.y) << " DIAG )";
     } else {
         output << "(" << p.x << ", " << p.y << ", " << " NORMAL)";
@@ -131,31 +102,92 @@ std::ostream& operator<<(std::ostream& output, const DiagramPoint p)
 }
 #endif
 
-DiagramPoint::DiagramPoint(double xx, double yy, Type ttype) : 
+template <class Real>
+DiagramPoint<Real>::DiagramPoint(Real xx, Real yy, Type ttype) :
     x(xx),
     y(yy),
     type(ttype)
 {
     //if ( yy < xx )
         //throw "Point is below the diagonal";
-    //if ( yy == xx and ttype != DiagramPoint::DIAG)
+    //if ( yy == xx and ttype != DiagramPoint<Real>::DIAG)
         //throw "Point on the main diagonal must have DIAG type";
 }
 
-double DiagramPoint::getRealX() const
+template <class Real>
+Real DiagramPoint<Real>::getRealX() const
 {
-    if (isNormal())
+    if (is_normal())
         return x;
-    else 
-        return 0.5 * ( x + y);
+    else
+        return Real(0.5) * (x + y);
 }
 
-double DiagramPoint::getRealY() const
+template <class Real>
+Real DiagramPoint<Real>::getRealY() const
 {
-    if (isNormal())
+    if (is_normal())
         return y;
-    else 
-        return 0.5 * ( x + y);
+    else
+        return Real(0.5) * (x + y);
 }
 
-} // end of namespace geom_ws
+template<class Container>
+std::string format_container_to_log(const Container& cont)
+{
+    std::stringstream result;
+    result << "[";
+    for(auto iter = cont.begin(); iter != cont.end(); ++iter) {
+        result << *iter;
+        if (std::next(iter) != cont.end()) {
+            result << ", ";
+        }
+    }
+    result << "]";
+    return result.str();
+}
+
+template<class Container>
+std::string format_pair_container_to_log(const Container& cont)
+{
+    std::stringstream result;
+    result << "[";
+    for(auto iter = cont.begin(); iter != cont.end(); ++iter) {
+        result << "(" << iter->first << ", " << iter->second << ")";
+        if (std::next(iter) != cont.end()) {
+            result << ", ";
+        }
+    }
+    result << "]";
+    return result.str();
+}
+
+
+template<class Real, class IndexContainer>
+std::string format_point_set_to_log(const IndexContainer& indices,
+                                    const std::vector<DiagramPoint<Real>>& points)
+{
+    std::stringstream result;
+    result << "[";
+    for(auto iter = indices.begin(); iter != indices.end(); ++iter) {
+        DiagramPoint<Real> p = points[*iter];
+        result << "(" << p.getRealX() << ", " << p.getRealY() << ")";
+        if (std::next(iter) != indices.end())
+            result << ", ";
+    }
+    result << "]";
+    return result.str();
+}
+
+template<class T>
+std::string format_int(T i)
+{
+    std::stringstream ss;
+    ss.imbue(std::locale(""));
+    ss << std::fixed << i;
+    return ss.str();
+}
+
+
+} // end of namespace ws
+} // hera

@@ -59,10 +59,6 @@ if                          (build_examples)
     add_subdirectory        (examples)
 endif                       (build_examples)
 
-# hera/wasserstein
-add_subdirectory            ("${CMAKE_CURRENT_SOURCE_DIR}/ext/hera/wasserstein" "ext_build/hera/wasserstein")
-set_property                (TARGET wasserstein PROPERTY POSITION_INDEPENDENT_CODE ON)      # need -fPIC to link Hera into the Python bindings on Linux
-
 if                          (build_python_bindings)
     add_subdirectory        (bindings/python)
 endif                       (build_python_bindings)

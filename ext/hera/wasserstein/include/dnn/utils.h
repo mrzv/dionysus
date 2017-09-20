@@ -1,10 +1,14 @@
-#ifndef DNN_UTILS_H
-#define DNN_UTILS_H
+#ifndef HERA_WS_DNN_UTILS_H
+#define HERA_WS_DNN_UTILS_H
 
 #include <boost/random/uniform_int.hpp>
 #include <boost/foreach.hpp>
 #include <boost/typeof/typeof.hpp>
 
+namespace hera
+{
+namespace ws
+{
 namespace dnn
 {
 
@@ -36,6 +40,8 @@ void random_shuffle(RandomIt first, RandomIt last, UniformRandomNumberGenerator&
     random_shuffle(first, last, g, [](T& x, T& y) { std::swap(x,y); });
 }
 
-}
+} // dnn
+} // ws
+} // hera
 
 #endif

@@ -11,6 +11,9 @@ file                        (MAKE_DIRECTORY "${MODULE_OUTPUT_DIRECTORY}/dionysus
 file                        (GLOB DIONYSUS_PYTHON "${CMAKE_CURRENT_SOURCE_DIR}/dionysus/*.py")
 add_custom_target           (dionysus ALL ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/dionysus ${MODULE_OUTPUT_DIRECTORY}/dionysus DEPENDS ${DIONYSUS_PYTHON})
 
+# needed to make ext/hera/wasserstein compile
+include_directories         (${PROJECT_SOURCE_DIR}/ext/hera/wasserstein/include)
+
 pybind11_add_module         (_dionysus dionysus.cpp
                                        filtration.cpp
                                        simplex.cpp
@@ -22,7 +25,6 @@ pybind11_add_module         (_dionysus dionysus.cpp
                                        omni-field-persistence.cpp
                                        cohomology-persistence.cpp
                                        zigzag-persistence.cpp
-                                       distances.cpp)
-target_link_libraries       (_dionysus PRIVATE wasserstein)     # CMake will find the target in hera/wasserstein;
-                                                                # PRIVATE to keep consistent with target_link_libraries in pybind11_add_module
+                                       bottleneck-distance.cpp
+                                       wasserstein-distance.cpp)
 set_target_properties       (_dionysus PROPERTIES OUTPUT_NAME dionysus/_dionysus)

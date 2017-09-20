@@ -1,7 +1,6 @@
-#ifndef PARALLEL_H
-#define PARALLEL_H
+#ifndef HERA_WS_PARALLEL_H
+#define HERA_WS_PARALLEL_H
 
-//#include <iostream>
 #include <vector>
 
 #include <boost/range.hpp>
@@ -18,6 +17,10 @@
 #include <boost/serialization/collections_load_imp.hpp>
 #include <boost/serialization/collections_save_imp.hpp>
 
+namespace hera
+{
+namespace ws
+{
 namespace dnn
 {
     using tbb::mutex;
@@ -87,7 +90,9 @@ namespace dnn
 
         tbb::tick_count start;
     };
-}
+} // dnn
+} // ws
+} // hera
 
 // Serialization for tbb::concurrent_vector<...>
 namespace boost
@@ -132,6 +137,10 @@ namespace boost
 #include <map>
 #include <boost/progress.hpp>
 
+namespace hera
+{
+namespace ws
+{
 namespace dnn
 {
     template<class T>
@@ -207,14 +216,22 @@ namespace dnn
     };
 
     using boost::progress_timer;
-}
+} // dnn
+} // ws
+} // hera
 
 #endif // TBB
 
+namespace hera
+{
+namespace ws
+{
 namespace dnn
 {
     template<class Range, class F>
     void                do_foreach(const Range& range, const F& f)                      { do_foreach(boost::begin(range), boost::end(range), f); }
-}
+} // dnn
+} // ws
+} // hera
 
 #endif

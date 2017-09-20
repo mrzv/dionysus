@@ -1,5 +1,5 @@
-#ifndef DNN_GEOMETRY_EUCLIDEAN_FIXED_H
-#define DNN_GEOMETRY_EUCLIDEAN_FIXED_H
+#ifndef HERA_WS_DNN_GEOMETRY_EUCLIDEAN_FIXED_H
+#define HERA_WS_DNN_GEOMETRY_EUCLIDEAN_FIXED_H
 
 #include <boost/operators.hpp>
 #include <boost/array.hpp>
@@ -15,6 +15,10 @@
 
 #include "../parallel/tbb.h"        // for dnn::vector<...>
 
+namespace hera
+{
+namespace ws
+{
 namespace dnn
 {
     // TODO: wrap in another namespace (e.g., euclidean)
@@ -107,7 +111,7 @@ namespace dnn
     template<class Point>
     struct PointTraits;                         // intentionally undefined; should be specialized for each type
 
-    
+
     template<size_t D, typename Real>
     struct PointTraits< Point<D, Real> >        // specialization for dnn::Point
     {
@@ -119,11 +123,11 @@ namespace dnn
         typedef         typename PointType::DistanceType                    DistanceType;
 
 
-        static DistanceType 
-            distance(const PointType& p1, const PointType& p2)              { if (std::isinf(internal_p)) return p1.distance(p2); else return p1.p_distance(p2, internal_p); }
+        static DistanceType
+            distance(const PointType& p1, const PointType& p2)              { if (hera::is_infinity(internal_p)) return p1.distance(p2); else return p1.p_distance(p2, internal_p); }
 
-        static DistanceType 
-            distance(PointHandle p1, PointHandle p2)                        { return distance(*p1,*p2); } 
+        static DistanceType
+            distance(PointHandle p1, PointHandle p2)                        { return distance(*p1,*p2); }
 
         static size_t   dimension()                                         { return D; }
         static Real     coordinate(const PointType& p, size_t i)            { return p[i]; }
@@ -163,8 +167,8 @@ namespace dnn
         };
 
     template<size_t D, typename Real>
-    Real PointTraits< Point<D, Real> >::internal_p = std::numeric_limits<Real>::infinity();
- 
+    Real PointTraits< Point<D, Real> >::internal_p = hera::get_infinity<Real>();
+
 
     template<class PointContainer>
     void read_points(const std::string& filename, PointContainer& points)
@@ -185,6 +189,8 @@ namespace dnn
                 points.back()[i++] = x;
         }
     }
-}
+} // dnn
+} // ws
+} // hera
 
 #endif

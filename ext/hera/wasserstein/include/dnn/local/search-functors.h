@@ -1,8 +1,12 @@
-#ifndef DNN_LOCAL_SEARCH_FUNCTORS_H
-#define DNN_LOCAL_SEARCH_FUNCTORS_H
+#ifndef HERA_WS_DNN_LOCAL_SEARCH_FUNCTORS_H
+#define HERA_WS_DNN_LOCAL_SEARCH_FUNCTORS_H
 
 #include <boost/range/algorithm/heap_algorithm.hpp>
 
+namespace hera
+{
+namespace ws
+{
 namespace dnn
 {
 
@@ -28,7 +32,7 @@ struct NNRecord
     typedef         typename HandleDistance::PointHandle                            PointHandle;
     typedef         typename HandleDistance::DistanceType                           DistanceType;
 
-                    NNRecord()                                                      { result.d = std::numeric_limits<DistanceType>::infinity(); }
+                    NNRecord()                                                      { result.d = std::numeric_limits<DistanceType>::max(); }
     DistanceType    operator()(PointHandle p, DistanceType d)                       { if (d < result.d) { result.p = p; result.d = d; } return result.d; }
     HandleDistance  result;
 };
@@ -67,7 +71,7 @@ struct kNNRecord
             result.push_back(HandleDistance(p,d));
             boost::push_heap(result);
             if (result.size() < k)
-                return std::numeric_limits<DistanceType>::infinity();
+                return std::numeric_limits<DistanceType>::max();
         } else if (d < result[0].d)
         {
             boost::pop_heap(result);
@@ -84,6 +88,8 @@ struct kNNRecord
     HDContainer     result;
 };
 
-}
+} // dnn
+} // ws
+} // hera
 
 #endif // DNN_LOCAL_SEARCH_FUNCTORS_H

@@ -1,5 +1,5 @@
-#ifndef DNN_LOCAL_KD_TREE_H
-#define DNN_LOCAL_KD_TREE_H
+#ifndef HERA_WS_DNN_LOCAL_KD_TREE_H
+#define HERA_WS_DNN_LOCAL_KD_TREE_H
 
 #include "../utils.h"
 #include "search-functors.h"
@@ -13,6 +13,10 @@
 #include <boost/static_assert.hpp>
 #include <boost/type_traits.hpp>
 
+namespace hera
+{
+namespace ws
+{
 namespace dnn
 {
     // Weighted KDTree
@@ -48,8 +52,9 @@ namespace dnn
             template<class Range>
             void            init(const Range& range);
 
-            DistanceType   weight(PointHandle p) { return weights_[indices_[p]]; }
-            void            increase_weight(PointHandle p, DistanceType w);
+            DistanceType    weight(PointHandle p) { return weights_[indices_[p]]; }
+            void            change_weight(PointHandle p, DistanceType w);
+            void            adjust_weights(DistanceType delta);             // subtract delta from all weights
 
             HandleDistance  find(PointHandle q) const;
             Result          findR(PointHandle q, DistanceType r) const;     // all neighbors within r
@@ -83,7 +88,9 @@ namespace dnn
             HandleMap           indices_;
             double wassersteinPower;
     };
-}
+} // dnn
+} // ws
+} // hera
 
 #include "kd-tree.hpp"
 
