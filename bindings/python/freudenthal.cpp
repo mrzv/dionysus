@@ -125,9 +125,9 @@ PyFiltration fill_freudenthal_(py::array a, bool reverse)
 
 PyFiltration fill_freudenthal(py::array a, bool reverse)
 {
-    if (a.dtype() == py::dtype::of<float>())
+    if (a.dtype().is(py::dtype::of<float>()))
         return fill_freudenthal_<float>(a, reverse);
-    else if (a.dtype() == py::dtype::of<double>())
+    else if (a.dtype().is(py::dtype::of<double>()))
         return fill_freudenthal_<double>(a, reverse);
     else
         throw std::runtime_error("Unknown array dtype");

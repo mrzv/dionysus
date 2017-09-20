@@ -101,17 +101,17 @@ PyFiltration fill_rips(py::array a, unsigned k, double r)
     if (a.ndim() == 2)
     {
         // PairwiseDistances returns squared distances, so we use r*r
-        if (a.dtype() == py::dtype::of<float>())
+        if (a.dtype().is(py::dtype::of<float>()))
             return fill_rips_<PairwiseDistances<float>>(a,k,r*r);
-        else if (a.dtype() == py::dtype::of<double>())
+        else if (a.dtype().is(py::dtype::of<double>()))
             return fill_rips_<PairwiseDistances<double>>(a,k,r*r);
         else
             throw std::runtime_error("Unknown array dtype");
     } else if (a.ndim() == 1)
     {
-        if (a.dtype() == py::dtype::of<float>())
+        if (a.dtype().is(py::dtype::of<float>()))
             return fill_rips_<ExplicitDistances<float>>(a,k,r);
-        else if (a.dtype() == py::dtype::of<double>())
+        else if (a.dtype().is(py::dtype::of<double>()))
             return fill_rips_<ExplicitDistances<double>>(a,k,r);
         else
             throw std::runtime_error("Unknown array dtype");
