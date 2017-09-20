@@ -54,47 +54,47 @@ namespace hera {
 // get exact bottleneck distance,
 template<class PairContainer>
 typename DiagramTraits<PairContainer>::RealType
-bottleneckDistExact(PairContainer& A, PairContainer& B)
+bottleneckDistExact(PairContainer& dgm_A, PairContainer& dgm_B)
 {
     using Real = typename DiagramTraits<PairContainer>::RealType;
-    hera::bt::DiagramPointSet<Real> a(A.begin(), A.end());
-    hera::bt::DiagramPointSet<Real> b(B.begin(), B.end());
+    hera::bt::DiagramPointSet<Real> a(dgm_A);
+    hera::bt::DiagramPointSet<Real> b(dgm_B);
     return hera::bt::bottleneckDistExact<Real>(a, b, 14);
 }
 
 // get exact bottleneck distance,
 template<class PairContainer>
 typename DiagramTraits<PairContainer>::RealType
-bottleneckDistExact(PairContainer& A, PairContainer& B, const int decPrecision)
+bottleneckDistExact(PairContainer& dgm_A, PairContainer& dgm_B, const int decPrecision)
 {
     using Real = typename DiagramTraits<PairContainer>::RealType;
-    hera::bt::DiagramPointSet<Real> a(A.begin(), A.end());
-    hera::bt::DiagramPointSet<Real> b(B.begin(), B.end());
+    hera::bt::DiagramPointSet<Real> a(dgm_A);
+    hera::bt::DiagramPointSet<Real> b(dgm_B);
     return hera::bt::bottleneckDistExact(a, b, decPrecision);
 }
 
 // return the interval (distMin, distMax) such that:
 // a) actual bottleneck distance between A and B is contained in the interval
-// b) if the interval is not (0,0), then  (distMax - distMin) / distMin < epsilon
+// b) if the interval is not (0,0), then  (distMax - distMin) / distMin < delta
 template<class PairContainer>
 std::pair<typename DiagramTraits<PairContainer>::RealType, typename DiagramTraits<PairContainer>::RealType>
-bottleneckDistApproxInterval(PairContainer& A, PairContainer& B, const typename DiagramTraits<PairContainer>::RealType epsilon)
+bottleneckDistApproxInterval(PairContainer& dgm_A, PairContainer& dgm_B, const typename DiagramTraits<PairContainer>::RealType delta)
 {
     using Real = typename DiagramTraits<PairContainer>::RealType;
-    hera::bt::DiagramPointSet<Real> a(A.begin(), A.end());
-    hera::bt::DiagramPointSet<Real> b(B.begin(), B.end());
-    return hera::bt::bottleneckDistApproxInterval(a, b, epsilon);
+    hera::bt::DiagramPointSet<Real> a(dgm_A);
+    hera::bt::DiagramPointSet<Real> b(dgm_B);
+    return hera::bt::bottleneckDistApproxInterval(a, b, delta);
 }
 
 
 template<class PairContainer>
 typename DiagramTraits<PairContainer>::RealType
-bottleneckDistApproxHeur(PairContainer& A, PairContainer& B, const typename DiagramTraits<PairContainer>::RealType epsilon)
+bottleneckDistApproxHeur(PairContainer& dgm_A, PairContainer& dgm_B, const typename DiagramTraits<PairContainer>::RealType delta)
 {
     using Real = typename DiagramTraits<PairContainer>::RealType;
-    hera::bt::DiagramPointSet<Real> a(A.begin(), A.end());
-    hera::bt::DiagramPointSet<Real> b(B.begin(), B.end());
-    std::pair<Real,  Real> resPair = hera::bt::bottleneckDistApproxIntervalHeur(a, b, epsilon);
+    hera::bt::DiagramPointSet<Real> a(dgm_A);
+    hera::bt::DiagramPointSet<Real> b(dgm_B);
+    std::pair<Real,  Real> resPair = hera::bt::bottleneckDistApproxIntervalHeur(a, b, delta);
     return resPair.second;
 }
 
@@ -103,12 +103,12 @@ bottleneckDistApproxHeur(PairContainer& A, PairContainer& B, const typename Diag
 // see bottleneckDistApproxInterval
 template<class PairContainer>
 typename DiagramTraits<PairContainer>::RealType
-bottleneckDistApprox(PairContainer& A, PairContainer& B, const typename DiagramTraits<PairContainer>::RealType epsilon)
+bottleneckDistApprox(PairContainer& A, PairContainer& B, const typename DiagramTraits<PairContainer>::RealType delta)
 {
     using Real = typename DiagramTraits<PairContainer>::RealType;
     hera::bt::DiagramPointSet<Real> a(A.begin(), A.end());
     hera::bt::DiagramPointSet<Real> b(B.begin(), B.end());
-    return hera::bt::bottleneckDistApprox(a, b, epsilon);
+    return hera::bt::bottleneckDistApprox(a, b, delta);
 }
 
 } // end namespace hera

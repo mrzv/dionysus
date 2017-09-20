@@ -60,20 +60,20 @@ int main(int argc, char* argv[])
     if (argc >= 4) {
         // the third parameter is epsilon,
         // return approximate distance (faster)
-        double approxEpsilon =  atof(argv[3]);
-        if (approxEpsilon > 0.0) {
+        double delta =  atof(argv[3]);
+        if (delta > 0.0) {
             if (useSamplingHeur && diagramA.size() > heurThreshold && diagramB.size() > heurThreshold) {
 #ifdef VERBOSE_BOTTLENECK
                 std::cout << "using sampling heuristic" << std::endl;
 #endif
-                res = hera::bottleneckDistApproxHeur(diagramA, diagramB, approxEpsilon);
+                res = hera::bottleneckDistApproxHeur(diagramA, diagramB, delta);
             } else {
 #ifdef VERBOSE_BOTTLENECK
                 std::cout << "NOT using sampling heuristic" << std::endl;
 #endif
-                res = hera::bottleneckDistApprox(diagramA, diagramB, approxEpsilon);
+                res = hera::bottleneckDistApprox(diagramA, diagramB, delta);
             }
-        } else if (approxEpsilon == 0.0) {
+        } else if (delta == 0.0) {
 #ifdef VERBOSE_BOTTLENECK
                 std::cout << "NOT using sampling heuristic, computing EXACT answer" << std::endl;
 #endif
@@ -96,8 +96,8 @@ int main(int argc, char* argv[])
     // May be useful if the same diagram is used multiple times
     // to avoid copying data from user's container each time.
 
-    //hera::bt::DiagramPointSet dA(diagramA.begin(), diagramA.end());
-    //hera::bt::DiagramPointSet dB(diagramB.begin(), diagramB.end());
+    //hera::bt::DiagramPointSet dA(diagramA);
+    //hera::bt::DiagramPointSet dB(diagramB);
     //double result1 = hera::bt::bottleneckDistExact(dA, dB);
     //std::cout << std::setprecision(15) << result1 << std::endl;
 

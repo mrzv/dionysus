@@ -347,12 +347,33 @@ public:
         }
     }
 
+    template<class PointContainer>
+    void fillIn(const PointContainer& dgm_cont)
+    {
+        using Traits = DiagramTraits<PointContainer>;
+        isLinked = false;
+        clear();
+        IdType uniqueId = MinValidId + 1;
+        for (const auto& pt : dgm_cont) {
+            Real x = Traits::get_x(pt);
+            Real y = Traits::get_y(pt);
+            insert(DgmPoint(x, y, DgmPoint::NORMAL, uniqueId++));
+        }
+    }
+
 
     // ctor from range
     template<class PairIterator>
     DiagramPointSet(PairIterator begin_iter, PairIterator end_iter)
     {
         fillIn(begin_iter, end_iter);
+    }
+
+    // ctor from container, uses DiagramTraits
+    template<class PointContainer>
+    DiagramPointSet(const PointContainer& dgm)
+    {
+        fillIn(dgm);
     }
 
 
