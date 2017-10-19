@@ -100,6 +100,7 @@ reduce(ZpChain& zp_chain, BaseElement p)
 
         auto qit = q_lows_.find(j);
         if (qit == q_lows_.end())       // no pivot
+        if (qit == q_lows_.end() || special(qit->second, p))       // no valid pivot over Q
             return;
 
         // TODO: this could be optimized (add and convert on the fly)

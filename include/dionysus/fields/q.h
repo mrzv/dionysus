@@ -29,13 +29,21 @@ class Q
         Element         init(BaseElement a) const           { return { a,1 }; }
 
         Element         neg(Element a) const                { return { -a.numerator, a.denominator }; }
-        Element         add(Element a, Element b) const     { return { a.numerator*b.denominator + b.numerator*a.denominator, a.denominator*b.denominator }; }
+        Element         add(Element a, Element b) const     { Element x { a.numerator*b.denominator + b.numerator*a.denominator, a.denominator*b.denominator }; normalize(x); return x; }
 
         Element         inv(Element a) const                { return { a.denominator, a.numerator }; }
-        Element         mul(Element a, Element b) const     { return { a.numerator*b.numerator, a.denominator*b.denominator }; }
+        Element         mul(Element a, Element b) const     { Element x { a.numerator*b.numerator, a.denominator*b.denominator }; normalize(x); return x; }
         Element         div(Element a, Element b) const     { return mul(a, inv(b)); }
 
         bool            is_zero(Element a) const            { return a.numerator == 0; }
+
+        BaseElement     numerator(const Element& x) const   { return x.numerator; }
+        BaseElement     denominator(const Element& x) const { return x.denominator; }
+
+        static void     normalize(Element& x)               { BaseElement q = gcd(abs(x.numerator), abs(x.denominator)); x.numerator /= q; x.denominator /= q; }
+
+        static BaseElement  abs(BaseElement x)              { if (x < 0) return -x; return x; }
+        static BaseElement  gcd(BaseElement a, BaseElement b)   { if (b < a) return gcd(b,a); while (a != 0) { b %= a; std::swap(a,b); } return b; }
 };
 
 }
