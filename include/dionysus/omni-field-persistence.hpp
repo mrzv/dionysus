@@ -1,27 +1,27 @@
-template<typename Index_, class Comparison_>
+template<typename Index_, class Comparison_, class Q_, class Zp_>
 void
-dionysus::OmniFieldPersistence<Index_, Comparison_>::
+dionysus::OmniFieldPersistence<Index_, Comparison_, Q_, Zp_>::
 add(QChain&& chain)
 {
+    sort(chain);
+
     q_chains_.emplace_back(std::move(chain));
     q_pairs_.emplace_back(unpaired());
     Index i = q_chains_.size() - 1;
 
     QChain& c = q_chains_.back();
-    sort(c);
 
-    auto reduce = [&](BaseElement p)
+    auto reduce = [this,&c,i](BaseElement p)
     {
-        auto& field    = zp(p);
-        auto  zp_chain = convert(c, field);
+        auto zp_chain = convert(c, zp(p));
 
         this->reduce(zp_chain, p);
 
         if (!zp_chain.empty())
         {
-            auto j = zp_chain.back().index();
-            zp_lows_[j].emplace(p,i);
-            set_pair(j,i,p);
+            auto l = zp_chain.back().index();
+            zp_lows_[l].emplace(p,i);
+            set_pair(l,i,p);
         }
 
         zp_chains_[i].emplace(p, std::move(zp_chain));        // empty chain is still a valid indicator that we don't need to bother with this field
@@ -34,10 +34,11 @@ add(QChain&& chain)
         auto& low = c.back();
 
         auto e = low.element();
-        auto j = low.index();
+        auto l = low.index();
+        assert(!q_.is_zero(e));
         if (e != q_.id())
         {
-            auto factors = factor(e.numerator);
+            auto factors = factor(q_.numerator(e));
             for (auto p : factors)
             {
                 if (!special(i, p))        // there is already a dedicated column over p
@@ -45,34 +46,49 @@ add(QChain&& chain)
             }
         }
 
-        auto it_zp = zp_lows_.find(j);
+        auto it_zp = zp_lows_.find(l);
         if (it_zp != zp_lows_.end())
             for (auto& x : it_zp->second)
-                if (!special(i,x.first))
-                    reduce(x.first);
+            {
+                auto p = x.first;
+                if (!special(i,p))
+                    reduce(p);
+            }
 
-        auto it_q = q_lows_.find(j);
+        auto it_q = q_lows_.find(l);
         if (it_q != q_lows_.end())
         {
-            Index k        = it_q->second;
-            auto  k_chain  = q_chains_[k];
-            auto  k_e      = k_chain.back().element();
+            Index j = it_q->second;
 
-            auto  m = q_.neg(q_.div(e,k_e));
+            // add the primes from j to i
+            auto it_zp = zp_chains_.find(j);
+            if (it_zp != zp_chains_.end())
+                for (auto& x : it_zp->second)
+                {
+                    auto p = x.first;
+                    if (!special(i,p))
+                        reduce(p);
+                }
 
-            Chain<QChain>::addto(c, m, k_chain, q_, entry_cmp);
+            // reduce over Q
+            auto  j_chain  = q_chains_[j];
+            auto  j_e      = j_chain.back().element();
+
+            auto  m = q_.neg(q_.div(e,j_e));
+            Chain<QChain>::addto(c, m, j_chain, q_, entry_cmp);
+            assert(c.empty() || !q_.is_zero(c.back().element()));
         } else
         {
-            q_lows_.emplace(j,i);
-            set_pair(j,i);
+            q_lows_.emplace(l,i);
+            set_pair(l,i);
             break;
         }
     }
 }
 
-template<typename Index_, class Comparison_>
+template<typename Index_, class Comparison_, class Q_, class Zp_>
 void
-dionysus::OmniFieldPersistence<Index_,Comparison_>::
+dionysus::OmniFieldPersistence<Index_,Comparison_,Q_,Zp_>::
 reduce(ZpChain& zp_chain, BaseElement p)
 {
     auto& field = zp(p);
@@ -93,27 +109,31 @@ reduce(ZpChain& zp_chain, BaseElement p)
                 const ZpChain& co = zp_chains_[it2->second][p];
 
                 auto  m = field.neg(field.div(low.element(), co.back().element()));
+                assert(m < p);
                 Chain<ZpChain>::addto(zp_chain, m, co, field, entry_cmp);
                 continue;
             }
         }
 
         auto qit = q_lows_.find(j);
-        if (qit == q_lows_.end())       // no pivot
         if (qit == q_lows_.end() || special(qit->second, p))       // no valid pivot over Q
             return;
 
         // TODO: this could be optimized (add and convert on the fly)
         auto& q_chain = q_chains_[qit->second];
+        assert(q_chain.empty() || !q_.is_zero(q_chain.back().element()));
+
         auto  co      = convert(q_chain, field);
         auto  m       = field.neg(field.div(low.element(), co.back().element()));
         Chain<ZpChain>::addto(zp_chain, m, co, field, entry_cmp);
+
+        assert(!zp_chain.empty() || zp_chain.back().index() != j);
     }
 }
 
-template<typename Index_, class Comparison_>
-typename dionysus::OmniFieldPersistence<Index_,Comparison_>::ZpChain
-dionysus::OmniFieldPersistence<Index_,Comparison_>::
+template<typename Index_, class Comparison_, class Q_, class Zp_>
+typename dionysus::OmniFieldPersistence<Index_,Comparison_,Q_,Zp_>::ZpChain
+dionysus::OmniFieldPersistence<Index_,Comparison_,Q_,Zp_>::
 convert(const QChain& c, const Zp& field) const
 {
     ZpChain result;
@@ -121,12 +141,13 @@ convert(const QChain& c, const Zp& field) const
     auto p = field.prime();
     for (auto& x : c)
     {
-        auto num = x.element().numerator % p;
+        auto num = q_.numerator(x.element()) % p;
         if (num != 0)
         {
-            auto denom = x.element().denominator % p;
-            while (denom < 0)
-                denom += p;
+            while (num < 0) num += p;
+            auto denom = q_.denominator(x.element()) % p;
+            while (denom < 0) denom += p;
+            assert(denom % p != 0);
             result.emplace_back(field.div(num, denom), x.index());
         }
     }
@@ -134,31 +155,45 @@ convert(const QChain& c, const Zp& field) const
 }
 
 
-template<typename Index_, class Comparison_>
-typename dionysus::OmniFieldPersistence<Index_,Comparison_>::Factors
-dionysus::OmniFieldPersistence<Index_, Comparison_>::
+template<typename Index_, class Comparison_, class Q_, class Zp_>
+typename dionysus::OmniFieldPersistence<Index_,Comparison_,Q_,Zp_>::Factors
+dionysus::OmniFieldPersistence<Index_, Comparison_,Q_,Zp_>::
 factor(BaseElement x)
 {
     if (x < 0)
         x = -x;
     Factors result;
-    BaseElement p = 2;
-    while (p <= x)
+
+    if (Q::is_prime(x))
+    {
+        result.push_back(x);
+        return result;
+    }
+
+    BaseElement p { 2 };
+    while (p*p <= x)
     {
         if (x % p == 0)
         {
             result.push_back(p);
-            while (x % p == 0)
-                x /= p;
+            do { x /= p; } while (x % p == 0);
+            if (Q::is_prime(x))
+            {
+                result.push_back(x);
+                break;
+            }
         }
         ++p;
     }
+    if (x > 1)
+        result.push_back(x);
+
     return result;
 }
 
-template<typename Index_, class Comparison_>
-typename dionysus::OmniFieldPersistence<Index_,Comparison_>::Index
-dionysus::OmniFieldPersistence<Index_, Comparison_>::
+template<typename Index_, class Comparison_, class Q_, class Zp_>
+typename dionysus::OmniFieldPersistence<Index_,Comparison_,Q_,Zp_>::Index
+dionysus::OmniFieldPersistence<Index_, Comparison_, Q_, Zp_>::
 pair(Index i, BaseElement p) const
 {
     if (p == 1)
@@ -179,9 +214,9 @@ pair(Index i, BaseElement p) const
     }
 }
 
-template<typename Index_, class Comparison_>
+template<typename Index_, class Comparison_, class Q_, class Zp_>
 void
-dionysus::OmniFieldPersistence<Index_, Comparison_>::
+dionysus::OmniFieldPersistence<Index_, Comparison_, Q_, Zp_>::
 set_pair(Index i, Index j, BaseElement p)
 {
     auto& pairs = zp_pairs_[p];
@@ -189,9 +224,9 @@ set_pair(Index i, Index j, BaseElement p)
     pairs[j] = i;
 }
 
-template<typename Index_, class Comparison_>
+template<typename Index_, class Comparison_, class Q_, class Zp_>
 void
-dionysus::OmniFieldPersistence<Index_, Comparison_>::
+dionysus::OmniFieldPersistence<Index_, Comparison_, Q_, Zp_>::
 set_pair(Index i, Index j)
 {
     q_pairs_[i] = j;

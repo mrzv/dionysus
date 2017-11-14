@@ -40,10 +40,22 @@ class Q
         BaseElement     numerator(const Element& x) const   { return x.numerator; }
         BaseElement     denominator(const Element& x) const { return x.denominator; }
 
-        static void     normalize(Element& x)               { BaseElement q = gcd(abs(x.numerator), abs(x.denominator)); x.numerator /= q; x.denominator /= q; }
+        static void     normalize(Element& x)
+        {
+            BaseElement q = gcd(abs(x.numerator), abs(x.denominator));
+            x.numerator /= q;
+            x.denominator /= q;
+            if (x.denominator < 0)
+            {
+                x.numerator   = -x.numerator;
+                x.denominator = -x.denominator;
+            }
+        }
 
         static BaseElement  abs(BaseElement x)              { if (x < 0) return -x; return x; }
         static BaseElement  gcd(BaseElement a, BaseElement b)   { if (b < a) return gcd(b,a); while (a != 0) { b %= a; std::swap(a,b); } return b; }
+
+        static bool     is_prime(BaseElement x)             { return false; }       // Ok, since is_prime is only used as a shortcut
 };
 
 }

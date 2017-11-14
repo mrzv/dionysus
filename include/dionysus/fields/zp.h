@@ -23,7 +23,7 @@ class ZpField
         Element         neg(Element a) const                { return p_ - a; }
         Element         add(Element a, Element b) const     { return (a+b) % p_; }
 
-        Element         inv(Element a) const                { return inverses_[a]; }
+        Element         inv(Element a) const                { while (a < 0) a += p_; return inverses_[a]; }
         Element         mul(Element a, Element b) const     { return (a*b) % p_; }
         Element         div(Element a, Element b) const     { return mul(a, inv(b)); }
 

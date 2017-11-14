@@ -12,24 +12,24 @@
 namespace dionysus
 {
 
-template<typename Index_ = unsigned, class Comparison_ = std::less<Index_>>
+template<typename Index_ = unsigned, class Comparison_ = std::less<Index_>, class Q_ = ::dionysus::Q<>, class Zp_ = ::dionysus::ZpField<typename Q_::BaseElement>>
 class OmniFieldPersistence
 {
     public:
         using   Index       = Index_;
-        using   Q           = ::dionysus::Q<>;
+        using   Q           = Q_;
         using   Field       = Q;
         using   Comparison  = Comparison_;
 
-        using   BaseElement = Q::BaseElement;
-        using   Zp          = ::dionysus::ZpField<BaseElement>;
+        using   BaseElement = typename Q::BaseElement;
+        using   Zp          = Zp_;
         using   Zps         = std::unordered_map<BaseElement, Zp>;
 
-        using   QElement    = Q::Element;
+        using   QElement    = typename Q::Element;
         using   QEntry      = ChainEntry<Q,Index>;
         using   QChain      = std::vector<QEntry>;
 
-        using   ZpElement   = Zp::Element;
+        using   ZpElement   = typename Zp::Element;
         using   ZpEntry     = ChainEntry<Zp, Index>;
         using   ZpChain     = std::vector<ZpEntry>;
 
@@ -100,10 +100,10 @@ class OmniFieldPersistence
 };
 
 // Make OmniFieldPersistence act like a ReducedMatrix (e.g., for the purpose of constructing a persistence diagram)
-template<typename Index_, class Comparison_>
+template<typename Index_, class Comparison_, class Q_, class Zp_>
 struct PrimeAdapter
 {
-    using Persistence = OmniFieldPersistence<Index_, Comparison_>;
+    using Persistence = OmniFieldPersistence<Index_, Comparison_, Q_, Zp_>;
     using Prime       = typename Persistence::BaseElement;
     using Index       = typename Persistence::Index;
 
@@ -120,12 +120,12 @@ struct PrimeAdapter
     Prime               p_;
 };
 
-template<typename Index, class Comparison>
-PrimeAdapter<Index, Comparison>
-prime_adapter(const OmniFieldPersistence<Index, Comparison>&    persistence,
-              typename PrimeAdapter<Index, Comparison>::Prime   p)
+template<typename Index, class Comparison, class Q, class Zp>
+PrimeAdapter<Index, Comparison, Q, Zp>
+prime_adapter(const OmniFieldPersistence<Index, Comparison, Q, Zp>&    persistence,
+              typename PrimeAdapter<Index, Comparison, Q, Zp>::Prime   p)
 {
-    return PrimeAdapter<Index, Comparison>(persistence, p);
+    return PrimeAdapter<Index, Comparison, Q, Zp>(persistence, p);
 }
 
 } // dionysus

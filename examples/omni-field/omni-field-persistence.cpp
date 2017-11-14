@@ -88,8 +88,8 @@ int main()
     }
 
     auto primes = persistence.primes();
-    primes.insert(primes.begin(), 1);
-    for (unsigned p : primes)
+    primes.emplace(primes.begin(), 1);
+    for (auto& p : primes)
     {
         if (p == 1)
             fmt::print("Over Z_p (for all p, except those specified explicitly)\n");
