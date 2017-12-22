@@ -99,7 +99,7 @@ We select the longest bar and take its corresponding cocycle:
 
     >>> pt = max(dgms[1], key = lambda pt: pt.death - pt.birth)
     >>> print(pt)
-    (0.164409,3.38459)
+    (0.405474,1.83973)
     >>> cocycle = p.cocycle(pt.data)
 
 To smooth the cocycle and convert it to the corresponding circular coordinates,

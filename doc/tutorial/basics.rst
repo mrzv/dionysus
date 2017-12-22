@@ -246,7 +246,7 @@ Diagram Distances
     >>> dgms2 = d.init_diagrams(m2, f2)
     >>> wdist = d.wasserstein_distance(dgms1[1], dgms2[1], q=2)
     >>> print("2-Wasserstein distance between 1-dimensional persistence diagrams:", wdist)
-    2-Wasserstein distance between 1-dimensional persistence diagrams: 0.037361082536
+    2-Wasserstein distance between 1-dimensional persistence diagrams: 0.0652536600828
     >>> bdist = d.bottleneck_distance(dgms1[1], dgms2[1])
     >>> print("Bottleneck distance between 1-dimensional persistence diagrams:", bdist)
-    Bottleneck distance between 1-dimensional persistence diagrams: 0.0336918905377
+    Bottleneck distance between 1-dimensional persistence diagrams: 0.0607360452414

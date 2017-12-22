@@ -1,3 +1,5 @@
+#include <cmath>
+
 #include <pybind11/pybind11.h>
 #include <pybind11/numpy.h>
 namespace py = pybind11;
@@ -101,12 +103,24 @@ PyFiltration fill_rips(py::array a, unsigned k, double r)
     if (a.ndim() == 2)
     {
         // PairwiseDistances returns squared distances, so we use r*r
+        PyFiltration f;
         if (a.dtype().is(py::dtype::of<float>()))
-            return fill_rips_<PairwiseDistances<float>>(a,k,r*r);
+            f = fill_rips_<PairwiseDistances<float>>(a,k,r*r);
         else if (a.dtype().is(py::dtype::of<double>()))
-            return fill_rips_<PairwiseDistances<double>>(a,k,r*r);
+            f = fill_rips_<PairwiseDistances<double>>(a,k,r*r);
         else
             throw std::runtime_error("Unknown array dtype");
+
+        // take square roots from simplex data
+        // in general, this is very unsafe, but we are only modifying simplex
+        // data, which is not used in simplex hash, so it should be Ok overall
+        for (const PySimplex& s : f)
+        {
+            PySimplex& s_ = const_cast<PySimplex&>(s);
+            s_.data() = std::sqrt(s_.data());
+        }
+
+        return f;
     } else if (a.ndim() == 1)
     {
         if (a.dtype().is(py::dtype::of<float>()))

@@ -38,9 +38,9 @@ space:
    ...     print(s)
    <0> 0
    ...
-   <9,61,92> 0.0899135
-   <9,72,92> 0.0899135
-   <9,82,92> 0.0899135
+   <9,61,92> 0.299856
+   <9,72,92> 0.299856
+   <9,82,92> 0.299856
 
 :func:`~dionysus._dionysus.fill_rips` also accepts `condensed distance matrices <https://docs.scipy.org/doc/scipy-0.18.1/reference/spatial.distance.html>`_
 (linearized lower triangular part of a symmetric matrix):

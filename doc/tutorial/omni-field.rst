@@ -93,4 +93,4 @@ It's possible to examine the columns of the reduced matrices over any given prim
     ...         print("Column %d mod %d:" % (i,2), ofp.column(i, 2))
     ...         print("Column %d mod %d:" % (i,3), ofp.column(i, 3))
     Column 53 mod 2:
-    Column 53 mod 3: 1*9 + 1*10 + -1*11
+    Column 53 mod 3: 1*9 + 1*10 + 2*11
