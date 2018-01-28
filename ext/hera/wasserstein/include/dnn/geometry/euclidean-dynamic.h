@@ -6,6 +6,7 @@
 #include <boost/iterator/iterator_facade.hpp>
 #include <boost/serialization/access.hpp>
 #include <boost/serialization/vector.hpp>
+#include <cmath>
 
 namespace hera
 {

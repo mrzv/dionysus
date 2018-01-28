@@ -122,6 +122,7 @@ namespace ws
         }
         return s;
     }
+
     template<class Real = double>
     struct Point {
         Real x, y;
@@ -136,9 +137,17 @@ namespace ws
     std::ostream& operator<<(std::ostream& output, const Point<Real> p);
 #endif
 
-    template<class Real = double>
+    template <class T>
+    inline void hash_combine(std::size_t & seed, const T & v)
+    {
+        std::hash<T> hasher;
+        seed ^= hasher(v) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+    }
+
+    template<class Real_ = double>
     struct DiagramPoint
     {
+        using Real = Real_;
         // data members
         // Points above the diagonal have type NORMAL
         // Projections onto the diagonal have type DIAG
@@ -184,6 +193,20 @@ namespace ws
         }
 
     };
+
+
+    template<class Real>
+    struct DiagramPointHash {
+        size_t operator()(const DiagramPoint<Real> &p) const
+        {
+            std::size_t seed = 0;
+            hash_combine(seed, std::hash<Real>(p.x));
+            hash_combine(seed, std::hash<Real>(p.y));
+            hash_combine(seed, std::hash<bool>(p.is_diagonal()));
+            return seed;
+        }
+    };
+
 
 #ifndef FOR_R_TDA
     template <class Real = double>

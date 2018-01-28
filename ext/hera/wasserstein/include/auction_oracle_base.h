@@ -53,7 +53,7 @@ template <class Real = double, class PointContainer_ = std::vector<DiagramPoint<
 struct AuctionOracleBase {
     AuctionOracleBase(const PointContainer_& _bidders, const PointContainer_& _items, const AuctionParams<Real>& params);
     ~AuctionOracleBase() {}
-    Real get_epsilon() { return epsilon; };
+    Real get_epsilon() const { return epsilon; };
     void set_epsilon(Real new_epsilon) { assert(new_epsilon >= 0.0); epsilon = new_epsilon; };
     const std::vector<Real>& get_prices() const { return prices; }
     virtual Real get_price(const size_t item_idx) const { return prices[item_idx]; } // TODO make virtual?

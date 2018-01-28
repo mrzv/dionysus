@@ -54,7 +54,7 @@ public:
                     const std::string& _log_filename_prefix = "");
 
     void set_epsilon(Real new_val) { assert(epsilon > 0.0); epsilon = new_val; };
-    Real get_epsilon() const { return epsilon; }
+    Real get_epsilon() const { return oracle.get_epsilon(); }
     Real get_wasserstein_cost();
     Real get_wasserstein_distance();
     Real get_relative_error() const { return relative_error; };

@@ -114,6 +114,98 @@ namespace ws
     }
 
 
+    template<class RealType>
+    struct SplitProblemInput
+    {
+        std::vector<DiagramPoint<RealType>> A_1;
+        std::vector<DiagramPoint<RealType>> B_1;
+        std::vector<DiagramPoint<RealType>> A_2;
+        std::vector<DiagramPoint<RealType>> B_2;
+
+        std::unordered_map<size_t, size_t> A_1_indices;
+        std::unordered_map<size_t, size_t> A_2_indices;
+        std::unordered_map<size_t, size_t> B_1_indices;
+        std::unordered_map<size_t, size_t> B_2_indices;
+
+        RealType mid_coord { 0.0 };
+        RealType strip_width { 0.0 };
+
+        void init_vectors(size_t n)
+        {
+
+            A_1_indices.clear();
+            A_2_indices.clear();
+            B_1_indices.clear();
+            B_2_indices.clear();
+
+            A_1.clear();
+            A_2.clear();
+            B_1.clear();
+            B_2.clear();
+
+            A_1.reserve(n / 2);
+            B_1.reserve(n / 2);
+            A_2.reserve(n / 2);
+            B_2.reserve(n / 2);
+        }
+
+        void init(const std::vector<DiagramPoint<RealType>>& A,
+                  const std::vector<DiagramPoint<RealType>>& B)
+        {
+            using DiagramPointR = DiagramPoint<RealType>;
+
+            init_vectors(A.size());
+
+            RealType min_sum = std::numeric_limits<RealType>::max();
+            RealType max_sum = -std::numeric_limits<RealType>::max();
+            for(const auto& p_A : A) {
+                RealType s = p_A[0] + p_A[1];
+                if (s > max_sum)
+                    max_sum = s;
+                if (s < min_sum)
+                    min_sum = s;
+                mid_coord += s;
+            }
+
+            mid_coord /= A.size();
+
+            strip_width = 0.25 * (max_sum - min_sum);
+
+            auto first_diag_iter = std::upper_bound(A.begin(), A.end(), 0, [](const int& a, const DiagramPointR& p) { return a < (int)(p.is_diagonal()); });
+            size_t num_normal_A_points = std::distance(A.begin(), first_diag_iter);
+
+            // process all normal points in A,
+            // projections follow normal points
+            for(size_t i = 0; i < A.size(); ++i) {
+
+                assert(i < num_normal_A_points and A.is_normal() or i >= num_normal_A_points and A.is_diagonal());
+                assert(i < num_normal_A_points and B.is_diagonal() or i >= num_normal_A_points and B.is_normal());
+
+                RealType s = i < num_normal_A_points ? A[i][0] + A[i][1] : B[i][0] + B[i][1];
+
+                if (s < mid_coord + strip_width) {
+                    // add normal point and its projection to the
+                    // left half
+                    A_1.push_back(A[i]);
+                    B_1.push_back(B[i]);
+                    A_1_indices[i] = A_1.size() - 1;
+                    B_1_indices[i] = B_1.size() - 1;
+                }
+
+                if (s > mid_coord - strip_width) {
+                    // to the right half
+                    A_2.push_back(A[i]);
+                    B_2.push_back(B[i]);
+                    A_2_indices[i] = A_2.size() - 1;
+                    B_2_indices[i] = B_2.size() - 1;
+                }
+
+            }
+        } // end init
+
+    };
+
+
     // CAUTION:
     // this function assumes that all coordinates are finite
     // points at infinity are processed in wasserstein_cost
@@ -136,30 +228,16 @@ namespace ws
             throw std::runtime_error("Bad epsilon factor in Wasserstein " + std::to_string(params.epsilon_common_ratio));
         }
 
-        //AuctionRunnerFR<RealType> auction(A, B, params, _log_filename_prefix);
-        //AuctionRunnerGS<RealType, AuctionOracleStupidSparseRestricted<RealType>> auction(A, B, params);
-        //AuctionRunnerJac<RealType, AuctionOracleStupidSparseRestricted<150, RealType>> auction(A, B, params, _log_filename_prefix);
-        //AuctionRunnerJac<RealType> auction(A, B, params, _log_filename_prefix);
+        if (A.empty() and B.empty())
+            return 0.0;
+
+        RealType result;
+
+        // just use Gauss-Seidel
         AuctionRunnerGS<RealType> auction(A, B, params, _log_filename_prefix);
         auction.run_auction();
-
-    //    RealType init_eps = auction.get_epsilon();
-    ////    AuctionRunnerJac<RealType, AuctionOracleStupidSparseRestricted<50, RealType>> auction_1(A, B, q,  delta, _internal_p, init_eps, _eps_factor, _max_num_phases, _gamma_threshold, 1, _log_filename_prefix);
-    //    AuctionRunnerJac<RealType> auction_1(A, B, params,  _log_filename_prefix + "_1");
-    //    auto prices = auction.oracle.get_prices();
-    //    auto console_logger = spdlog::get("console");
-    //    if (console_logger) {
-    //        console_logger->info("Started updating prices");
-    //    }
-    //    for(IdxType  item_idx = 0; item_idx < static_cast<IdxType>(B.size()); ++item_idx) {
-    //        auction_1.oracle.set_price(item_idx, prices[item_idx]);
-    //    }
-    //    if (console_logger) {
-    //        console_logger->info("Finished updating prices");
-    //    }
-    //    auction_1.run_auction();
-        return auction.get_wasserstein_cost();
-
+        result = auction.get_wasserstein_cost();
+        return result;
     }
 
 } // ws
@@ -233,16 +311,17 @@ wasserstein_cost(const PairContainer& A,
         }
     }
 
-    if (a_empty)
-        return total_cost_B;
-
-    if (b_empty)
-        return total_cost_A;
-
     RealType infinity_cost = ws::get_one_dimensional_cost(x_plus_A, x_plus_B, params.wasserstein_power);
     infinity_cost += ws::get_one_dimensional_cost(x_minus_A, x_minus_B, params.wasserstein_power);
     infinity_cost += ws::get_one_dimensional_cost(y_plus_A, y_plus_B, params.wasserstein_power);
     infinity_cost += ws::get_one_dimensional_cost(y_minus_A, y_minus_B, params.wasserstein_power);
+
+    if (a_empty)
+        return total_cost_B + infinity_cost;
+
+    if (b_empty)
+        return total_cost_A + infinity_cost;
+
 
     if (infinity_cost == std::numeric_limits<RealType>::infinity()) {
         return infinity_cost;
