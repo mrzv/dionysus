@@ -6,6 +6,7 @@ namespace ba = boost::adaptors;
 
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
+#include <pybind11/functional.h>
 namespace py = pybind11;
 
 #include <dionysus/row-reduction.h>
@@ -49,7 +50,10 @@ struct Time
 
 
 std::tuple<PyZigzagPersistence, std::vector<PyDiagram>>
-zigzag_homology_persistence(const PyFiltration& f, const std::vector<std::vector<float>>& times_, PyZpField::Element prime)
+zigzag_homology_persistence(const PyFiltration&                                                             f,
+                            const std::vector<std::vector<float>>&                                          times_,
+                            PyZpField::Element                                                              prime,
+                            const std::function<void(size_t, float, bool, const PyZigzagPersistence*)>&     callback)
 {
     using Index          = PyZigzagPersistence::Index;
     using CellChainEntry = dionysus::ChainEntry<PyZpField, PySimplex>;
@@ -120,6 +124,8 @@ zigzag_homology_persistence(const PyFiltration& f, const std::vector<std::vector
             }
             ++op;
         }
+
+        callback(i,t,dir,&persistence);
     }
 
     // add infinite points
@@ -160,6 +166,7 @@ void init_zigzag_persistence(py::module& m)
 {
     using namespace pybind11::literals;
     m.def("zigzag_homology_persistence",   &zigzag_homology_persistence, "filtration"_a, "times"_a, py::arg("prime") = 2,
+                                                                         py::arg("callback") = std::function<void(size_t,float,bool, const PyZigzagPersistence*)>([](size_t, float, bool, const PyZigzagPersistence*){}),
           R"(
           compute zigzag homology persistence of the filtration with respect to the given times
 
@@ -169,6 +176,10 @@ void init_zigzag_persistence(py::module& m)
                           the inner list specifies for each simplex when it enters and leaves the zigzag
                           (even entries, starting the indexing from 0, are interpreted as appearance times, odd entires as disappearance)
               prime:      prime modulo which to perform computation
+              callback:   function to call after every step in the zigzag; it gets arguments `(i,t,d,zz)`,
+                          where `i` is the index of the simplex being added or removed, `t` is the time,
+                          `d` is the "direction" (`True` if the simplex is being added, `False` if it`s being removed),
+                          `zz` is the current state of the :class:`~dionysus._dionysus.ZigzagPersistence`
 
           Returns:
               A pair. The first element is an instance of
