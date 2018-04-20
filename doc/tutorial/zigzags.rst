@@ -62,7 +62,7 @@ that represent the decomposition of the sequence.
     1*4 + 1*5 + 1*6
     1*0
 
-`:func:`~dionysus._dionysus.zigzag_homology_persistence` takes an optional `callback` argument,
+:func:`~dionysus._dionysus.zigzag_homology_persistence` takes an optional `callback` argument,
 which gets called back after every step of the zigzag. The function receives four arguments, `(i,t,d,zz)`.
 `i` is the index of the simplex being added or removed. `t` is the current
 time. `d` is the direction: ``True`` if the simplex is being added, ``False``,
