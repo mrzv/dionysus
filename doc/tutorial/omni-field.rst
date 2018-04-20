@@ -43,7 +43,7 @@ diagrams look the same.
 .. doctest::
 
     >>> print(ofp.primes())
-    [2L]
+    [2]
 
 
 To access the results, we can construct persistence diagrams over a particular
