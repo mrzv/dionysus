@@ -61,3 +61,40 @@ that represent the decomposition of the sequence.
     ...     print(z)
     1*4 + 1*5 + 1*6
     1*0
+
+`:func:`~dionysus._dionysus.zigzag_homology_persistence` takes an optional `callback` argument,
+which gets called back after every step of the zigzag. The function receives four arguments, `(i,t,d,zz)`.
+`i` is the index of the simplex being added or removed. `t` is the current
+time. `d` is the direction: ``True`` if the simplex is being added, ``False``,
+if removed. `zz` is the current state of :class:`~dionysus._dionysus.ZigzagPersistence`.
+
+.. doctest::
+
+    >>> def detail(i,t,d,zz):
+    ...     print(i,t,d)
+    ...     for z in zz:
+    ...         print(z)
+
+    >>> zz, dgms = d.zigzag_homology_persistence(f, times, callback = detail)
+    1 0.10000000149011612 True
+    1*0
+    0 0.4000000059604645 True
+    1*1
+    1*0
+    0 0.6000000238418579 False
+    1*0
+    0 0.699999988079071 True
+    1*2
+    1*0
+    3 0.8999999761581421 True
+    1*3
+    1*2
+    1*0
+    2 0.8999999761581421 True
+    1*3
+    1*0
+    4 0.8999999761581421 True
+    1*0
+    5 0.8999999761581421 True
+    1*4 + 1*5 + 1*6
+    1*0
