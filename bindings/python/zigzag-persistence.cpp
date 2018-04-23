@@ -14,8 +14,11 @@ namespace py = pybind11;
 #include <dionysus/standard-reduction.h>
 
 #include "filtration.h"
+#include "persistence.h"                // to get access to PyReducedMatrix::Chain
 #include "zigzag-persistence.h"
 #include "diagram.h"
+
+PYBIND11_MAKE_OPAQUE(PyReducedMatrix::Chain);      // we want to provide our own binding for Chain
 
 struct Time
 {
@@ -47,13 +50,35 @@ struct Time
     bool        dir;
 };
 
+class PyTimeIndexMap
+{
+    public:
+        using ZZIndex           = PyZigzagPersistence::Index;
+        using FIndex            = size_t;
+        using Map               = std::unordered_map<ZZIndex, FIndex>;
+        using const_iterator    = Map::const_iterator;
 
+        void                    set(const ZZIndex& x, const FIndex& y)  { m_[x] = y; }
+        void                    remove(const ZZIndex& x)                { m_.erase(x); }
 
-std::tuple<PyZigzagPersistence, std::vector<PyDiagram>>
-zigzag_homology_persistence(const PyFiltration&                                                             f,
-                            const std::vector<std::vector<float>>&                                          times_,
-                            PyZpField::Element                                                              prime,
-                            const std::function<void(size_t, float, bool, const PyZigzagPersistence*)>&     callback)
+        FIndex                  operator[](const ZZIndex& x) const      { return m_.find(x)->second; }
+        size_t                  size() const                            { return m_.size(); }
+
+        const_iterator          begin() const                           { return m_.begin(); }
+        const_iterator          end() const                             { return m_.end(); }
+
+    private:
+        Map     m_;
+};
+
+using Times     = std::vector<std::vector<float>>;
+using Callback  = std::function<void(size_t, float, bool, const PyZigzagPersistence*, const PyTimeIndexMap*)>;
+
+std::tuple<PyZigzagPersistence, std::vector<PyDiagram>, PyTimeIndexMap>
+zigzag_homology_persistence(const PyFiltration&     f,
+                            const Times&            times_,
+                            PyZpField::Element      prime,
+                            const Callback&         callback)
 {
     using Index          = PyZigzagPersistence::Index;
     using CellChainEntry = dionysus::ChainEntry<PyZpField, PySimplex>;
@@ -78,6 +103,7 @@ zigzag_homology_persistence(const PyFiltration&                                 
     unsigned op = 0;
     unsigned cell = 0;
     std::vector<unsigned>   cells(f.size(), -1);
+    PyTimeIndexMap          cells_inv_;
     for (auto& tt : times)
     {
         size_t i = tt.i; float t = tt.t; bool dir = tt.dir;
@@ -85,6 +111,7 @@ zigzag_homology_persistence(const PyFiltration&                                 
         auto& c = f[i];
         if (dir)
         {
+            cells_inv_.set(cell, i);
             cells[i] = cell++;
 
             Index pair = persistence.add(c.boundary(persistence.field()) |
@@ -110,6 +137,7 @@ zigzag_homology_persistence(const PyFiltration&                                 
         } else
         {
             Index pair = persistence.remove(cells[i]);
+            cells_inv_.remove(cells[i]);
             cells[i] = -1;
             if (pair != persistence.unpaired())
             {
@@ -125,7 +153,7 @@ zigzag_homology_persistence(const PyFiltration&                                 
             ++op;
         }
 
-        callback(i,t,dir,&persistence);
+        callback(i,t,dir,&persistence,&cells_inv_);
     }
 
     // add infinite points
@@ -144,29 +172,16 @@ zigzag_homology_persistence(const PyFiltration&                                 
         diagrams[dim].emplace_back(t_birth, inf, birth_idx);
     }
 
-    return std::make_tuple(std::move(persistence), std::move(diagrams));
+    return std::make_tuple(std::move(persistence), std::move(diagrams), std::move(cells_inv_));
 }
 
-PYBIND11_MAKE_OPAQUE(PyZigzagPersistence::Column);
-
-// This is horribly hacky. In chain.h, we need to output an entry in the
-// PyZigzagPersistence::RowMatrix, which is a tuple. So we just provide an
-// operator<< to handle it explicitly.
-std::ostream& operator<<(std::ostream& out, const PyZigzagPersistence::RowMatrix::Entry::IndexPair& x)
-{
-    out << std::get<0>(x);
-    return out;
-}
 #include "chain.h"
-
-// FIXME: need to translate chains from times to simplices;
-//        fix ZigzagPersistence::add() to take cell_index argument
 
 void init_zigzag_persistence(py::module& m)
 {
     using namespace pybind11::literals;
     m.def("zigzag_homology_persistence",   &zigzag_homology_persistence, "filtration"_a, "times"_a, py::arg("prime") = 2,
-                                                                         py::arg("callback") = std::function<void(size_t,float,bool, const PyZigzagPersistence*)>([](size_t, float, bool, const PyZigzagPersistence*){}),
+                                                                         py::arg("callback") = Callback([](size_t, float, bool, const PyZigzagPersistence*, const PyTimeIndexMap*){}),
           R"(
           compute zigzag homology persistence of the filtration with respect to the given times
 
@@ -176,16 +191,19 @@ void init_zigzag_persistence(py::module& m)
                           the inner list specifies for each simplex when it enters and leaves the zigzag
                           (even entries, starting the indexing from 0, are interpreted as appearance times, odd entires as disappearance)
               prime:      prime modulo which to perform computation
-              callback:   function to call after every step in the zigzag; it gets arguments `(i,t,d,zz)`,
+              callback:   function to call after every step in the zigzag; it gets arguments `(i,t,d,zz,cells)`,
                           where `i` is the index of the simplex being added or removed, `t` is the time,
                           `d` is the "direction" (`True` if the simplex is being added, `False` if it`s being removed),
-                          `zz` is the current state of the :class:`~dionysus._dionysus.ZigzagPersistence`
+                          `zz` is the current state of the :class:`~dionysus._dionysus.ZigzagPersistence`,
+                          `cells` is the map from the internal indices of the zigzag representation to the filtration indices.
 
           Returns:
-              A pair. The first element is an instance of
+              A triple. The first element is an instance of
               :class:`~dionysus._dionysus.ZigzagPersistence`, which offers access to the cycles
-              alive at the end of the zigzag; the second is a list of persistence diagrams.
-
+              alive at the end of the zigzag; the second is a list of
+              persistence diagrams; the third is an instance of
+              :class:`~dionysus._dionysus.TimeIndexMap` for translating cycles
+              from the internal representation to filtration indices.
           )");
 
     py::class_<PyZigzagPersistence>(m, "ZigzagPersistence", "representation of the current homology basis")
@@ -195,7 +213,13 @@ void init_zigzag_persistence(py::module& m)
                             {
                                 auto cycles = zz.alive_cycles() |
                                                 ba::transformed([&zz](PyZigzagPersistence::Index i)
-                                                                { return zz.cycle(i); });
+                                                                {
+                                                                    // convert to a normal chain
+                                                                    PyReducedMatrix::Chain c;
+                                                                    for (auto& x : zz.cycle(i))
+                                                                        c.emplace_back(x.element(), std::get<0>(x.index()));
+                                                                    return c;
+                                                                });
                                 return py::make_iterator(std::begin(cycles), std::end(cycles));
                             },
                             py::keep_alive<0, 1>() /* Essential: keep object alive while iterator exists */,
@@ -204,5 +228,11 @@ void init_zigzag_persistence(py::module& m)
                             { std::ostringstream oss; oss << "Zigzag persistence with " << zz.alive_size() << " alive cycles"; return oss.str(); })
     ;
 
-    init_chain<PyZigzagPersistence::Column>(m, "ZZ");
+    py::class_<PyTimeIndexMap>(m, "TimeIndexMap", "map from the internal representation of zigzag persistence to filtration indices")
+        .def("__len__",     &PyTimeIndexMap::size,                      "size of the map")
+        .def("__getitem__", [](const PyTimeIndexMap& m, size_t i) { return m[i]; }, "access the filtration index of the given internal index")
+        .def("__iter__",    [](const PyTimeIndexMap& m) { return py::make_iterator(m.begin(), m.end()); },
+                                py::keep_alive<0, 1>() /* Essential: keep object alive while iterator exists */,
+                                "iterate over the entries of the map")
+    ;
 }

@@ -34,12 +34,14 @@ of the corresponding sequence of simplicial complexes, using
 
 .. doctest::
 
-    >>> zz, dgms = d.zigzag_homology_persistence(f, times)
+    >>> zz, dgms, cells = d.zigzag_homology_persistence(f, times)
 
-The function returns a pair: an internal representation of
+The function returns a triple: an internal representation of
 :class:`~dionysus._dionysus.ZigzagPersistence`, which stores cycles still alive
-in the right-most homology group in the sequence, and the persistence diagrams
-that represent the decomposition of the sequence.
+in the right-most homology group in the sequence, the persistence diagrams that
+represent the decomposition of the sequence, auxiliary map to translate from
+internal indices used in the cycles into the indices of the simplices in the
+:class:`~dionysus._dionysus.Filtration`:
 
 .. doctest::
 
@@ -62,6 +64,34 @@ that represent the decomposition of the sequence.
     1*4 + 1*5 + 1*6
     1*0
 
+    >>> for x in cells:
+    ...     print(x)
+    (6, 5)
+    (4, 2)
+    (3, 3)
+    (2, 0)
+    (5, 4)
+    (0, 1)
+
+
+Representative cycles
+~~~~~~~~~~~~~~~~~~~~~
+
+The first and the third element of the triple, combined, can be used to extract
+representative cycles. The third element is the map from the cycle's internal
+representation to the filtration indices. The following snippet outputs the
+cycles in terms of the simplices.
+
+.. doctest::
+
+    >>> for z in zz:
+    ...     print(' + '.join("%d * (%s)" % (x.element, f[cells[x.index]]) for x in z))
+    1 * (<0,1> 0) + 1 * (<0,2> 0) + 1 * (<1,2> 0)
+    1 * (<1> 0)
+
+Intermediate steps
+~~~~~~~~~~~~~~~~~~
+
 :func:`~dionysus._dionysus.zigzag_homology_persistence` takes an optional `callback` argument,
 which gets called back after every step of the zigzag. The function receives four arguments, `(i,t,d,zz)`.
 `i` is the index of the simplex being added or removed. `t` is the current
@@ -70,31 +100,31 @@ if removed. `zz` is the current state of :class:`~dionysus._dionysus.ZigzagPersi
 
 .. doctest::
 
-    >>> def detail(i,t,d,zz):
+    >>> def detail(i,t,d,zz,cells):
     ...     print(i,t,d)
     ...     for z in zz:
-    ...         print(z)
+    ...         print(z, ' -> ', ' + '.join("%d * (%s)" % (x.element, f[cells[x.index]]) for x in z))
 
-    >>> zz, dgms = d.zigzag_homology_persistence(f, times, callback = detail)
+    >>> zz, dgms, cells = d.zigzag_homology_persistence(f, times, callback = detail)
     1 0.10000000149011612 True
-    1*0
+    1*0  ->  1 * (<1> 0)
     0 0.4000000059604645 True
-    1*1
-    1*0
+    1*1  ->  1 * (<0> 0)
+    1*0  ->  1 * (<1> 0)
     0 0.6000000238418579 False
-    1*0
+    1*0  ->  1 * (<1> 0)
     0 0.699999988079071 True
-    1*2
-    1*0
+    1*2  ->  1 * (<0> 0)
+    1*0  ->  1 * (<1> 0)
     3 0.8999999761581421 True
-    1*3
-    1*2
-    1*0
+    1*3  ->  1 * (<2> 0)
+    1*2  ->  1 * (<0> 0)
+    1*0  ->  1 * (<1> 0)
     2 0.8999999761581421 True
-    1*3
-    1*0
+    1*3  ->  1 * (<2> 0)
+    1*0  ->  1 * (<1> 0)
     4 0.8999999761581421 True
-    1*0
+    1*0  ->  1 * (<1> 0)
     5 0.8999999761581421 True
-    1*4 + 1*5 + 1*6
-    1*0
+    1*4 + 1*5 + 1*6  ->  1 * (<0,1> 0) + 1 * (<0,2> 0) + 1 * (<1,2> 0)
+    1*0  ->  1 * (<1> 0)
