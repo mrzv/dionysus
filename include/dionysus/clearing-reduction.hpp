@@ -11,14 +11,14 @@ dionysus::ClearingReduction<P>::
 operator()(const Filtration& filtration, const ReportPair& report_pair)
 {
     using Cell = typename Filtration::Cell;
-    (*this)(filtration, [](const Cell&) { return false; }, report_pair);
+    (*this)(filtration, [](const Cell&) { return false; }, report_pair, &no_progress);
 }
 
 template<class P>
-template<class Filtration, class Relative, class ReportPair>
+template<class Filtration, class Relative, class ReportPair, class Progress>
 void
 dionysus::ClearingReduction<P>::
-operator()(const Filtration& filtration, const Relative& relative, const ReportPair& report_pair)
+operator()(const Filtration& filtration, const Relative& relative, const ReportPair& report_pair, const Progress& progress)
 {
     persistence_.resize(filtration.size());
 
@@ -35,6 +35,7 @@ operator()(const Filtration& filtration, const Relative& relative, const ReportP
 
     for(size_t i : indices)
     {
+        progress();
         const auto& c = filtration[i];
 
         if (relative(c))

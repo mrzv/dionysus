@@ -8,14 +8,14 @@ dionysus::StandardReduction<P>::
 operator()(const Filtration& filtration, const ReportPair& report_pair)
 {
     using Cell = typename Filtration::Cell;
-    (*this)(filtration, [](const Cell&) { return false; }, report_pair);
+    (*this)(filtration, [](const Cell&) { return false; }, report_pair, no_progress);
 }
 
 template<class P>
-template<class Filtration, class Relative, class ReportPair>
+template<class Filtration, class Relative, class ReportPair, class Progress>
 void
 dionysus::StandardReduction<P>::
-operator()(const Filtration& filtration, const Relative& relative, const ReportPair& report_pair)
+operator()(const Filtration& filtration, const Relative& relative, const ReportPair& report_pair, const Progress& progress)
 {
     persistence_.reserve(filtration.size());
 
@@ -26,6 +26,8 @@ operator()(const Filtration& filtration, const Relative& relative, const ReportP
     unsigned i = 0;
     for(auto& c : filtration)
     {
+        progress();
+
         if (relative(c))
         {
             ++i;

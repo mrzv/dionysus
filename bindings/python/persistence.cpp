@@ -7,15 +7,32 @@ namespace py = pybind11;
 #include <dionysus/standard-reduction.h>
 #include <dionysus/clearing-reduction.h>
 
+#include <dionysus/dlog/progress.h>
+
 #include "field.h"
 #include "filtration.h"
 #include "persistence.h"
 #include "diagram.h"
 #include "chain.h"
 
-template<class Relative>
+struct ShowProgress
+{
+        ShowProgress(size_t total):
+            progress(total)                     {}
+
+    void    operator()() const                  { ++progress; }
+
+    mutable dlog::progress  progress;
+};
+
+struct NoProgress
+{
+    void    operator()() const                  {}
+};
+
+template<class Relative, class Progress>
 PyReducedMatrix
-compute_homology_persistence(const PyFiltration& filtration, const Relative& relative, PyZpField::Element prime, std::string method)
+compute_homology_persistence(const PyFiltration& filtration, const Relative& relative, PyZpField::Element prime, std::string method, const Progress& progress)
 {
     PyZpField field(prime);
 
@@ -25,14 +42,14 @@ compute_homology_persistence(const PyFiltration& filtration, const Relative& rel
         using Reduction   = dionysus::ClearingReduction<Persistence>;
         Persistence persistence(field);
         Reduction   reduce(persistence);
-        reduce(filtration, relative, &Reduction::no_report_pair);
+        reduce(filtration, relative, &Reduction::no_report_pair, progress);
         return std::move(reduce.persistence());
     }
     else if (method == "row")
     {
         using Reduction = dionysus::RowReduction<PyZpField>;
         Reduction   reduce(field);
-        reduce(filtration, relative, &Reduction::no_report_pair);
+        reduce(filtration, relative, &Reduction::no_report_pair, progress);
         return reduce.persistence();
     } else if (method == "column")
     {
@@ -40,7 +57,7 @@ compute_homology_persistence(const PyFiltration& filtration, const Relative& rel
         using Reduction   = dionysus::StandardReduction<Persistence>;
         Persistence persistence(field);
         Reduction   reduce(persistence);
-        reduce(filtration, relative, &Reduction::no_report_pair);
+        reduce(filtration, relative, &Reduction::no_report_pair, progress);
         return std::move(reduce.persistence());
     } else if (method == "column_no_negative")
     {
@@ -48,24 +65,30 @@ compute_homology_persistence(const PyFiltration& filtration, const Relative& rel
         using Reduction   = dionysus::StandardReduction<Persistence>;
         Persistence persistence(field);
         Reduction   reduce(persistence);
-        reduce(filtration, relative, &Reduction::no_report_pair);
+        reduce(filtration, relative, &Reduction::no_report_pair, progress);
         return std::move(reduce.persistence());
     } else
         throw std::runtime_error("Unknown method: " + method);
 }
 
 PyReducedMatrix
-homology_persistence(const PyFiltration& filtration, PyZpField::Element prime, std::string method)
+homology_persistence(const PyFiltration& filtration, PyZpField::Element prime, std::string method, bool progress)
 {
     using Cell = PyFiltration::Cell;
-    return compute_homology_persistence(filtration, [](const Cell&) { return false; }, prime, method);
+    if (progress)
+        return compute_homology_persistence(filtration, [](const Cell&) { return false; }, prime, method, ShowProgress(filtration.size()));
+    else
+        return compute_homology_persistence(filtration, [](const Cell&) { return false; }, prime, method, NoProgress());
 }
 
 PyReducedMatrix
-relative_homology_persistence(const PyFiltration& filtration, const PyFiltration& relative, PyZpField::Element prime, std::string method)
+relative_homology_persistence(const PyFiltration& filtration, const PyFiltration& relative, PyZpField::Element prime, std::string method, bool progress)
 {
     using Cell = PyFiltration::Cell;
-    return compute_homology_persistence(filtration, [&relative](const Cell& c) { return relative.contains(c); }, prime, method);
+    if (progress)
+        return compute_homology_persistence(filtration, [&relative](const Cell& c) { return relative.contains(c); }, prime, method, ShowProgress(filtration.size()));
+    else
+        return compute_homology_persistence(filtration, [&relative](const Cell& c) { return relative.contains(c); }, prime, method, NoProgress());
 }
 
 std::vector<PyDiagram>
@@ -82,10 +105,10 @@ void init_persistence(py::module& m)
 {
     using namespace pybind11::literals;
     m.def("homology_persistence",   &homology_persistence,
-          "filtration"_a, "prime"_a = 2, "method"_a = "clearing",
+          "filtration"_a, "prime"_a = 2, "method"_a = "clearing", "progress"_a = false,
           "compute homology persistence of the filtration (pair simplices); method is one of `clearing`, `row`, `column`, or `column_no_negative`");
     m.def("homology_persistence",   &relative_homology_persistence,
-          "filtration"_a, "relative"_a, "prime"_a = 2, "method"_a = "clearing",
+          "filtration"_a, "relative"_a, "prime"_a = 2, "method"_a = "clearing", "progress"_a = false,
           "compute homology persistence of the filtration, relative to a subcomplex; method is one of `clearing`, `row`, `column`, or `column_no_negative`");
 
     m.def("init_diagrams",      &py_init_diagrams,  "m"_a, "f"_a,  "initialize diagrams from reduced matrix and filtration");

@@ -8,14 +8,14 @@ dionysus::RowReduction<F,I,C,V...>::
 operator()(const Filtration& filtration, const ReportPair& report_pair)
 {
     using Cell = typename Filtration::Cell;
-    (*this)(filtration, [](const Cell&) { return false; }, report_pair);
+    (*this)(filtration, [](const Cell&) { return false; }, report_pair, &no_progress);
 }
 
 template<class F, typename I, class C, template<class Self> class... V>
-template<class Filtration, class Relative, class ReportPair>
+template<class Filtration, class Relative, class ReportPair, class Progress>
 void
 dionysus::RowReduction<F,I,C,V...>::
-operator()(const Filtration& filtration, const Relative& relative, const ReportPair& report_pair)
+operator()(const Filtration& filtration, const Relative& relative, const ReportPair& report_pair, const Progress& progress)
 {
     persistence_.resize(filtration.size());
 
@@ -34,6 +34,8 @@ operator()(const Filtration& filtration, const Relative& relative, const ReportP
     Index i = 0;
     for(auto& c : filtration)
     {
+        progress();
+
         if (relative(c))
         {
             persistence_.set_skip(i);
