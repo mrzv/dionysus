@@ -50,11 +50,14 @@ struct ExecuteLZZ
 int main(int argc, char** argv)
 {
     using namespace opts;
-    Options ops(argc, argv);
+    Options ops;
 
+    bool help;
     std::string infn;
-    if (  ops >> Present('h', "help", "show help") ||
-        !(ops >> PosOption(infn)))
+
+    ops >> Option('h', "help", help, "show help");
+
+    if (ops.parse(argc,argv) || help || !(ops >> PosOption(infn)))
     {
         fmt::print("Usage: {} IN.npy [OUT.dgm]\n{}", argv[0], ops);
         return 1;

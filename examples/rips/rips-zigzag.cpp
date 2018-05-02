@@ -67,24 +67,23 @@ int main(int argc, char** argv)
 {
     using opts::Options;
     using opts::Option;
-    using opts::Present;
     using opts::PosOption;
 
     short unsigned          skeleton = 2;
     DistanceType            multiplier = 6;
     short unsigned          p = 11;
     std::string             infilename, diagram_name;
+    bool                    help;
 
-    Options ops(argc, argv);
+    Options ops;
     ops
         >> Option('s', "skeleton",      skeleton,           "dimension of the Rips complex we want to compute")
         >> Option('m', "multiplier",    multiplier,         "multiplier for epsilon (distance to the next maxmin point)")
         >> Option('p', "prime",         p,                  "prime for arithmetic")
+        >> Option('h', "help",          help,               "show help message")
     ;
 
-    if ( (ops >> Present('h', "help", "show help message") ||
-        !(ops >> PosOption(infilename)) ||
-        !(ops >> PosOption(diagram_name))))
+    if (!ops.parse(argc,argv) || !(ops >> PosOption(infilename)) || !(ops >> PosOption(diagram_name)))
     {
         std::cout << "Usage: " << argv[0] << " input-points diagram.out" << std::endl;
         std::cout << ops;

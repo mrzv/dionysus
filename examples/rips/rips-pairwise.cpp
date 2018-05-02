@@ -43,25 +43,24 @@ int main(int argc, char* argv[])
 {
     using opts::Options;
     using opts::Option;
-    using opts::Present;
     using opts::PosOption;
 
     short unsigned          skeleton = 2;
     DistanceType            max_distance = std::numeric_limits<DistanceType>::infinity();
     std::string             infilename, diagram_name;
     int                     p = -1;
+    bool                    output_diagram, verbose, help;
 
-    Options ops(argc, argv);
+    Options ops;
     ops
         >> Option('s', "skeleton",      skeleton,           "dimension of the Rips complex we want to compute")
         >> Option('m', "max-distance",  max_distance,       "maximum distance value cutoff")
         >> Option('p', "p",             p,                  "restrict diagrams to this dimension")
+        >> Option('d', "diagram",       output_diagram,     "output diagram")
+        >> Option('v', "verbose",       verbose,            "verbose output")
     ;
-    bool output_diagram = ops >> Present('d', "diagram", "output diagram");
-    bool verbose        = ops >> Present('v', "verbose", "verbose output");
 
-    if ( (ops >> Present('h', "help", "show help message") ||
-        !(ops >> PosOption(infilename))))
+    if (!ops.parse(argc,argv) || help || !(ops >> PosOption(infilename)))
     {
         std::cout << "Usage: " << argv[0] << " input-points" << std::endl;
         std::cout << ops;

@@ -128,13 +128,16 @@ struct ExecuteEP
 int main(int argc, char** argv)
 {
     using namespace opts;
-    Options ops(argc, argv);
+    Options ops;
 
-    bool no_extended = ops >> Present('n', "no-extended", "don't compute the extended part");
+    bool no_extended, help;
+    ops
+        >> Option('n', "no-extended", no_extended, "don't compute the extended part")
+        >> Option('h', "help",        help,        "show help")
+    ;
 
     std::string infn;
-    if (  ops >> Present('h', "help", "show help") ||
-        !(ops >> PosOption(infn)))
+    if (!ops.parse(argc,argv) || help || !(ops >> PosOption(infn)))
     {
         fmt::print("Usage: {} IN.npy [OUT.dgm]\n{}", argv[0], ops);
         return 1;
