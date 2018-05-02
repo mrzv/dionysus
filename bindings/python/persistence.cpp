@@ -1,5 +1,6 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
+#include <pybind11/iostream.h>
 namespace py = pybind11;
 
 #include <dionysus/row-reduction.h>
@@ -35,6 +36,11 @@ PyReducedMatrix
 compute_homology_persistence(const PyFiltration& filtration, const Relative& relative, PyZpField::Element prime, std::string method, const Progress& progress)
 {
     PyZpField field(prime);
+
+    py::scoped_ostream_redirect stream(
+        std::cout,                               // std::ostream&
+        py::module::import("sys").attr("stdout") // Python output
+    );
 
     if (method == "clearing")
     {
