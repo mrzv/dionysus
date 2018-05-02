@@ -339,6 +339,7 @@ BasicOption::parse(std::size_t argc, char** argv, std::size_t& i, std::size_t j)
         } else
         {
             std::cerr << "error: cannot find the argument; ignoring " << argv[i] << '\n';
+            return false;
         }
     } else if (argv[i][j] == '=')
     {
