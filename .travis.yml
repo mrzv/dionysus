@@ -1,0 +1,26 @@
+language: python
+python: 3.5
+
+os:   linux
+dist: trusty
+sudo: required
+
+before_install:
+  - sudo apt-get -qq update
+
+addons:
+  apt:
+    sources:
+      - ubuntu-toolchain-r-test
+    packages:
+      - g++-7
+      - cmake
+      - libboost1.55-dev
+
+before_script:
+  - CC=gcc-7 CXX=g++-7 python setup.py install
+  - pip install sphinx numpy scipy matplotlib nb2plots
+
+script:
+  - cd doc
+  - make doctest
