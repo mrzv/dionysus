@@ -175,6 +175,35 @@ zigzag_homology_persistence(const PyFiltration&     f,
     return std::make_tuple(std::move(persistence), std::move(diagrams), std::move(cells_inv_));
 }
 
+// custom iterator that preserves right filtration order
+struct PyZZAliveCycleIterator
+{
+            PyZZAliveCycleIterator(const PyZigzagPersistence& zz_, py::object ref_):
+                zz(zz_), ref(ref_)
+    {
+        for (PyZigzagPersistence::Index x : zz.alive_cycles())
+            indices.push_back(x);
+        std::sort(indices.begin(), indices.end());
+    }
+
+    PyReducedMatrix::Chain  next()
+    {
+        if (idx == indices.size())
+            throw py::stop_iteration();
+
+        PyReducedMatrix::Chain c;
+        for (auto& x : zz.cycle(indices[idx]))
+            c.emplace_back(x.element(), std::get<0>(x.index()));
+        ++idx;
+        return c;
+    }
+
+    const PyZigzagPersistence&                  zz;
+    py::object                                  ref;
+    size_t                                      idx = 0;
+    std::vector<PyZigzagPersistence::Index>     indices;
+};
+
 #include "chain.h"
 
 void init_zigzag_persistence(py::module& m)
@@ -206,24 +235,14 @@ void init_zigzag_persistence(py::module& m)
               from the internal representation to filtration indices.
           )");
 
+   py::class_<PyZZAliveCycleIterator>(m, "ZZAliveCycleIterator")
+        .def("__iter__", [](PyZZAliveCycleIterator& it) -> PyZZAliveCycleIterator& { return it; })
+        .def("__next__", &PyZZAliveCycleIterator::next);
+
     py::class_<PyZigzagPersistence>(m, "ZigzagPersistence", "representation of the current homology basis")
         .def(py::init<PyZpField>())
         .def("__len__",     &PyZigzagPersistence::alive_size,       "number of alive cycles")
-        .def("__iter__",    [](const PyZigzagPersistence& zz)
-                            {
-                                auto cycles = zz.alive_cycles() |
-                                                ba::transformed([&zz](PyZigzagPersistence::Index i)
-                                                                {
-                                                                    // convert to a normal chain
-                                                                    PyReducedMatrix::Chain c;
-                                                                    for (auto& x : zz.cycle(i))
-                                                                        c.emplace_back(x.element(), std::get<0>(x.index()));
-                                                                    return c;
-                                                                });
-                                return py::make_iterator(std::begin(cycles), std::end(cycles));
-                            },
-                            py::keep_alive<0, 1>() /* Essential: keep object alive while iterator exists */,
-                            "iterator over the alive cycles")
+        .def("__iter__",    [](py::object zz)   { return PyZZAliveCycleIterator(zz.cast<const PyZigzagPersistence&>(), zz); }, "iterator over the alive cycles")
         .def("__repr__",    [](const PyZigzagPersistence& zz)
                             { std::ostringstream oss; oss << "Zigzag persistence with " << zz.alive_size() << " alive cycles"; return oss.str(); })
     ;
