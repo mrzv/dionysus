@@ -1,4 +1,4 @@
-def plot_diagram(dgm, show = False,labels = False):
+def plot_diagram(dgm, show = False, labels = False):
     """Plot the persistence diagram."""
 
     import matplotlib.pyplot as plt
@@ -14,9 +14,8 @@ def plot_diagram(dgm, show = False,labels = False):
 
     min_diag = min(min_birth, min_death)
     max_diag = max(max_birth, max_death)
-
-    plt.scatter([p.birth for p in dgm], [p.death for p in dgm])
-    plt.plot([min_diag, max_diag], [min_diag, max_diag])        # diagonal
+    ax.scatter([p.birth for p in dgm], [p.death for p in dgm])
+    ax.plot([min_diag, max_diag], [min_diag, max_diag])        # diagonal
 
     if labels:
         ax.set_xlabel("birth")
@@ -64,8 +63,8 @@ def plot_diagram_density(dgm, bins = 200, lognorm = True, diagonal = True, show 
     #min_death = min(p.death for p in dgm if p.death != inf)
     max_death = max(p.death for p in dgm if p.death != inf)
 
-    fig,ax = plt.subplots()
-    hist2s,histx,histy,im = ax.hist2d([p.birth for p in dgm if p.birth != inf and p.death != inf], [p.death for p in dgm if p.birth != inf and p.death != inf], bins = bins, norm = norm)
+    fig, ax = plt.subplots()
+    hist2d, histx, histy, im = ax.hist2d([p.birth for p in dgm if p.birth != inf and p.death != inf], [p.death for p in dgm if p.birth != inf and p.death != inf], bins = bins, norm = norm)
     ax.set_aspect('equal', 'datalim')
     if labels:
         ax.set_xlabel("birth")
@@ -77,10 +76,11 @@ def plot_diagram_density(dgm, bins = 200, lognorm = True, diagonal = True, show 
     ## clip the view
     #plt.axes().set_xlim([min_birth, max_birth])
     #plt.axes().set_ylim([min_death, max_death])
+    
     if labels:
-        plt.colorbar(im,label = "overlap quantity")
+        fig.colorbar(im, ax = ax, label = "overlap quantity")
     else:
-        plt.colorbar(im)
+        fig.colorbar(im, ax = ax)
 
     if show:
         plt.show()
