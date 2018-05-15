@@ -11,6 +11,13 @@ void init_filtration(py::module& m)
     using namespace pybind11::literals;
     py::class_<PyFiltration>(m, "Filtration", "store an ordered sequence of simplices, providing lookup")
         .def(py::init<>(),      "initialize empty filtration")
+        .def(py::init([](const std::vector<PySimplex>& simplices)
+                      {
+                          PyFiltration* f = new PyFiltration;
+                          for (auto& s : simplices)
+                              f->emplace_back(s);
+                          return f;
+                      }), "initialize filtration from a list of simplices")
         .def(py::init([](const std::vector<std::vector<PySimplex::Vertex>>& simplices)
                       {
                           PyFiltration* f = new PyFiltration;
@@ -25,13 +32,6 @@ void init_filtration(py::module& m)
                               f->emplace_back(std::get<0>(s), std::get<1>(s));
                           return f;
                       }), "initialize filtration from a list of tuples of vertices and values")
-        .def(py::init([](const std::vector<PySimplex>& simplices)
-                      {
-                          PyFiltration* f = new PyFiltration;
-                          for (auto& s : simplices)
-                              f->emplace_back(s);
-                          return f;
-                      }), "initialize filtration from a list of simplices")
         .def("append",          [](PyFiltration* f, const PySimplex& s) { f->push_back(s); },  "s"_a, "append simplex to the filtration")
         .def("add",             [](PyFiltration* f, const PySimplex& s) { return f->add(s); }, "s"_a,
                                 "append simplex to the filtration, if not already in the filtration; either way return the index of the simplex")
