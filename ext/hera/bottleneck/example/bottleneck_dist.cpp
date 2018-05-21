@@ -48,11 +48,11 @@ int main(int argc, char* argv[])
 
     PairVector diagramA, diagramB;
     int decPrecision { 0 };
-    if (!hera::bt::readDiagramPointSet(argv[1], diagramA, decPrecision)) {
+    if (!hera::readDiagramPointSet(argv[1], diagramA, decPrecision)) {
         std::exit(1);
     }
 
-    if (!hera::bt::readDiagramPointSet(argv[2], diagramB, decPrecision)) {
+    if (!hera::readDiagramPointSet(argv[2], diagramB, decPrecision)) {
         std::exit(1);
     }
 
@@ -63,20 +63,11 @@ int main(int argc, char* argv[])
         double delta =  atof(argv[3]);
         if (delta > 0.0) {
             if (useSamplingHeur && diagramA.size() > heurThreshold && diagramB.size() > heurThreshold) {
-#ifdef VERBOSE_BOTTLENECK
-                std::cout << "using sampling heuristic" << std::endl;
-#endif
                 res = hera::bottleneckDistApproxHeur(diagramA, diagramB, delta);
             } else {
-#ifdef VERBOSE_BOTTLENECK
-                std::cout << "NOT using sampling heuristic" << std::endl;
-#endif
                 res = hera::bottleneckDistApprox(diagramA, diagramB, delta);
             }
         } else if (delta == 0.0) {
-#ifdef VERBOSE_BOTTLENECK
-                std::cout << "NOT using sampling heuristic, computing EXACT answer" << std::endl;
-#endif
             res = hera::bottleneckDistExact(diagramA, diagramB, decPrecision);
         } else {
             std::cerr << "The third parameter (relative error) must be positive!" << std::endl;
@@ -84,9 +75,6 @@ int main(int argc, char* argv[])
         }
     } else {
         // only filenames have been supplied, return exact distance
-#ifdef VERBOSE_BOTTLENECK
-        std::cout << "NOT using sampling heuristic, computing EXACT answer" << std::endl;
-#endif
         res = hera::bottleneckDistExact(diagramA, diagramB, decPrecision);
     }
     std::cout << std::setprecision(15) << res << std::endl;

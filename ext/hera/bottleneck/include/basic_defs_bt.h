@@ -128,9 +128,17 @@ public:
     }
 
 
-    bool isDiagonal(void) const { return type == DIAG; }
+    bool isDiagonal() const { return type == DIAG; }
 
-    bool isNormal(void) const { return type == NORMAL; }
+    bool isNormal() const { return type == NORMAL; }
+
+    bool isInfinity() const
+    {
+        return x == std::numeric_limits<Real>::infinity() or
+               x == -std::numeric_limits<Real>::infinity() or
+               y == std::numeric_limits<Real>::infinity() or
+               y == -std::numeric_limits<Real>::infinity();
+    }
 
     Real inline getRealX() const // return the x-coord
     {
@@ -176,17 +184,6 @@ inline void hash_combine(std::size_t & seed, const T & v)
     std::hash<T> hasher;
     seed ^= hasher(v) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
 }
-
-//template<class Real = double>
-//struct PointHash {
-//    size_t operator()(const Point<Real> &p) const
-//    {
-//        size_t seed = 0;
-//        hash_combine(seed, p.x);
-//        hash_combine(seed, p.y);
-//        return seed;
-//    }
-//};
 
 template<class Real = double>
 struct DiagramPointHash {
@@ -306,11 +303,6 @@ public:
         return points.end();
     }
 
-    const_iterator find(const DgmPoint &p) const
-    {
-        return points.find(p);
-    }
-
     const_iterator cbegin() const
     {
         return points.cbegin();
@@ -319,6 +311,12 @@ public:
     const_iterator cend() const
     {
         return points.cend();
+    }
+
+
+    const_iterator find(const DgmPoint &p) const
+    {
+        return points.find(p);
     }
 
 #ifndef FOR_R_TDA
@@ -405,7 +403,8 @@ Real getFurthestDistance3Approx(DiagPointContainer& A, DiagPointContainer& B) {
 }
 
 // preprocess diagrams A and B by adding projections onto diagonal of points of
-// A to B and vice versa. NB: ids of points will be changed!
+// A to B and vice versa. Also removes points at infinity!
+// NB: ids of points will be changed!
 template<class Real_>
 void addProjections(DiagramPointSet<Real_>& A, DiagramPointSet<Real_>& B)
 {
@@ -420,7 +419,8 @@ void addProjections(DiagramPointSet<Real_>& A, DiagramPointSet<Real_>& B)
     // copy normal points from A to newA
     // add projections to newB
     for(auto& pA : A) {
-        if (pA.isNormal()) {
+        if (pA.isNormal() and not pA.isInfinity()) {
+            // add pA's projection to B
             DgmPoint dpA {pA.getRealX(), pA.getRealY(), DgmPoint::NORMAL, uniqueId++};
             DgmPoint dpB {(pA.getRealX() +pA.getRealY())/2, (pA.getRealX() +pA.getRealY())/2, DgmPoint::DIAG, uniqueId++};
             newA.insert(dpA);
@@ -429,7 +429,8 @@ void addProjections(DiagramPointSet<Real_>& A, DiagramPointSet<Real_>& B)
     }
 
     for(auto& pB : B) {
-        if (pB.isNormal()) {
+        if (pB.isNormal() and not pB.isInfinity()) {
+            // add pB's projection to A
             DgmPoint dpB {pB.getRealX(), pB.getRealY(), DgmPoint::NORMAL, uniqueId++};
             DgmPoint dpA {(pB.getRealX() +pB.getRealY())/2, (pB.getRealX() +pB.getRealY())/2, DgmPoint::DIAG, uniqueId++};
             newB.insert(dpB);

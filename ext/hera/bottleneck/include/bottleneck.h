@@ -50,6 +50,8 @@ namespace hera {
 // PairContainer class must support iteration of the form
 // for(it = pairContainer.begin(); it != pairContainer.end(); ++it)
 
+// all functions in this header are wrappers around
+// functions from hera::bt namespace
 
 // get exact bottleneck distance,
 template<class PairContainer>
@@ -86,7 +88,8 @@ bottleneckDistApproxInterval(PairContainer& dgm_A, PairContainer& dgm_B, const t
     return hera::bt::bottleneckDistApproxInterval(a, b, delta);
 }
 
-
+// use sampling heuristic: discard most of the points with small persistency
+// to get a good initial approximation of the bottleneck distance
 template<class PairContainer>
 typename DiagramTraits<PairContainer>::RealType
 bottleneckDistApproxHeur(PairContainer& dgm_A, PairContainer& dgm_B, const typename DiagramTraits<PairContainer>::RealType delta)
@@ -97,7 +100,6 @@ bottleneckDistApproxHeur(PairContainer& dgm_A, PairContainer& dgm_B, const typen
     std::pair<Real,  Real> resPair = hera::bt::bottleneckDistApproxIntervalHeur(a, b, delta);
     return resPair.second;
 }
-
 
 // get approximate distance,
 // see bottleneckDistApproxInterval

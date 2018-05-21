@@ -46,15 +46,143 @@ derivative works thereof, in binary and source code form.
 namespace hera {
 namespace bt {
 
+template<class Real>
+void binarySearch(const Real epsilon,
+                  std::pair<Real, Real>& result,
+                  BoundMatchOracle<Real>& oracle,
+                  const Real infinityCost,
+                  bool isResultInitializedCorrectly,
+                  const Real distProbeInit)
+{
+    // aliases for result components
+    Real& distMin = result.first;
+    Real& distMax = result.second;
+
+    distMin = std::max(distMin, infinityCost);
+    distMax = std::max(distMax, infinityCost);
+
+    Real distProbe;
+
+    if (not isResultInitializedCorrectly) {
+        distProbe = distProbeInit;
+        if (oracle.isMatchLess(distProbe)) {
+            // distProbe is an upper bound,
+            // find lower bound with binary search
+            do {
+                distMax = distProbe;
+                distProbe /= 2.0;
+            } while (oracle.isMatchLess(distProbe));
+            distMin = distProbe;
+        } else {
+            // distProbe is a lower bound,
+            // find upper bound with exponential search
+            do {
+                distMin = distProbe;
+                distProbe *= 2.0;
+            } while (!oracle.isMatchLess(distProbe));
+            distMax = distProbe;
+        }
+    }
+    // bounds are correct , perform binary search
+    distProbe = ( distMin + distMax ) / 2.0;
+    while (( distMax - distMin ) / distMin >= epsilon ) {
+
+        if (distMax < infinityCost) {
+            distMin = infinityCost;
+            distMax = infinityCost;
+            break;
+        }
+
+        if (oracle.isMatchLess(distProbe)) {
+            distMax = distProbe;
+        } else {
+            distMin = distProbe;
+        }
+
+        distProbe = ( distMin + distMax ) / 2.0;
+    }
+
+    distMin = std::max(distMin, infinityCost);
+    distMax = std::max(distMax, infinityCost);
+}
+
+template<class Real>
+inline Real getOneDimensionalCost(std::vector<Real> &set_A, std::vector<Real> &set_B)
+{
+    if (set_A.size() != set_B.size()) {
+        return std::numeric_limits<Real>::infinity();
+    }
+
+    if (set_A.empty()) {
+        return Real(0.0);
+    }
+
+    std::sort(set_A.begin(), set_A.end());
+    std::sort(set_B.begin(), set_B.end());
+
+    Real result = 0.0;
+    for(size_t i = 0; i < set_A.size(); ++i) {
+        result = std::max(result, (std::fabs(set_A[i] - set_B[i])));
+    }
+
+    return result;
+}
+
+template<class Real>
+inline Real getInfinityCost(const DiagramPointSet <Real> &A, const DiagramPointSet <Real> &B)
+{
+    std::vector<Real> x_plus_A, x_minus_A, y_plus_A, y_minus_A;
+    std::vector<Real> x_plus_B, x_minus_B, y_plus_B, y_minus_B;
+
+    for(auto iter_A = A.cbegin(); iter_A != A.cend(); ++iter_A) {
+        Real x = iter_A->getRealX();
+        Real y = iter_A->getRealY();
+        if ( x == std::numeric_limits<Real>::infinity()) {
+            y_plus_A.push_back(y);
+        } else if (x == -std::numeric_limits<Real>::infinity()) {
+            y_minus_A.push_back(y);
+        } else if (y == std::numeric_limits<Real>::infinity()) {
+            x_plus_A.push_back(x);
+        } else if (y == -std::numeric_limits<Real>::infinity()) {
+            x_minus_A.push_back(x);
+        }
+    }
+
+    for(auto iter_B = B.cbegin(); iter_B != B.cend(); ++iter_B) {
+        Real x = iter_B->getRealX();
+        Real y = iter_B->getRealY();
+        if (x == std::numeric_limits<Real>::infinity()) {
+            y_plus_B.push_back(y);
+        } else if (x == -std::numeric_limits<Real>::infinity()) {
+            y_minus_B.push_back(y);
+        } else if (y == std::numeric_limits<Real>::infinity()) {
+            x_plus_B.push_back(x);
+        } else if (y == -std::numeric_limits<Real>::infinity()) {
+            x_minus_B.push_back(x);
+        }
+    }
+
+    Real infinity_cost = getOneDimensionalCost(x_plus_A, x_plus_B);
+    infinity_cost = std::max(infinity_cost, getOneDimensionalCost(x_minus_A, x_minus_B));
+    infinity_cost = std::max(infinity_cost, getOneDimensionalCost(y_plus_A, y_plus_B));
+    infinity_cost = std::max(infinity_cost, getOneDimensionalCost(y_minus_A, y_minus_B));
+
+    return infinity_cost;
+}
+
 // return the interval (distMin, distMax) such that:
 // a) actual bottleneck distance between A and B is contained in the interval
 // b) if the interval is not (0,0), then  (distMax - distMin) / distMin < epsilon
 template<class Real>
-std::pair<Real, Real> bottleneckDistApproxInterval(DiagramPointSet<Real>& A, DiagramPointSet<Real>& B, const Real epsilon)
+inline std::pair<Real, Real> bottleneckDistApproxInterval(DiagramPointSet<Real>& A, DiagramPointSet<Real>& B, const Real epsilon)
 {
     // empty diagrams are not considered as error
     if (A.empty() and B.empty())
         return std::make_pair(0.0, 0.0);
+
+    Real infinity_cost = getInfinityCost(A, B);
+    if (infinity_cost == std::numeric_limits<Real>::infinity())
+        return std::make_pair(infinity_cost, infinity_cost);
 
     // link diagrams A and B by adding projections
     addProjections(A, B);
@@ -74,47 +202,13 @@ std::pair<Real, Real> bottleneckDistApproxInterval(DiagramPointSet<Real>& A, Dia
     // get a 3-approximation of maximal distance between A and B
     // as a starting value for probe distance
     Real distProbe  { getFurthestDistance3Approx<Real, DiagramPointSet<Real>>(A, B) };
-    // aliases for result components
-    Real& distMin {result.first};
-    Real& distMax {result.second};
-
-    if ( oracle.isMatchLess(distProbe) ) {
-        // distProbe is an upper bound,
-        // find lower bound with binary search
-        do {
-            distMax = distProbe;
-            distProbe /= 2.0;
-        } while (oracle.isMatchLess(distProbe));
-        distMin = distProbe;
-    } else {
-        // distProbe is a lower bound,
-        // find upper bound with exponential search
-        do {
-            distMin = distProbe;
-            distProbe *= 2.0;
-        } while (!oracle.isMatchLess(distProbe));
-        distMax = distProbe;
-    }
-    // bounds are found, perform binary search
-    //std::cout << "Bounds found, distMin = " << distMin << ", distMax = " << distMax << ", ratio = " << ( distMax - distMin ) / distMin << std::endl ;
-    distProbe = ( distMin + distMax ) / 2.0;
-    while (  ( distMax - distMin ) / distMin >= epsilon ) {
-        if (oracle.isMatchLess(distProbe)) {
-            distMax = distProbe;
-        } else {
-            distMin = distProbe;
-        }
-        distProbe = ( distMin + distMax ) / 2.0;
-    }
+    binarySearch(epsilon, result, oracle, infinity_cost, false, distProbe);
     return result;
 }
 
 template<class Real>
 void sampleDiagramForHeur(const DiagramPointSet<Real>& dgmIn, DiagramPointSet<Real>& dgmOut)
 {
-#ifdef VERBOSE_BOTTLENECK
-    std::cout << "Entered sampleDiagramForHeur, dgmIn.size = " << dgmIn.size() << std::endl;
-#endif
     struct pair_hash {
         std::size_t operator()(const std::pair<Real, Real> p) const
         {
@@ -123,14 +217,11 @@ void sampleDiagramForHeur(const DiagramPointSet<Real>& dgmIn, DiagramPointSet<Re
     };
     std::unordered_map<std::pair<Real, Real>, int, pair_hash> m;
     for(auto ptIter = dgmIn.cbegin(); ptIter != dgmIn.cend(); ++ptIter) {
-        if (ptIter->isNormal()) {
+        if (ptIter->isNormal() and not ptIter->isInfinity()) {
             m[std::make_pair(ptIter->getRealX(), ptIter->getRealY())]++;
         }
     }
-#ifdef VERBOSE_BOTTLENECK
-    std::cout << "map filled in, m.size = " << m.size() << std::endl;
-#endif
-     if (m.size() < 2) {
+    if (m.size() < 2) {
         dgmOut = dgmIn;
         return;
     }
@@ -138,13 +229,7 @@ void sampleDiagramForHeur(const DiagramPointSet<Real>& dgmIn, DiagramPointSet<Re
     for(const auto& ptQtyPair : m) {
         v.push_back(ptQtyPair.second);
     }
-#ifdef VERBOSE_BOTTLENECK
-    std::cout << "v filled in, v.size = " << v.size() << std::endl;
-#endif
     std::sort(v.begin(), v.end());
-#ifdef VERBOSE_BOTTLENECK
-    std::cout << "v sorted" << std::endl;
-#endif
     int maxLeap = v[1] - v[0];
     int cutVal = v[0];
     for(int i = 1; i < static_cast<int>(v.size())- 1; ++i) {
@@ -154,10 +239,7 @@ void sampleDiagramForHeur(const DiagramPointSet<Real>& dgmIn, DiagramPointSet<Re
             cutVal = v[i];
         }
     }
-#ifdef VERBOSE_BOTTLENECK
-    std::cout << "cutVal found, cutVal = " << cutVal << std::endl;
-#endif
-     std::vector<std::pair<Real, Real>> vv;
+    std::vector<std::pair<Real, Real>> vv;
     // keep points whose multiplicites are at most cutVal
     // quick-and-dirty: fill in vv with copies of each point
     // to construct DiagramPointSet from it later
@@ -168,14 +250,8 @@ void sampleDiagramForHeur(const DiagramPointSet<Real>& dgmIn, DiagramPointSet<Re
             }
         }
     }
-#ifdef VERBOSE_BOTTLENECK
-    std::cout << "vv filled in, vv.size = " << v.size() << std::endl;
-#endif
     dgmOut.clear();
     dgmOut = DiagramPointSet<Real>(vv.begin(), vv.end());
-#ifdef VERBOSE_BOTTLENECK
-    std::cout << "dgmOut filled in, dgmOut.size = " << dgmOut.size() << std::endl;
-#endif
 }
 
 
@@ -183,7 +259,10 @@ void sampleDiagramForHeur(const DiagramPointSet<Real>& dgmIn, DiagramPointSet<Re
 // a) actual bottleneck distance between A and B is contained in the interval
 // b) if the interval is not (0,0), then  (distMax - distMin) / distMin < epsilon
 template<class Real>
-std::pair<Real, Real> bottleneckDistApproxIntervalWithInitial(DiagramPointSet<Real>& A, DiagramPointSet<Real>& B, const Real epsilon, const std::pair<Real, Real> initialGuess)
+std::pair<Real, Real> bottleneckDistApproxIntervalWithInitial(DiagramPointSet<Real>& A, DiagramPointSet<Real>& B,
+                                                              const Real epsilon,
+                                                              const std::pair<Real, Real> initialGuess,
+                                                              const Real infinity_cost)
 {
     // empty diagrams are not considered as error
     if (A.empty() and B.empty())
@@ -197,6 +276,7 @@ std::pair<Real, Real> bottleneckDistApproxIntervalWithInitial(DiagramPointSet<Re
     bool useRangeSearch { true };
     // construct an oracle
     BoundMatchOracle<Real> oracle(A, B, epsThreshold, useRangeSearch);
+
     Real& distMin {result.first};
     Real& distMax {result.second};
 
@@ -223,16 +303,8 @@ std::pair<Real, Real> bottleneckDistApproxIntervalWithInitial(DiagramPointSet<Re
     }
 
     // bounds are found, perform binary search
-    //std::cout << "Bounds found, distMin = " << distMin << ", distMax = " << distMax << ", ratio = " << ( distMax - distMin ) / distMin << std::endl ;
     Real distProbe = ( distMin + distMax ) / 2.0;
-    while (  ( distMax - distMin ) / distMin >= epsilon ) {
-        if (oracle.isMatchLess(distProbe)) {
-            distMax = distProbe;
-        } else {
-            distMin = distProbe;
-        }
-        distProbe = ( distMin + distMax ) / 2.0;
-    }
+    binarySearch(epsilon, result, oracle, infinity_cost, true, distProbe);
     return result;
 }
 
@@ -247,19 +319,20 @@ std::pair<Real, Real> bottleneckDistApproxIntervalHeur(DiagramPointSet<Real>& A,
     if (A.empty() and B.empty())
         return std::make_pair(0.0, 0.0);
 
+    Real infinity_cost = getInfinityCost(A, B);
+    if (infinity_cost == std::numeric_limits<Real>::infinity())
+        return std::make_pair(infinity_cost, infinity_cost);
+
     DiagramPointSet<Real> sampledA, sampledB;
     sampleDiagramForHeur(A, sampledA);
     sampleDiagramForHeur(B, sampledB);
-#ifdef VERBOSE_BOTTLENECK
-    std::cout << "A : " << A.size() << ", sampled: " << sampledA.size() << std::endl;
-    std::cout << "B : " << B.size() << ", sampled: " << sampledB.size() << std::endl;
-#endif
+
     std::pair<Real, Real> initGuess = bottleneckDistApproxInterval(sampledA, sampledB, epsilon);
-#ifdef VERBOSE_BOTTLENECK
-    std::cout << "initial guess with sampling: " << initGuess.first << ", " << initGuess.second << std::endl;
-    std::cout << "running on the original diagrams" << std::endl;
-#endif
-    return bottleneckDistApproxIntervalWithInitial<Real>(A, B, epsilon, initGuess);
+
+    initGuess.first = std::max(initGuess.first, infinity_cost);
+    initGuess.second = std::max(initGuess.second, infinity_cost);
+
+    return bottleneckDistApproxIntervalWithInitial<Real>(A, B, epsilon, initGuess, infinity_cost);
 }
 
 
@@ -277,9 +350,6 @@ Real bottleneckDistApprox(DiagramPointSet<Real>& A, DiagramPointSet<Real>& B, co
 template<class Real>
 Real bottleneckDistExactFromSortedPwDist(DiagramPointSet<Real>&A, DiagramPointSet<Real>& B, std::vector<Real>& pairwiseDist, const int decPrecision)
 {
-    //for(size_t k = 0; k < pairwiseDist.size(); ++k) {
-        //std::cout << "pairwiseDist[" << k << "] = " << std::setprecision(15) << pairwiseDist[k] << std::endl;
-    //}
     // trivial case: we have only one candidate
     if (pairwiseDist.size() == 1)
         return pairwiseDist[0];
@@ -292,13 +362,11 @@ Real bottleneckDistExactFromSortedPwDist(DiagramPointSet<Real>&A, DiagramPointSe
     }
     for(size_t k = 0; k < pairwiseDist.size() - 2; ++k) {
         auto diff = pairwiseDist[k+1]- pairwiseDist[k];
-        //std::cout << "diff = " << diff << ", pairwiseDist[k] = " << pairwiseDist[k] << std::endl;
         if ( diff > diffThreshold and diff < distEpsilon ) {
             distEpsilon = diff;
         }
     }
     distEpsilon /= 3.0;
-    //std::cout << "decPrecision = " << decPrecision << ", distEpsilon = " << distEpsilon << std::endl;
 
     BoundMatchOracle<Real> oracle(A, B, distEpsilon, useRangeSearch);
     // binary search
@@ -307,17 +375,13 @@ Real bottleneckDistExactFromSortedPwDist(DiagramPointSet<Real>&A, DiagramPointSe
     size_t idxMid;
     while(idxMax > idxMin) {
         idxMid = static_cast<size_t>(floor(idxMin + idxMax) / 2.0);
-        //std::cout << "while begin: min = " << idxMin << ", idxMax = " << idxMax << ", idxMid = " << idxMid << ", testing d = " << std::setprecision(15) << pairwiseDist[idxMid] << std::endl;
         iterNum++;
         // not A[imid] < dist <=>  A[imid] >= dist  <=> A[imid[ >= dist + eps
         if (oracle.isMatchLess(pairwiseDist[idxMid] + distEpsilon / 2.0)) {
-            //std::cout << "isMatchLess = true" << std::endl;
             idxMax = idxMid;
         } else {
-            //std::cout << "isMatchLess = false " << std::endl;
             idxMin = idxMid + 1;
         }
-        //std::cout << "while end: idxMin = " << idxMin << ", idxMax = " << idxMax << ", idxMid = " << idxMid << std::endl;
     }
     idxMid = static_cast<size_t>(floor(idxMin + idxMax) / 2.0);
     return pairwiseDist[idxMid];
@@ -337,11 +401,12 @@ Real bottleneckDistExact(DiagramPointSet<Real>& A, DiagramPointSet<Real>& B, con
 
     constexpr Real epsilon = 0.001;
     auto interval = bottleneckDistApproxInterval(A, B, epsilon);
+    if (interval.first == interval.second)
+        return interval.first;
     const Real delta = 0.50001 * (interval.second - interval.first);
     const Real approxDist = 0.5 * ( interval.first + interval.second);
     const Real minDist = interval.first;
     const Real maxDist = interval.second;
-    //std::cout << std::setprecision(15) <<  "minDist = " << minDist << ", maxDist = " << maxDist << std::endl;
     if ( delta == 0 ) {
         return interval.first;
     }
@@ -352,21 +417,6 @@ Real bottleneckDistExact(DiagramPointSet<Real>& A, DiagramPointSet<Real>& B, con
     for(const auto& ptA : A) {
         pointsA.push_back(ptA);
     }
-
-    //std::vector<Real> killdist;
-    //for(auto pta : a) {
-        //for(auto ptb : b) {
-            //if ( distlinf(pta, ptb) > mindist and distlinf(pta, ptb) < maxdist) {
-                //killdist.push_back(distlinf(pta, ptb));
-                //std::cout << pta << ", " << ptb << std::endl;
-            //}
-        //}
-    //}
-    //std::sort(killdist.begin(), killdist.end());
-    //for(auto d : killdist) {
-        //std::cout << d << std::endl;
-    //}
-    //std::cout << "*************" << std::endl;
 
     // in this vector we store the distances between the points
     // that are candidates to realize
@@ -385,13 +435,6 @@ Real bottleneckDistExact(DiagramPointSet<Real>& A, DiagramPointSet<Real>& B, con
                                 { return a.first < b.first; };
 
         std::sort(xCentersVec.begin(), xCentersVec.end(), compLambda);
-        //std::cout << "xCentersVec.size  = " << xCentersVec.size() << std::endl;
-        //for(auto p = xCentersVec.begin(); p!= xCentersVec.end(); ++p) {
-            //if (p->second.id == 200) {
-                //std::cout << "index of 200: " << p - xCentersVec.begin() << std::endl;
-            //}
-        //}
-        //std::vector<DgmPoint>
         // todo: sort points in B, reduce search range in lower and upper bounds
         for(auto ptB : B) {
             // iterator to the first stripe such that ptB lies to the left
@@ -400,30 +443,17 @@ Real bottleneckDistExact(DiagramPointSet<Real>& A, DiagramPointSet<Real>& B, con
                                             xCentersVec.end(),
                                             std::make_pair(ptB.getRealX() - delta, ptB),
                                             compLambda);
-            //if (ptB.id == 236) {
-                //std::cout << itStart - xCentersVec.begin() <<  std::endl;
-            //}
 
             for(auto iterA = itStart; iterA < xCentersVec.end(); ++iterA) {
-                //if (ptB.id == 236) {
-                    //std::cout << "consider " << iterA->second << std::endl;
-                //}
                 if ( ptB.getRealX() < iterA->first - delta) {
                     // from that moment x_B >= x_j - delta
                     // is violated: x_B no longer lies to right from the left
                     // boundary of current stripe
-                    //if (ptB.id == 236) {
-                        //std::cout << "break" << std::endl;
-                    //}
                     break;
                 }
                 // we're here => ptB lies in vertical stripe,
                 // check if distance fits into the interval we've found
                 Real pwDist = distLInf(iterA->second, ptB);
-                //if (ptB.id == 236) {
-                    //std::cout << pwDist << std::endl;
-                //}
-                //std::cout << 1000*minDist << " <= " << 1000*pwDist << " <= " << 1000*maxDist << std::endl;
                 if (pwDist >= minDist and pwDist <= maxDist) {
                     pairwiseDist.push_back(pwDist);
                 }
@@ -447,13 +477,6 @@ Real bottleneckDistExact(DiagramPointSet<Real>& A, DiagramPointSet<Real>& B, con
 
         std::sort(yCentersVec.begin(), yCentersVec.end(), compLambda);
 
-        // std::cout << "Sorted vector of y-centers:" << std::endl;
-        //for(auto coordPtPair : yCentersVec) {
-            //std::cout << coordPtPair.first << ", id = " << coordPtPair.second.id << std::endl;
-        //}
-        /*std::cout << "End of sorted vector of y-centers:" << std::endl;*/
-
-        //std::vector<DgmPoint>
         // todo: sort points in B, reduce search range in lower and upper bounds
         for(auto ptB : B) {
             auto itStart = std::lower_bound(yCentersVec.begin(),
@@ -467,7 +490,6 @@ Real bottleneckDistExact(DiagramPointSet<Real>& A, DiagramPointSet<Real>& B, con
                     break;
                 }
                 Real pwDist = distLInf(iterA->second, ptB);
-                //std::cout << 1000*minDist << " <= " << 1000*pwDist << " <= " << 1000*maxDist << std::endl;
                 if (pwDist >= minDist and pwDist <= maxDist) {
                     pairwiseDist.push_back(pwDist);
                 }
@@ -475,309 +497,9 @@ Real bottleneckDistExact(DiagramPointSet<Real>& A, DiagramPointSet<Real>& B, con
         }
     }
 
-    //std::cout << "pairwiseDist.size = " << pairwiseDist.size() << " out of " << A.size() * A.size() << std::endl;
     std::sort(pairwiseDist.begin(), pairwiseDist.end());
-    //for(auto ddd : pairwiseDist) {
-        //std::cout << std::setprecision(15) << ddd << std::endl;
-    //}
 
     return bottleneckDistExactFromSortedPwDist(A, B, pairwiseDist, decPrecision);
-}
-
-template<class Real>
-Real bottleneckDistSlow(DiagramPointSet<Real>& A, DiagramPointSet<Real>& B)
-{
-    using DistVerticesPair = std::pair<Real, std::pair<size_t, size_t>>;
-
-    // use range search when building the layer graph
-    bool useRangeSearch { true };
-    // find maximum of min. distances for each point,
-    // use this value as lower bound for bottleneck distance
-    bool useHeurMinIdx { true };
-
-    // find matching in a greedy manner to
-    // get an upper bound for a bottleneck distance
-    bool useHeurGreedyMatching { false };
-
-    // use successive multiplication of idxMin with 2 to get idxMax
-    bool goUpToFindIdxMax { false };
-    //
-    goUpToFindIdxMax = goUpToFindIdxMax and !useHeurGreedyMatching;
-
-    if (!useHeurGreedyMatching) {
-        long int N = 3 * (A.size() / 2 ) * (B.size() / 2);
-        std::vector<Real> pairwiseDist;
-        pairwiseDist.reserve(N);
-        Real maxMinDist {0.0};
-        for(auto& p_A : A) {
-            Real minDist { std::numeric_limits<Real>::max() };
-            for(auto& p_B : B) {
-                if (p_A.isNormal() or p_B.isNormal()) {
-                    Real d = distLInf(p_A, p_B);
-                    pairwiseDist.push_back(d);
-                    if (useHeurMinIdx and p_A.isNormal()) {
-                        if (d < minDist)
-                            minDist = d;
-                    }
-                }
-            }
-            if (useHeurMinIdx and p_A.isNormal() and minDist > maxMinDist) {
-                maxMinDist = minDist;
-            }
-        }
-
-        std::sort(pairwiseDist.begin(), pairwiseDist.end());
-
-        Real distEpsilon = std::numeric_limits<Real>::max();
-        for(size_t k = 0; k < pairwiseDist.size() - 2; ++k) {
-            auto diff = pairwiseDist[k+1]- pairwiseDist[k];
-            if ( diff > 1.0e-10 and diff < distEpsilon ) {
-                distEpsilon = diff;
-            }
-        }
-        distEpsilon /= 3.0;
-
-        BoundMatchOracle<Real> oracle(A, B, distEpsilon, useRangeSearch);
-        // binary search
-        size_t iterNum {0};
-        size_t idxMin {0}, idxMax {pairwiseDist.size() - 1};
-        if (useHeurMinIdx) {
-            auto maxMinIter = std::equal_range(pairwiseDist.begin(), pairwiseDist.end(), maxMinDist);
-            assert(maxMinIter.first != pairwiseDist.end());
-            idxMin = maxMinIter.first - pairwiseDist.begin();
-            //std::cout << "maxMinDist = " << maxMinDist << ", idxMin = " << idxMin << ", d = " << pairwiseDist[idxMin] << std::endl;
-        }
-
-        if (goUpToFindIdxMax) {
-            if ( pairwiseDist.size() == 1) {
-                return pairwiseDist[0];
-            }
-
-            idxMax = std::max<size_t>(idxMin, 1);
-            while (!oracle.isMatchLess(pairwiseDist[idxMax])) {
-                //std::cout << "entered while" << std::endl;
-                idxMin = idxMax;
-                if (2*idxMax > pairwiseDist.size() -1) {
-                    idxMax = pairwiseDist.size() - 1;
-                    break;
-                } else {
-                    idxMax *= 2;
-                }
-            }
-            //std::cout << "size = " << pairwiseDist.size() << ", idxMax = " << idxMax <<  ", pw[max] = " << pairwiseDist[idxMax] << std::endl;
-        }
-
-        size_t idxMid { (idxMin + idxMax) / 2 };
-        while(idxMax > idxMin) {
-            iterNum++;
-            if (oracle.isMatchLess(pairwiseDist[idxMid])) {
-                idxMax = idxMid;
-            } else {
-                if (idxMax - idxMin == 1)
-                    idxMin++;
-                else
-                    idxMin = idxMid;
-            }
-            idxMid = (idxMin + idxMax) / 2;
-        }
-        return pairwiseDist[idxMid];
-    } else {
-        // with greeedy matching
-        long int N = A.size() * B.size();
-        std::vector<DistVerticesPair> pairwiseDist;
-        pairwiseDist.reserve(N);
-        Real maxMinDist {0.0};
-        size_t idxA{0}, idxB{0};
-        for(auto p_A : A) {
-            Real minDist { std::numeric_limits<Real>::max() };
-            idxB = 0;
-            for(auto p_B : B) {
-                Real d = distLInf(p_A, p_B);
-                pairwiseDist.push_back( std::make_pair(d, std::make_pair(idxA, idxB) ) );
-                if (useHeurMinIdx and p_A.isNormal()) {
-                    if (d < minDist)
-                        minDist = d;
-                }
-                idxB++;
-            }
-            if (useHeurMinIdx and p_A.isNormal() and minDist > maxMinDist) {
-                maxMinDist = minDist;
-            }
-            idxA++;
-        }
-
-        auto compLambda = [](DistVerticesPair a, DistVerticesPair b)
-                    { return a.first < b.first;};
-
-        std::sort(pairwiseDist.begin(),
-                  pairwiseDist.end(),
-                  compLambda);
-
-        Real distEpsilon = std::numeric_limits<Real>::max();
-        for(size_t k = 0; k < pairwiseDist.size() - 2; ++k) {
-            auto diff = pairwiseDist[k+1].first - pairwiseDist[k].first;
-            if ( diff > 1.0e-10 and diff < distEpsilon ) {
-                distEpsilon = diff;
-            }
-        }
-        distEpsilon /= 3.0;
-
-        BoundMatchOracle<Real> oracle(A, B, distEpsilon, useRangeSearch);
-
-        // construct greedy matching
-        size_t numVert { A.size() };
-        size_t numMatched { 0 };
-        std::unordered_set<size_t> aTobMatched, bToaMatched;
-        aTobMatched.reserve(numVert);
-        bToaMatched.reserve(numVert);
-        size_t distVecIdx {0};
-        while( numMatched < numVert) {
-            auto vertPair = pairwiseDist[distVecIdx++].second;
-            //std::cout << "distVecIdx = " << distVecIdx <<   ", matched: " << numMatched << " out of " << numVert << std::endl;
-            //std::cout << "vertex A idx = " << vertPair.first <<   ", B idx: " << vertPair.second << " out of " << numVert << std::endl;
-            if ( aTobMatched.count(vertPair.first) == 0 and
-                 bToaMatched.count(vertPair.second) == 0 ) {
-                aTobMatched.insert(vertPair.first);
-                bToaMatched.insert(vertPair.second);
-                numMatched++;
-            }
-        }
-        size_t idxMax = distVecIdx-1;
-        //std::cout << "idxMax = " << idxMax << ", size = " << pairwiseDist.size() << std::endl;
-        // binary search
-        size_t iterNum {0};
-        size_t idxMin {0};
-        if (useHeurMinIdx) {
-            auto maxMinIter = std::equal_range(pairwiseDist.begin(),
-                                               pairwiseDist.end(),
-                                               std::make_pair(maxMinDist, std::make_pair(0,0)),
-                                               compLambda);
-            assert(maxMinIter.first != pairwiseDist.end());
-            idxMin = maxMinIter.first - pairwiseDist.begin();
-            //std::cout << "maxMinDist = " << maxMinDist << ", idxMin = " << idxMin << ", d = " << pairwiseDist[idxMin].first << std::endl;
-        }
-        size_t idxMid { (idxMin + idxMax) / 2 };
-        while(idxMax > idxMin) {
-            iterNum++;
-            if (oracle.isMatchLess(pairwiseDist[idxMid].first)) {
-                idxMax = idxMid;
-            } else {
-                if (idxMax - idxMin == 1)
-                    idxMin++;
-                else
-                    idxMin = idxMid;
-            }
-            idxMid = (idxMin + idxMax) / 2;
-        }
-        return pairwiseDist[idxMid].first;
-    }
-    // stats
-    /*
-    // count number of edges
-    // pairwiseDist is sorted, add edges of the same length
-    int edgeNumber {idxMid};
-    while(pairwiseDist[edgeNumber + 1] == pairwiseDist[edgeNumber])
-        edgeNumber++;
-    // add edges between diagonal points
-    edgeNumber += N / 3;
-    // output stats
-    std::cout << idxMid << "\t" << N;
-    std::cout << "\t" << iterNum;
-    std::cout << "\t" << A.size() + B.size();
-    std::cout << "\t" << edgeNumber << "\t";
-    std::cout << (Real)(edgeNumber) / (Real)(A.size() + B.size()) << std::endl;
-    */
-}
-
-// wrappers
-template<class Real>
-bool readDiagramPointSet(const std::string& fname, std::vector<std::pair<Real, Real>>& result)
-{
-    int decPrecision;
-    return readDiagramPointSet(fname.c_str(), result, decPrecision);
-}
-
-template<class Real>
-bool readDiagramPointSet(const char* fname, std::vector<std::pair<Real, Real>>& result)
-{
-    int decPrecision;
-    return readDiagramPointSet(fname, result, decPrecision);
-}
-
-template<class Real>
-bool readDiagramPointSet(const std::string& fname, std::vector<std::pair<Real, Real>>& result, int& decPrecision)
-{
-    return readDiagramPointSet(fname.c_str(), result, decPrecision);
-}
-
-// reading function
-template<class Real>
-bool readDiagramPointSet(const char* fname, std::vector<std::pair<Real, Real>>& result, int& decPrecision)
-{
-    size_t lineNumber { 0 };
-    result.clear();
-    std::ifstream f(fname);
-    if (!f.good()) {
-#ifndef FOR_R_TDA
-        std::cerr << "Cannot open file " << fname << std::endl;
-#endif
-        return false;
-    }
-    std::string line;
-    while(std::getline(f, line)) {
-        lineNumber++;
-        // process comments: remove everything after hash
-        auto hashPos = line.find_first_of("#", 0);
-        if( std::string::npos != hashPos) {
-            line = std::string(line.begin(), line.begin() + hashPos);
-        }
-        if (line.empty()) {
-            continue;
-        }
-         // trim whitespaces
-        auto whiteSpaceFront = std::find_if_not(line.begin(),line.end(),isspace);
-        auto whiteSpaceBack = std::find_if_not(line.rbegin(),line.rend(),isspace).base();
-        if (whiteSpaceBack <= whiteSpaceFront) {
-            // line consists of spaces only - move to the next line
-            continue;
-        }
-        line = std::string(whiteSpaceFront,whiteSpaceBack);
-        bool fracPart = false;
-        int currDecPrecision = 0;
-        for(auto c : line) {
-            if (c == '.') {
-                fracPart = true;
-            } else if (fracPart) {
-                if (isdigit(c)) {
-                    currDecPrecision++;
-                } else {
-                    fracPart = false;
-                    if (currDecPrecision > decPrecision)
-                        decPrecision = currDecPrecision;
-                    currDecPrecision = 0;
-                }
-            }
-        }
-        Real x, y;
-        std::istringstream iss(line);
-        if (not(iss >> x >> y)) {
-#ifndef FOR_R_TDA
-            std::cerr << "Error in file " << fname << ", line number " << lineNumber << ": cannot parse \"" << line << "\"" << std::endl;
-#endif
-            return false;
-        }
-        if ( x != y ) {
-            result.push_back(std::make_pair(x,y));
-        } else {
-#ifndef FOR_R_TDA
-#ifndef VERBOSE_BOTTLENECK
-            std::cerr << "Warning: in file " << fname << ", line number " << lineNumber << ", zero persistence point ignored: \"" << line << "\"" << std::endl;
-#endif
-#endif
-        }
-    }
-    f.close();
-    return true;
 }
 
 } // end namespace bt
