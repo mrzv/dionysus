@@ -19,8 +19,9 @@ addons:
 
 before_script:
   - CC=gcc-7 CXX=g++-7 python setup.py install
-  - pip install sphinx numpy scipy matplotlib nb2plots
+  - pip install sphinx numpy scipy matplotlib nb2plots pytest
 
 script:
+  - pytest
   - cd doc
   - make doctest
