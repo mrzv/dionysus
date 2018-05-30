@@ -33,6 +33,10 @@ Alpha shape filtrations are available via `DioDe <https://github.com/mrzv/diode>
   * (Optional) `SciPy <https://www.scipy.org/>`_ for the LSQR routine used in :ref:`circular`.
   * (Optional) `Maplotlib <https://matplotlib.org/>`_ for :ref:`plotting`.
 
+**Requirements:**
+  * Boost needs to be at least version 1.55.
+  * If you are using GCC, the oldest supported version is 5.4.
+
 **Contact:**
   * please use the `dionysus mailing list <https://groups.io/g/dionysus/>`_
     for all questions and discussion related to the library;
