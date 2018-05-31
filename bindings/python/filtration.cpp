@@ -50,6 +50,7 @@ void init_filtration(py::module& m)
                                 { f.sort([cmp,reverse](const PySimplex& s1, const PySimplex& s2) { return reverse ? cmp(s1, s2) > 0 : cmp(s1, s2) < 0; }); },
                                 "cmp"_a, "reverse"_a = false,
                                 "sort the filtration with respect to the given functor")
+        .def("rearrange",       &PyFiltration::rearrange, "indices"_a, "rearrange simplices into the given order")
         .def("__repr__",        [](const PyFiltration& f) { std::ostringstream oss; oss << "Filtration with " << f.size() << " simplices"; return oss.str(); })
     ;
 }

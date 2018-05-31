@@ -1,6 +1,8 @@
 #ifndef DIONYSUS_FILTRATION_H
 #define DIONYSUS_FILTRATION_H
 
+#include <vector>
+
 #include <boost/multi_index_container.hpp>
 #include <boost/multi_index/ordered_index.hpp>
 #include <boost/multi_index/hashed_index.hpp>
@@ -73,6 +75,8 @@ class Filtration
         template<class Cmp = std::less<Cell>>
         void                sort(const Cmp& cmp = Cmp())                        { cells_.template get<order>().sort(cmp); }
 
+        void                rearrange(const std::vector<size_t>& indices);
+
         OrderConstIterator  begin() const                                       { return cells_.template get<order>().begin(); }
         OrderConstIterator  end() const                                         { return cells_.template get<order>().end(); }
         OrderIterator       begin()                                             { return cells_.template get<order>().begin(); }
@@ -103,5 +107,17 @@ index(const Cell& s) const
     }
     return it - begin();
 }
+
+template<class C, class CLI, bool checked_index>
+void
+dionysus::Filtration<C,CLI,checked_index>::
+rearrange(const std::vector<size_t>& indices)
+{
+    std::vector<std::reference_wrapper<const Cell>> references; references.reserve(indices.size());
+    for (size_t i : indices)
+        references.push_back(std::cref((*this)[i]));
+    cells_.template get<order>().rearrange(references.begin());
+}
+
 
 #endif
