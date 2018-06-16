@@ -9,6 +9,7 @@
  *  - 2018-04-27: replace parsing logic with the one from ProgramOptions.hxx to
  *                make the parser compliant with [GNU Program Argument Syntax
  *                Conventions](https://www.gnu.org/software/libc/manual/html_node/Argument-Syntax.html)
+ *  - 2018-05-11: add dashed_non_option(), to accept arguments that are negative numbers
  */
 
 #ifndef OPTS_OPTS_H
@@ -21,6 +22,8 @@
 #include <vector>
 #include <map>
 #include <memory>
+#include <cctype>
+#include <functional>
 
 namespace opts {
 
@@ -102,6 +105,8 @@ struct Traits<std::string>
 
 struct BasicOption
 {
+    using IsShort = std::function<bool(char)>;
+
                     BasicOption(char        s_,
                                 std::string l_,
                                 std::string default_,
@@ -138,7 +143,7 @@ struct BasicOption
     }
 
     virtual bool    flag() const                                { return false; }
-    virtual bool    parse(std::size_t argc, char** argv, std::size_t& i, std::size_t j);
+    virtual bool    parse(int argc, char** argv, int& i, int j, IsShort is_short);
     virtual bool    set(std::string arg) =0;
 
     char            s;
@@ -183,7 +188,7 @@ struct OptionContainer<bool>: public BasicOption
                         BasicOption(s_, l_, "", "", help_),
                         var(&var_)                          { *var = false; }
 
-    bool            parse(std::size_t, char**, std::size_t&, std::size_t) override  { *var = true; return true; }
+    bool            parse(int, char**, int&, int, IsShort) override                 { *var = true; return true; }
     bool            set(std::string) override                                       { return true; }
     bool            flag() const override                                           { return true; }
 
@@ -318,6 +323,13 @@ struct Options
         std::cerr << "error: unrecognized option " << arg << '\n';
     }
 
+    static bool     dashed_non_option(char* arg, BasicOption::IsShort is_short)
+    {
+        return arg[ 0 ] == '-'
+                && (std::isdigit(arg[ 1 ]) || arg[ 1 ] == '.')
+                && !is_short(arg[ 1 ]);
+    }
+
     private:
         std::list<std::string>                      args;
         std::list<std::unique_ptr<BasicOption>>     options;
@@ -325,14 +337,15 @@ struct Options
 };
 
 bool
-BasicOption::parse(std::size_t argc, char** argv, std::size_t& i, std::size_t j)
+BasicOption::parse(int argc, char** argv, int& i, int j, IsShort is_short)
 {
     char* argument;
+    char* cur_arg = argv[i];
     // -v...
     if (argv[i][j] == '\0')
     {
         // -v data
-        if (i + 1 < argc && argv[i+1][0] != '-')
+        if (i + 1 < argc && (argv[i+1][0] != '-' || Options::dashed_non_option(argv[i+1], is_short)))
         {
             ++i;
             argument = argv[i];
@@ -355,7 +368,7 @@ BasicOption::parse(std::size_t argc, char** argv, std::size_t& i, std::size_t j)
     }
     bool result = set(argument);
     if (!result)
-        std::cerr << "error: failed to parse " << argument << " in " << argv[i] << '\n';
+        std::cerr << "error: failed to parse " << argument << " in " << cur_arg << '\n';
     return result;
 }
 
@@ -373,11 +386,13 @@ Options::parse(int argc, char** argv)
         long_opts[opt->l] = opt.get();
     }
 
-    for (std::size_t i = 1; i < argc; ++i)
+    auto is_short = [&short_opts](char c) -> bool   { return short_opts.find(c) != short_opts.end(); };
+
+    for (int i = 1; i < argc; ++i)
     {
         if( argv[ i ][ 0 ] == '\0' )
             continue;
-        if( argv[ i ][ 0 ] != '-')
+        if( argv[ i ][ 0 ] != '-' || dashed_non_option(argv[i], is_short))
             args.push_back(argv[i]);
         else
         {
@@ -411,7 +426,7 @@ Options::parse(int argc, char** argv)
                             unrecognized_option(argv[i]);
                         } else
                         {
-                            failed |= !opt_it->second->parse(argc, argv, i, last - argv[i]);
+                            failed |= !opt_it->second->parse(argc, argv, i, last - argv[i], is_short);
                         }
                     }
                 }
@@ -425,11 +440,11 @@ Options::parse(int argc, char** argv)
                     unrecognized_option(argv[i]);
                 } else if (opt_it->second->flag())
                 {
-                    opt_it->second->parse(argc, argv, i, 0);        // arguments are meaningless; just sets the flag
+                    opt_it->second->parse(argc, argv, i, 0, is_short);      // arguments are meaningless; just sets the flag
 
                     // -fgh
                     char c;
-                    for(std::size_t j = 1; (c = argv[i][j]) != '\0'; ++j)
+                    for(int j = 1; (c = argv[i][j]) != '\0'; ++j)
                     {
                         if (!std::isprint(c) || c == '-')
                         {
@@ -450,11 +465,11 @@ Options::parse(int argc, char** argv)
                             std::cerr << "error: non-void options not allowed in option packs; ignoring " << c << '\n';
                             continue;
                         }
-                        opt_it->second->parse(argc, argv, i, 0);    // arguments are meaningless; just sets the flag
+                        opt_it->second->parse(argc, argv, i, 0, is_short);     // arguments are meaningless; just sets the flag
                     }
                 } else
                 {
-                    failed |= !opt_it->second->parse(argc, argv, i, 2);
+                    failed |= !opt_it->second->parse(argc, argv, i, 2, is_short);
                 }
             }
         }
