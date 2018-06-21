@@ -5,7 +5,7 @@ namespace py = pybind11;
 
 #include <../ext/hera/wasserstein/include/wasserstein.h>
 
-double wasserstein_distance(const PyDiagram& dgm1, const PyDiagram& dgm2, int q, double delta, double internal_p, double initial_eps, double eps_factor)
+double wasserstein_distance(const PyDiagram& dgm1, const PyDiagram& dgm2, double q, double delta, double internal_p, double initial_eps, double eps_factor)
 {
     hera::AuctionParams<PyDiagram::Value> params;
     params.wasserstein_power = q;

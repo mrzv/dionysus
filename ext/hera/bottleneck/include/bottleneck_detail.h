@@ -43,39 +43,44 @@ derivative works thereof, in binary and source code form.
 namespace hera {
 
 
-namespace bt {
+    namespace bt {
+
+        // functions taking DiagramPointSet as input.
+        // ATTENTION: parameters A and B (diagrams) will be changed after the call
+        // (projections added).
+
+        // return the interval (distMin, distMax) such that:
+        // a) actual bottleneck distance between A and B is contained in the interval
+        // b) if the interval is not (0,0), then  (distMax - distMin) / distMin < epsilon
+        template<class Real>
+        std::pair<Real, Real> bottleneckDistApproxInterval(DiagramPointSet<Real>& A, DiagramPointSet<Real>& B,
+                                                           const Real epsilon, MatchingEdge<Real>& longest_edge,
+                                                           bool compute_longest_edge = false);
 
 
+        // heuristic (sample diagram to estimate the distance)
+        template<class Real>
+        std::pair<Real, Real>
+        bottleneckDistApproxIntervalHeur(DiagramPointSet<Real>& A, DiagramPointSet<Real>& B, const Real epsilon,
+                                         bool compute_longest_edge = false);
 
-// functions taking DiagramPointSet as input.
-// ATTENTION: parameters A and B (diagrams) will be changed after the call
-// (projections added).
+        // get approximate distance,
+        // see bottleneckDistApproxInterval
+        template<class Real>
+        Real bottleneckDistApprox(DiagramPointSet<Real>& A, DiagramPointSet<Real>& B, const Real epsilon,
+                                  MatchingEdge<Real>& longest_edge, bool compute_longest_edge = false);
 
-// return the interval (distMin, distMax) such that:
-// a) actual bottleneck distance between A and B is contained in the interval
-// b) if the interval is not (0,0), then  (distMax - distMin) / distMin < epsilon
-template<class Real>
-std::pair<Real, Real> bottleneckDistApproxInterval(DiagramPointSet<Real>& A, DiagramPointSet<Real>& B, const Real epsilon);
+        // get exact bottleneck distance,
+        template<class Real>
+        Real bottleneckDistExact(DiagramPointSet<Real>& A, DiagramPointSet<Real>& B, const int decPrecision,
+                                 MatchingEdge<Real>& longest_edge, bool compute_longest_edge = false);
 
+        // get exact bottleneck distance,
+        template<class Real>
+        Real bottleneckDistExact(DiagramPointSet<Real>& A, DiagramPointSet<Real>& B, MatchingEdge<Real>& longest_edge,
+                                 bool compute_longest_edge = false);
 
-// heuristic (sample diagram to estimate the distance)
-template<class Real>
-std::pair<Real, Real> bottleneckDistApproxIntervalHeur(DiagramPointSet<Real>& A, DiagramPointSet<Real>& B, const Real epsilon);
-
-// get approximate distance,
-// see bottleneckDistApproxInterval
-template<class Real>
-Real bottleneckDistApprox(DiagramPointSet<Real>& A, DiagramPointSet<Real>& B, const Real epsilon);
-
-// get exact bottleneck distance,
-template<class Real>
-Real bottleneckDistExact(DiagramPointSet<Real>& A, DiagramPointSet<Real>& B, const int decPrecision);
-
-// get exact bottleneck distance,
-template<class Real>
-Real bottleneckDistExact(DiagramPointSet<Real>& A, DiagramPointSet<Real>& B);
-
-} // end namespace bt
+    } // end namespace bt
 
 
 } // end namespace hera
