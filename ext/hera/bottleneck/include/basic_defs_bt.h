@@ -194,7 +194,7 @@ namespace hera {
             {
                 if (isDiagonal())
                     return 0.0;
-                Real pers = (y - x) / 2;
+                Real pers = fabs(y - x) / 2;
                 if (internal_p == get_infinity()) {
                     return pers;
                 } else if (internal_p == 1.0) {

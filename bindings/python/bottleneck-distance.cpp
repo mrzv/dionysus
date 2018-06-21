@@ -40,6 +40,6 @@ void init_bottleneck_distance(py::module& m)
     using namespace pybind11::literals;
     m.def("bottleneck_distance",   &bottleneck_distance, "dgm1"_a, "dgm2"_a, py::arg("delta") = 0.01,
           "compute bottleneck distance between two persistence diagrams");
-    m.def("bottleneck_distance_with_edge",   &bottleneck_distance_with_edge, "dgm1"_a, "dgm2"_a, py::arg("delta") = 0.01,
+    m.def("bottleneck_distance_with_edge",   &bottleneck_distance_with_edge, "dgm1"_a, "dgm2"_a, py::arg("delta") = 0,
           "compute bottleneck distance between two persistence diagrams and the longest edge");
 }
