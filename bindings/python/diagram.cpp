@@ -15,6 +15,9 @@ namespace py = pybind11;
 void init_diagram(py::module& m)
 {
     using namespace pybind11::literals;
+
+    using PointsVector = std::vector<std::tuple<PyDiagram::Value, PyDiagram::Value, PyDiagram::Data>>;
+
     py::class_<PyDiagram>(m, "Diagram", "persistence diagram")
         .def(py::init<>(),      "initialize empty diagram")
         .def(py::init([](const std::vector<std::tuple<PySimplex::Data, PySimplex::Data>>& pts)
@@ -31,6 +34,28 @@ void init_diagram(py::module& m)
                                 py::keep_alive<0, 1>() /* Essential: keep object alive while iterator exists */,
                                 "iterate over the points of the diagram")
         .def("__repr__",        [](const PyDiagram& dgm)        { std::ostringstream oss; oss << "Diagram with " << dgm.size() << " points"; return oss.str(); })
+        .def(py::pickle(
+            [](const PyDiagram& dgm)        // __getstate__
+            {
+                PointsVector points;
+
+                for (auto& p : dgm)
+                    points.emplace_back(p.birth(), p.death(), p.data);
+
+                return py::make_tuple(points);
+            },
+            [](py::tuple t)                 // __setstate__
+            {
+                if (t.size() != 1)
+                    throw std::runtime_error("Invalid state!");
+
+                PyDiagram dgm;
+                for (auto& p : t[0].cast<PointsVector>())
+                    dgm.emplace_back(std::get<0>(p), std::get<1>(p), std::get<2>(p));
+
+                return dgm;
+            }
+        ));
     ;
 
     using Point = PyDiagram::Point;
