@@ -15,18 +15,18 @@ double bottleneck_distance(const PyDiagram& dgm1, const PyDiagram& dgm2, double 
 
 std::pair<double, std::pair<int, int>> bottleneck_distance_with_edge(const PyDiagram& dgm1, const PyDiagram& dgm2, double delta)
 {
-    hera::bt::MatchingEdge<float> longest_edge;
+    hera::bt::MatchingEdge<double> longest_edge;
     bool compute_longest_edge = true;
 
     if (delta == 0.0) {
         int dec_precision = 14;
-        float d = hera::bottleneckDistExact(dgm1, dgm2, dec_precision, longest_edge, compute_longest_edge);
+        double d = hera::bottleneckDistExact(dgm1, dgm2, dec_precision, longest_edge, compute_longest_edge);
 
         return std::make_pair(d,
                               std::make_pair(longest_edge.first.get_user_id(),
                                   longest_edge.second.get_user_id()));
     } else {
-        float d = hera::bottleneckDistApprox(dgm1, dgm2, delta, longest_edge, compute_longest_edge);
+        double d = hera::bottleneckDistApprox(dgm1, dgm2, delta, longest_edge, compute_longest_edge);
 
         return std::make_pair(d,
                               std::make_pair(longest_edge.first.get_user_id(),
