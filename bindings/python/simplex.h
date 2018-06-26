@@ -2,7 +2,7 @@
 
 #include <dionysus/simplex.h>
 
-using PySimplex = dionysus::Simplex<int, double>;
+using PySimplex = dionysus::Simplex<int, float>;
 
 struct DataDimCmp
 {
