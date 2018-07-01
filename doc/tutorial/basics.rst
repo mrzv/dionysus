@@ -255,5 +255,5 @@ then index1 is an index of the point in diagram1, and index2 == -1; same for dia
     >>> print("Bottleneck distance between 1-dimensional persistence diagrams:", bdist)
     Bottleneck distance between 1-dimensional persistence diagrams: 0.060736045241355896
     >>> bdist_e = d.bottleneck_distance(dgms1[1], dgms2[1], 0.01, True)
-    >>> print("Bottleneck distance and longest edge: ", bdist_e)
+    >>> print("Bottleneck distance and longest edge:", bdist_e)
     Bottleneck distance and longest edge: (0.06073604660923593, (2, -1))
