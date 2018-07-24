@@ -1,7 +1,7 @@
 [pybind11]
 source = gh://pybind/pybind11
 collapse = True
-rev = v2.2.0
+rev = master
 destination:
     mkdir bindings/python/pybind11
     mv LICENSE bindings/python/pybind11
