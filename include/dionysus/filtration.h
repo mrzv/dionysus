@@ -2,6 +2,7 @@
 #define DIONYSUS_FILTRATION_H
 
 #include <vector>
+#include <sstream>
 
 #include <boost/multi_index_container.hpp>
 #include <boost/multi_index/ordered_index.hpp>
