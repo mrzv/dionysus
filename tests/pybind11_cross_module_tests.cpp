@@ -20,6 +20,10 @@ PYBIND11_MODULE(pybind11_cross_module_tests, m) {
     // Definitions here are tested by importing both this module and the
     // relevant pybind11_tests submodule from a test_whatever.py
 
+    // test_load_external
+    bind_local<ExternalType1>(m, "ExternalType1", py::module_local());
+    bind_local<ExternalType2>(m, "ExternalType2", py::module_local());
+
     // test_exceptions.py
     m.def("raise_runtime_error", []() { PyErr_SetString(PyExc_RuntimeError, "My runtime error"); throw py::error_already_set(); });
     m.def("raise_value_error", []() { PyErr_SetString(PyExc_ValueError, "My value error"); throw py::error_already_set(); });
@@ -104,4 +108,16 @@ PYBIND11_MODULE(pybind11_cross_module_tests, m) {
     m.def("get_gl_value", [](MixGL &o) { return o.i + 100; });
 
     py::class_<MixGL2>(m, "MixGL2", py::module_local()).def(py::init<int>());
+
+    // test_vector_bool
+    // We can't test both stl.h and stl_bind.h conversions of `std::vector<bool>` within
+    // the same module (it would be an ODR violation). Therefore `bind_vector` of `bool`
+    // is defined here and tested in `test_stl_binders.py`.
+    py::bind_vector<std::vector<bool>>(m, "VectorBool");
+
+    // test_missing_header_message
+    // The main module already includes stl.h, but we need to test the error message
+    // which appears when this header is missing.
+    m.def("missing_header_arg", [](std::vector<float>) { });
+    m.def("missing_header_return", []() { return std::vector<float>(); });
 }

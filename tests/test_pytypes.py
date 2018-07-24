@@ -7,11 +7,11 @@ from pybind11_tests import debug_enabled
 
 def test_list(capture, doc):
     with capture:
-        l = m.get_list()
-        assert l == ["overwritten"]
+        lst = m.get_list()
+        assert lst == ["overwritten"]
 
-        l.append("value2")
-        m.print_list(l)
+        lst.append("value2")
+        m.print_list(lst)
     assert capture.unordered == """
         Entry at position 0: value
         list item 0: overwritten
@@ -144,6 +144,8 @@ def test_accessors():
     assert d["is_none"] is False
     assert d["operator()"] == 2
     assert d["operator*"] == 7
+    assert d["implicit_list"] == [1, 2, 3]
+    assert all(x in TestObject.__dict__ for x in d["implicit_dict"])
 
     assert m.tuple_accessor(tuple()) == (0, 1, 2)
 

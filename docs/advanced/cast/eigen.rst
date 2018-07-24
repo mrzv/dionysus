@@ -41,7 +41,7 @@ consideration: by default, numpy matrices and eigen matrices are *not* storage
 compatible.
 
 If the numpy matrix cannot be used as is (either because its types differ, e.g.
-passing an array of integers to an Eigen paramater requiring doubles, or
+passing an array of integers to an Eigen parameter requiring doubles, or
 because the storage is incompatible), pybind11 makes a temporary copy and
 passes the copy instead.
 
@@ -89,7 +89,7 @@ as dictated by the binding function's return value policy (see the
 documentation on :ref:`return_value_policies` for full details).  That means,
 without an explicit return value policy, lvalue references will be copied and
 pointers will be managed by pybind11.  In order to avoid copying, you should
-explictly specify an appropriate return value policy, as in the following
+explicitly specify an appropriate return value policy, as in the following
 example:
 
 .. code-block:: cpp
@@ -275,7 +275,7 @@ Vectors versus column/row matrices
 Eigen and numpy have fundamentally different notions of a vector.  In Eigen, a
 vector is simply a matrix with the number of columns or rows set to 1 at
 compile time (for a column vector or row vector, respectively).  Numpy, in
-contast, has comparable 2-dimensional 1xN and Nx1 arrays, but *also* has
+contrast, has comparable 2-dimensional 1xN and Nx1 arrays, but *also* has
 1-dimensional arrays of size N.
 
 When passing a 2-dimensional 1xN or Nx1 array to Eigen, the Eigen type must
@@ -287,7 +287,7 @@ On the other hand, pybind11 allows you to pass 1-dimensional arrays of length N
 as Eigen parameters.  If the Eigen type can hold a column vector of length N it
 will be passed as such a column vector.  If not, but the Eigen type constraints
 will accept a row vector, it will be passed as a row vector.  (The column
-vector takes precendence when both are supported, for example, when passing a
+vector takes precedence when both are supported, for example, when passing a
 1D numpy array to a MatrixXd argument).  Note that the type need not be
 expicitly a vector: it is permitted to pass a 1D numpy array of size 5 to an
 Eigen ``Matrix<double, Dynamic, 5>``: you would end up with a 1x5 Eigen matrix.

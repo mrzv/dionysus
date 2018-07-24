@@ -6,6 +6,19 @@ def test_unscoped_enum():
     assert str(m.UnscopedEnum.EOne) == "UnscopedEnum.EOne"
     assert str(m.UnscopedEnum.ETwo) == "UnscopedEnum.ETwo"
     assert str(m.EOne) == "UnscopedEnum.EOne"
+
+    # name property
+    assert m.UnscopedEnum.EOne.name == "EOne"
+    assert m.UnscopedEnum.ETwo.name == "ETwo"
+    assert m.EOne.name == "EOne"
+    # name readonly
+    with pytest.raises(AttributeError):
+        m.UnscopedEnum.EOne.name = ""
+    # name returns a copy
+    foo = m.UnscopedEnum.EOne.name
+    foo = "bar"
+    assert m.UnscopedEnum.EOne.name == "EOne"
+
     # __members__ property
     assert m.UnscopedEnum.__members__ == \
         {"EOne": m.UnscopedEnum.EOne, "ETwo": m.UnscopedEnum.ETwo}
@@ -17,6 +30,22 @@ def test_unscoped_enum():
     foo["bar"] = "baz"
     assert m.UnscopedEnum.__members__ == \
         {"EOne": m.UnscopedEnum.EOne, "ETwo": m.UnscopedEnum.ETwo}
+
+    assert m.UnscopedEnum.__doc__ == \
+        '''An unscoped enumeration
+
+Members:
+
+  EOne : Docstring for EOne
+
+  ETwo : Docstring for ETwo''' or m.UnscopedEnum.__doc__ == \
+        '''An unscoped enumeration
+
+Members:
+
+  ETwo : Docstring for ETwo
+
+  EOne : Docstring for EOne'''
 
     # no TypeError exception for unscoped enum ==/!= int comparisons
     y = m.UnscopedEnum.ETwo

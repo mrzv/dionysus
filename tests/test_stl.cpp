@@ -8,6 +8,7 @@
 */
 
 #include "pybind11_tests.h"
+#include "constructor_stats.h"
 #include <pybind11/stl.h>
 
 // Test with `std::variant` in C++17 mode, or with `boost::variant` in C++11/14
@@ -48,6 +49,11 @@ TEST_SUBMODULE(stl, m) {
     // test_vector
     m.def("cast_vector", []() { return std::vector<int>{1}; });
     m.def("load_vector", [](const std::vector<int> &v) { return v.at(0) == 1 && v.at(1) == 2; });
+    // `std::vector<bool>` is special because it returns proxy objects instead of references
+    m.def("cast_bool_vector", []() { return std::vector<bool>{true, false}; });
+    m.def("load_bool_vector", [](const std::vector<bool> &v) {
+        return v.at(0) == true && v.at(1) == false;
+    });
     // Unnumbered regression (caused by #936): pointers to stl containers aren't castable
     static std::vector<RValueCaster> lvv{2};
     m.def("cast_ptr_vector", []() { return &lvv; });
@@ -230,4 +236,21 @@ TEST_SUBMODULE(stl, m) {
 
     // test_stl_pass_by_pointer
     m.def("stl_pass_by_pointer", [](std::vector<int>* v) { return *v; }, "v"_a=nullptr);
+
+    class Placeholder {
+    public:
+        Placeholder() { print_created(this); }
+        Placeholder(const Placeholder &) = delete;
+        ~Placeholder() { print_destroyed(this); }
+    };
+    py::class_<Placeholder>(m, "Placeholder");
+
+    /// test_stl_vector_ownership
+    m.def("test_stl_ownership",
+          []() {
+              std::vector<Placeholder *> result;
+              result.push_back(new Placeholder());
+              return result;
+          },
+          py::return_value_policy::take_ownership);
 }

@@ -126,7 +126,7 @@ targeted arguments can be passed through the :class:`cpp_function` constructor:
 
 .. warning::
 
-    Code with invalid return value policies might access unitialized memory or
+    Code with invalid return value policies might access uninitialized memory or
     free data structures multiple times, which can lead to hard-to-debug
     non-determinism and segmentation faults, hence it is worth spending the
     time to understand all the different options in the table above.
@@ -177,9 +177,10 @@ indices start at one, while zero refers to the return value. For methods, index
 index ``2``. Arbitrarily many call policies can be specified. When a ``Nurse``
 with value ``None`` is detected at runtime, the call policy does nothing.
 
-This feature internally relies on the ability to create a *weak reference* to
-the nurse object, which is permitted by all classes exposed via pybind11. When
-the nurse object does not support weak references, an exception will be thrown.
+When the nurse is not a pybind11-registered type, the implementation internally
+relies on the ability to create a *weak reference* to the nurse object. When
+the nurse object is not a pybind11-registered type and does not support weak
+references, an exception will be thrown.
 
 Consider the following example: here, the binding code for a list append
 operation ties the lifetime of the newly added element to the underlying
@@ -189,6 +190,17 @@ container:
 
     py::class_<List>(m, "List")
         .def("append", &List::append, py::keep_alive<1, 2>());
+
+For consistency, the argument indexing is identical for constructors. Index
+``1`` still refers to the implicit ``this`` pointer, i.e. the object which is
+being constructed. Index ``0`` refers to the return type which is presumed to
+be ``void`` when a constructor is viewed like a function. The following example
+ties the lifetime of the constructor element to the constructed object:
+
+.. code-block:: cpp
+
+    py::class_<Nurse>(m, "Nurse")
+        .def(py::init<Patient &>(), py::keep_alive<1, 2>());
 
 .. note::
 
@@ -426,7 +438,7 @@ To explicitly enable or disable this behaviour, using the
     py::class_<Cat>(m, "Cat").def(py::init<>());
     m.def("bark", [](Dog *dog) -> std::string {
         if (dog) return "woof!"; /* Called with a Dog instance */
-        else return "(no dog)"; /* Called with None, d == nullptr */
+        else return "(no dog)"; /* Called with None, dog == nullptr */
     }, py::arg("dog").none(true));
     m.def("meow", [](Cat *cat) -> std::string {
         // Can't be called with None argument
@@ -461,7 +473,7 @@ Overload resolution order
 When a function or method with multiple overloads is called from Python,
 pybind11 determines which overload to call in two passes.  The first pass
 attempts to call each overload without allowing argument conversion (as if
-every argument had been specified as ``py::arg().noconvert()`` as decribed
+every argument had been specified as ``py::arg().noconvert()`` as described
 above).
 
 If no overload succeeds in the no-conversion first pass, a second pass is
