@@ -234,7 +234,7 @@ boundary_end() const
 
 template<class V, class D>
 template<class F>
-typename Simplex<V,D>::template BoundaryChainIterator<F>
+typename Simplex<V,D>::BoundaryChainIterator<F>
 Simplex<V,D>::
 boundary_begin(const F& field) const
 {
@@ -244,7 +244,7 @@ boundary_begin(const F& field) const
 
 template<class V, class D>
 template<class F>
-typename Simplex<V,D>::template BoundaryChainIterator<F>
+typename Simplex<V,D>::BoundaryChainIterator<F>
 Simplex<V,D>::
 boundary_end(const F& field) const
 {
