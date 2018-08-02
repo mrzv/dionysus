@@ -8,30 +8,14 @@ namespace py = pybind11;
 #include <dionysus/standard-reduction.h>
 #include <dionysus/clearing-reduction.h>
 
-#include <dionysus/dlog/progress.h>
-
 #include "field.h"
 #include "filtration.h"
 #include "persistence.h"
 #include "diagram.h"
 #include "chain.h"
+#include "progress.h"
 
-struct ShowProgress
-{
-        ShowProgress(size_t total):
-            progress(total)                     {}
-
-    void    operator()() const                  { ++progress; }
-
-    mutable dlog::progress  progress;
-};
-
-struct NoProgress
-{
-    void    operator()() const                  {}
-};
-
-template<class Relative, class Progress>
+template<class Relative>
 PyReducedMatrix
 compute_homology_persistence(const PyFiltration& filtration, const Relative& relative, PyZpField::Element prime, std::string method, const Progress& progress)
 {

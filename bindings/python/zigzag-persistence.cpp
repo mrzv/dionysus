@@ -7,6 +7,7 @@ namespace ba = boost::adaptors;
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 #include <pybind11/functional.h>
+#include <pybind11/iostream.h>
 namespace py = pybind11;
 
 #include <dionysus/row-reduction.h>
@@ -17,6 +18,7 @@ namespace py = pybind11;
 #include "persistence.h"                // to get access to PyReducedMatrix::Chain
 #include "zigzag-persistence.h"
 #include "diagram.h"
+#include "progress.h"
 
 PYBIND11_MAKE_OPAQUE(PyReducedMatrix::Chain);      // we want to provide our own binding for Chain
 
@@ -78,8 +80,14 @@ std::tuple<PyZigzagPersistence, std::vector<PyDiagram>, PyTimeIndexMap>
 zigzag_homology_persistence(const PyFiltration&     f,
                             const Times&            times_,
                             PyZpField::Element      prime,
-                            const Callback&         callback)
+                            const Callback&         callback,
+                            bool                    show_progress)
 {
+    py::scoped_ostream_redirect stream(
+        std::cout,                               // std::ostream&
+        py::module::import("sys").attr("stdout") // Python output
+    );
+
     using Index          = PyZigzagPersistence::Index;
     using CellChainEntry = dionysus::ChainEntry<PyZpField, PySimplex>;
     using ChainEntry     = dionysus::ChainEntry<PyZpField, Index>;
@@ -97,6 +105,10 @@ zigzag_homology_persistence(const PyFiltration&     f,
     }
     std::sort(times.begin(), times.end());
 
+    std::unique_ptr<Progress> progress(new NoProgress);
+    if (show_progress)
+        progress = std::unique_ptr<Progress>(new ShowProgress(times.size()));
+
     std::vector<PyDiagram> diagrams;
     PyZpField field(prime);
     PyZigzagPersistence persistence(field);
@@ -106,6 +118,8 @@ zigzag_homology_persistence(const PyFiltration&     f,
     PyTimeIndexMap          cells_inv_;
     for (auto& tt : times)
     {
+        (*progress)();
+
         size_t i = tt.i; float t = tt.t; bool dir = tt.dir;
 
         auto& c = f[i];
@@ -211,6 +225,7 @@ void init_zigzag_persistence(py::module& m)
     using namespace pybind11::literals;
     m.def("zigzag_homology_persistence",   &zigzag_homology_persistence, "filtration"_a, "times"_a, py::arg("prime") = 2,
                                                                          py::arg("callback") = Callback([](size_t, float, bool, const PyZigzagPersistence*, const PyTimeIndexMap*){}),
+                                                                         py::arg("progress") = false,
           R"(
           compute zigzag homology persistence of the filtration with respect to the given times
 
