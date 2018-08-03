@@ -223,9 +223,9 @@ struct PyZZAliveCycleIterator
 void init_zigzag_persistence(py::module& m)
 {
     using namespace pybind11::literals;
-    m.def("zigzag_homology_persistence",   &zigzag_homology_persistence, "filtration"_a, "times"_a, py::arg("prime") = 2,
-                                                                         py::arg("callback") = Callback([](size_t, float, bool, const PyZigzagPersistence*, const PyTimeIndexMap*){}),
-                                                                         py::arg("progress") = false,
+    m.def("zigzag_homology_persistence",   &zigzag_homology_persistence, "filtration"_a, "times"_a, "prime"_a = 2,
+                                                                         "callback"_a = Callback([](size_t, float, bool, const PyZigzagPersistence*, const PyTimeIndexMap*){}),
+                                                                         "progress"_a = false,
           R"(
           compute zigzag homology persistence of the filtration with respect to the given times
 
@@ -239,7 +239,8 @@ void init_zigzag_persistence(py::module& m)
                           where `i` is the index of the simplex being added or removed, `t` is the time,
                           `d` is the "direction" (`True` if the simplex is being added, `False` if it`s being removed),
                           `zz` is the current state of the :class:`~dionysus._dionysus.ZigzagPersistence`,
-                          `cells` is the map from the internal indices of the zigzag representation to the filtration indices.
+                          `cells` is the map from the internal indices of the zigzag representation to the filtration indices,
+              progress:   show a progress bar.
 
           Returns:
               A triple. The first element is an instance of
