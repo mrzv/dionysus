@@ -1,6 +1,9 @@
 #pragma once
 
+#include <iostream>
+#include <pybind11/iostream.h>
 #include <dionysus/dlog/progress.h>
+namespace py = pybind11;
 
 struct Progress
 {
@@ -15,6 +18,10 @@ struct ShowProgress: public Progress
 
     void    operator()() const override         { ++progress; }
 
+    py::scoped_ostream_redirect stream = py::scoped_ostream_redirect(
+        std::cout,                               // std::ostream&
+        py::module::import("sys").attr("stdout") // Python output
+    );
     mutable dlog::progress  progress;
 };
 

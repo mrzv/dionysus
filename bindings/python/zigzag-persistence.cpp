@@ -7,7 +7,6 @@ namespace ba = boost::adaptors;
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 #include <pybind11/functional.h>
-#include <pybind11/iostream.h>
 namespace py = pybind11;
 
 #include <dionysus/row-reduction.h>
@@ -83,11 +82,6 @@ zigzag_homology_persistence(const PyFiltration&     f,
                             const Callback&         callback,
                             bool                    show_progress)
 {
-    py::scoped_ostream_redirect stream(
-        std::cout,                               // std::ostream&
-        py::module::import("sys").attr("stdout") // Python output
-    );
-
     using Index          = PyZigzagPersistence::Index;
     using CellChainEntry = dionysus::ChainEntry<PyZpField, PySimplex>;
     using ChainEntry     = dionysus::ChainEntry<PyZpField, Index>;
