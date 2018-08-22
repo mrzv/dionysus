@@ -250,3 +250,23 @@ Diagram Distances
     >>> bdist = d.bottleneck_distance(dgms1[1], dgms2[1])
     >>> print("Bottleneck distance between 1-dimensional persistence diagrams:", bdist)
     Bottleneck distance between 1-dimensional persistence diagrams: 0.060736045241355896
+
+.. _homologous-cycles:
+
+Homologous Cycles
+-----------------
+
+To determine if two chains are homologous, use :meth:`~dionysus._dionysus.ReducedMatrix.homologous` method:
+
+.. doctest::
+
+    >>> simplices = [[0], [1], [0,1], [2]]
+    >>> f = d.Filtration(simplices)
+    >>> f.sort()
+    >>> m = d.homology_persistence(f)
+
+    >>> m.homologous(d.Chain([(1,0)]), d.Chain([(1,1)]))
+    True
+
+    >>> m.homologous(d.Chain([(1,0)]), d.Chain([(1,2)]))
+    False

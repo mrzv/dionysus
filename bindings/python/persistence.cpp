@@ -83,6 +83,17 @@ py_init_diagrams(const PyReducedMatrix& m, const PyFiltration& f)
                          [](PyReducedMatrix::Index i) -> PyIndex    { return i; });             // data
 }
 
+bool
+homologous(PyReducedMatrix& m, PyReducedMatrix::Chain z1, const PyReducedMatrix::Chain& z2)
+{
+    using Entry = PyReducedMatrix::Entry;
+    auto entry_cmp = [&m](const Entry& e1, const Entry& e2) { return m.cmp()(e1.index(), e2.index()); };
+    // z1 -= z2
+    dionysus::Chain<PyReducedMatrix::Chain>::addto(z1, m.field().neg(m.field().id()), z2, m.field(), entry_cmp);
+    m.reduce(z1);
+    return z1.empty();
+}
+
 PYBIND11_MAKE_OPAQUE(PyReducedMatrix::Chain);      // we want to provide our own binding for Chain
 
 void init_persistence(py::module& m)
@@ -104,6 +115,7 @@ void init_persistence(py::module& m)
         .def("pair",        &PyReducedMatrix::pair,         "pair of the given index")
         .def_property_readonly("unpaired",      [](const PyReducedMatrix&) { return PyReducedMatrix::unpaired(); },
                                "index representing lack of pair")
+        .def("homologous",  &homologous,                    "test if two cycles are homologous")
         .def("__iter__",    [](const PyReducedMatrix& rm)   { return py::make_iterator(rm.columns().begin(), rm.columns().end()); },
                                 py::keep_alive<0, 1>() /* Essential: keep object alive while iterator exists */,
                                 "iterate over the columns of the matrix")
