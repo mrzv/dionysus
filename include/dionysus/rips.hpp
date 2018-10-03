@@ -18,7 +18,7 @@ generate(Dimension k, DistanceType max, const Functor& f, Iterator bg, Iterator 
     // candidates   = everything
     VertexContainer current;
     VertexContainer candidates(bg, end);
-    bron_kerbosch(current, candidates, std::prev(candidates.begin()), k, neighbor, f);
+    bron_kerbosch(current, candidates, candidates.begin(), k, neighbor, f);
 }
 
 template<class D, class S>
@@ -37,7 +37,7 @@ vertex_cofaces(IndexType v, Dimension k, DistanceType max, const Functor& f, Ite
         if (*cur != v && neighbor(v, *cur))
             candidates.push_back(*cur);
 
-    bron_kerbosch(current, candidates, std::prev(candidates.begin()), k, neighbor, f);
+    bron_kerbosch(current, candidates, candidates.begin(), k, neighbor, f);
 }
 
 template<class D, class S>
@@ -57,7 +57,7 @@ edge_cofaces(IndexType u, IndexType v, Dimension k, DistanceType max, const Func
         if (*cur != u && *cur != v && neighbor(v,*cur) && neighbor(u,*cur))
             candidates.push_back(*cur);
 
-    bron_kerbosch(current, candidates, std::prev(candidates.begin()), k, neighbor, f);
+    bron_kerbosch(current, candidates, candidates.begin(), k, neighbor, f);
 }
 
 template<class D, class S>
@@ -84,7 +84,7 @@ cofaces(const Simplex& s, Dimension k, DistanceType max, const Functor& f, Itera
                           s,
                           std::back_inserter(candidates));
 
-    bron_kerbosch(current, candidates, std::prev(candidates.begin()), k, neighbor, f, false);
+    bron_kerbosch(current, candidates, candidates.begin(), k, neighbor, f, false);
 }
 
 
@@ -106,7 +106,7 @@ bron_kerbosch(VertexContainer&                          current,
     if (current.size() == static_cast<size_t>(max_dim) + 1)
         return;
 
-    for (auto cur = std::next(excluded); cur != candidates.end(); ++cur)
+    for (auto cur = excluded; cur != candidates.end(); ++cur)
     {
         current.push_back(*cur);
 
@@ -118,7 +118,7 @@ bron_kerbosch(VertexContainer&                          current,
         for (auto ccur = std::next(cur); ccur != candidates.end(); ++ccur)
             if (neighbor(*ccur, *cur))
                 new_candidates.push_back(*ccur);
-        excluded  = new_candidates.begin() + (ex - 1);
+        excluded  = std::next(new_candidates.begin(), ex);
 
         bron_kerbosch(current, new_candidates, excluded, max_dim, neighbor, functor);
         current.pop_back();
