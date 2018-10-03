@@ -56,6 +56,7 @@ public:
     bool getMatchedVertex(const DgmPoint& p, DgmPoint& result) const;
     bool isPerfect() const;
     void trimMatching(const Real newThreshold);
+    MatchingEdge<Real> get_longest_edge() const;
 #ifndef FOR_R_TDA
     template<class R>
     friend std::ostream& operator<<(std::ostream& output, const Matching<R>& m);
@@ -82,6 +83,7 @@ public:
     BoundMatchOracle(DgmPointSet psA, DgmPointSet psB, Real dEps, bool useRS = true);
     bool isMatchLess(Real r);
     bool buildMatchingForThreshold(const Real r);
+    MatchingEdge<Real> get_longest_edge() const { return M.get_longest_edge(); }
 private:
     DgmPointSet A, B;
     Matching<Real> M;

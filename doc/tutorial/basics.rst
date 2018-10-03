@@ -229,7 +229,11 @@ Diagram Distances
 -----------------
 
 :func:`~dionysus._dionysus.wasserstein_distance` computes `q`-th Wasserstein distance between a pair of persistence diagrams.
-:func:`~dionysus._dionysus.bottleneck_distance` computes the bottleneck distance.
+:func:`~dionysus._dionysus.bottleneck_distance` computes the bottleneck distance. Extra arguments: delta is a relative
+error, compute_longest_edge is a bool (False by default). If compute_longest_edge is True, then the result is a tuple
+(distance, edge), where edge is a tuple (index1, index2). If the distance is 0, or if the distance is infinite, then
+both index1 == index2 == -1. If a longest edge connects a point of diagram1 with its diagonal projection,
+then index1 is an index of the point in diagram1, and index2 == -1; same for diagram2.
 
 .. testsetup::
 
@@ -250,3 +254,6 @@ Diagram Distances
     >>> bdist = d.bottleneck_distance(dgms1[1], dgms2[1])
     >>> print("Bottleneck distance between 1-dimensional persistence diagrams:", bdist)
     Bottleneck distance between 1-dimensional persistence diagrams: 0.060736045241355896
+    >>> bdist_e = d.bottleneck_distance(dgms1[1], dgms2[1], 0.01, True)
+    >>> print("Bottleneck distance and longest edge:", bdist_e)
+    Bottleneck distance and longest edge: (0.06073604660923593, (2, -1))

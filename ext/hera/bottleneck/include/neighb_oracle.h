@@ -179,7 +179,7 @@ public:
             // store normal items in kd-tree
             for(const auto& g : allPoints) {
                 if (true) {
-                    kdtreeItems[trueIdx] = dnnItemIdx;
+                    kdtreeItems.push_back(dnnItemIdx);
                     // index of items is id of dnn-point
                     DnnPoint p(trueIdx);
                     p[0] = g.getRealX();

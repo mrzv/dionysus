@@ -106,11 +106,11 @@ hera::bt::dnn::KDTree<T>::OrderTree
             size_t next_i = (i + 1) % traits.dimension();
 
             // Replace with a size condition instead?
-            if (b < m - 1)
+            if (m - b > 1)
                 q.push(KDTreeNode(b,   m, im, next_i));
             else if (b < m)
                 tree->parents_[im - 1] = im;
-            if (e > m + 2)
+            if (e - m > 2)
                 q.push(KDTreeNode(m+1, e, im, next_i));
             else if (e > m + 1)
                 tree->parents_[im + 1] = im;
@@ -210,7 +210,7 @@ void hera::bt::dnn::KDTree<T>::search(PointHandle q, ResultsFunctor& rf) const
         DistanceType diffToWasserPower = (diff > 0 ? 1.0 : -1.0) * fabs(diff);
 
         size_t       lm   = m + 1 + (e - (m+1))/2 - tree_.begin();
-        if ( subtree_n_elems[lm] > 0 ) {
+        if ( e > m + 1 and subtree_n_elems[lm] > 0 ) {
             if (e > m + 1 && diffToWasserPower  >= -D) {
                 nodes.push(KDTreeNode(m+1, e, i));
             }
