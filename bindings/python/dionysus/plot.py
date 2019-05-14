@@ -1,6 +1,3 @@
-import matplotlib.pyplot as plt
-from matplotlib.colors import LogNorm, Normalize
-
 def plot_diagram(dgm, show=False, labels=False, ax=None,
                  line_style=None, pt_style=None):
     """Plot the persistence diagram.
@@ -15,6 +12,9 @@ def plot_diagram(dgm, show=False, labels=False, ax=None,
         pt_style (dict): argments passed to `ax.scatter` for style of points.
         line_style (dict): argments passed to `ax.plot` for style of diagonal line.
     """
+
+    import matplotlib.pyplot as plt
+
     line_kwargs = {}
     pt_kwargs = {}
     if pt_style is not None:
@@ -63,6 +63,9 @@ def plot_bars(dgm, order='birth', show=False, ax=None, **bar_style):
         **bar_style: Arguments passed to `ax.plot` for style of the bars.
                      (Defaults: color='b')
     """
+
+    import matplotlib.pyplot as plt
+
     bar_kwargs = {'color': 'b'}
     bar_kwargs.update(bar_style)
 
@@ -98,6 +101,10 @@ def plot_diagram_density(dgm, lognorm=True, diagonal=True,
         **hist_style: Arguments passed to `ax.hist2d` for style of the histogram.
             (Defaults: bins=200)
     """
+
+    import matplotlib.pyplot as plt
+    from   matplotlib.colors import LogNorm, Normalize
+
     hist_kwargs = {'bins': 200}
     hist_kwargs.update(hist_style)
 
