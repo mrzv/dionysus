@@ -102,6 +102,12 @@ The following functions live in ``dionysus.plot`` module.
 .. autofunction:: dionysus.plot.plot_diagram_density
 
 
+Diagnostics
+-----------
+
+.. autofunction:: dionysus.is_simplicial
+
+
 .. Auto
    ----
 

@@ -8,4 +8,5 @@ Practical Guide to Persistent Homology
    filtrations
    persistence
    plotting
+   diagnostics
 

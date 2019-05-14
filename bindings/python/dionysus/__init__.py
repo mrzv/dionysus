@@ -60,3 +60,22 @@ def smooth(f, z, prime, show = False):
             vertex_values[f[i][0]] = x
 
     return vertex_values
+
+def is_simplicial(f, report = False):
+    """Check if filtration is simplicial. If `report = True`, output the problems."""
+    simplicial = True
+    for s in f:
+        if len(s) != len(set(s)):
+            if report:
+                print("%s is not a simplex" % s)
+                simplicial = False
+            else:
+                return False
+        for sb in s.boundary():
+            if sb not in f:
+                if report:
+                    print("%s in boundary of %s not found in the filtration" % (sb, s))
+                    simplicial = False
+                else:
+                    return False
+    return simplicial
