@@ -1,11 +1,12 @@
 def plot_diagram(dgm, show=False, labels=False, ax=None,
                  line_style=None, pt_style=None):
-    """Plot the persistence diagram.
+    """
+    Plot the persistence diagram.
 
     Arguments:
         dgm (Diagram): See for example `init_diagrams`.
 
-    Optional Arguments:
+    Keyword Arguments:
         show (bool): Display the plot. (Default: False)
         labels (bool): Set axis labels. (Default: False)
         ax (AxesSubplot): Axes that should be used for plotting (Default: None)
@@ -50,12 +51,13 @@ def plot_diagram(dgm, show=False, labels=False, ax=None,
         plt.show()
 
 def plot_bars(dgm, order='birth', show=False, ax=None, **bar_style):
-    """Plot the barcode.
+    """
+    Plot the barcode.
 
     Arguments:
         dgm (Diagram): See for example `init_diagrams`.
 
-    Optional Arguments:
+    Keyword Arguments:
         order (str): How to sort the bars, either 'death' or 'birth'
                      (Default: 'birth')
         show (bool): Display the plot. (Default: False)
@@ -86,13 +88,14 @@ def plot_bars(dgm, order='birth', show=False, ax=None, **bar_style):
 
 def plot_diagram_density(dgm, lognorm=True, diagonal=True,
                          show=False, labels=False, ax=None, **hist_style):
-    """Plot the histogram of point density.
+    """
+    Plot the histogram of point density.
 
     Arguments:
         dgm (Diagram): See for example `init_diagrams`.
 
-    Optional Arguments:
-        bins (int): bins for histogram, see `ax.hist2d`(Default: 200)
+    Keyword Arguments:
+        bins (int): bins for histogram, see `ax.hist2d` (Default: 200)
         lognorm (bool): Use logarithmic norm (Default: True)
         diagonal (bool):  (Default: True)
         show (bool): Display the plot. (Default: False)
