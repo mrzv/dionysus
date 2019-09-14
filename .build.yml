@@ -1,0 +1,30 @@
+image: archlinux
+packages:
+  - cmake
+  - python
+  - boost
+  - python-pip
+  - python-numpy
+  - python-scipy
+  - python-matplotlib
+  - python-pytest
+  - python-sphinx
+sources:
+  - https://github.com/mrzv/dionysus
+tasks:
+  - pip-install: |
+      sudo pip install nb2plots
+  - setup: |
+      cd dionysus
+      mkdir build
+      cd build
+      cmake ..
+  - build: |
+      cd dionysus/build
+      make
+  - test: |
+      export PYTHONPATH=~/dionysus/build/bindings/python
+      cd dionysus
+      pytest
+      cd doc
+      make doctest
