@@ -1,4 +1,8 @@
 image: archlinux
+triggers:
+  - action: email
+    condition: failure
+    to: Dmitriy Morozov <dmitriy@mrzv.org>
 packages:
   - cmake
   - python
