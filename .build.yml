@@ -18,7 +18,7 @@ sources:
 tasks:
   - pip-install: |
       sudo pip install nb2plots
-  - setup: |
+  - configure: |
       cd dionysus
       mkdir build
       cd build
