@@ -141,7 +141,6 @@ namespace boost
 
 #include <algorithm>
 #include <map>
-#include <boost/progress.hpp>
 
 namespace hera {
 namespace bt {
@@ -219,7 +218,6 @@ namespace dnn
         typedef         type                                                            range;
     };
 
-    using boost::progress_timer;
 }
 }
 }
