@@ -1,0 +1,12 @@
+imports:
+    hera: ./ext/hera
+
+git module hera:
+    url: git@bitbucket.org:grey_narn/hera.git
+    pick:
+        - license.txt
+        - bottleneck
+        - wasserstein
+    move:
+        geom_bottleneck: bottleneck
+        geom_matching/wasserstein: wasserstein
