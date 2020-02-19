@@ -13,4 +13,4 @@ git module hera:
     drop:
         - bottleneck/tests
         - wasserstein/tests
-    rev: cb1838e682ec07f80720241cf9098400caeb83c7
+    rev: 7fb44351b487c64f23066a428089ef14a95b4176
