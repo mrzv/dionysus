@@ -10,3 +10,4 @@ git module hera:
     move:
         geom_bottleneck: bottleneck
         geom_matching/wasserstein: wasserstein
+    rev: cb1838e682ec07f80720241cf9098400caeb83c7
