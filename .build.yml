@@ -28,7 +28,7 @@ tasks:
       make
   - test: |
       export PYTHONPATH=~/dionysus/build/bindings/python
-      cd dionysus
-      timeout 30s pytest
-      cd doc
+      cd dionysus/tests
+      pytest --ignore test_issue39.py
+      cd ../doc
       make doctest
