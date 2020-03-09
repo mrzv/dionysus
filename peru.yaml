@@ -7,10 +7,7 @@ git module hera:
         - license.txt
         - bottleneck
         - wasserstein
-    move:
-        geom_bottleneck: bottleneck
-        geom_matching/wasserstein: wasserstein
     drop:
         - bottleneck/tests
         - wasserstein/tests
-    rev: 7fb44351b487c64f23066a428089ef14a95b4176
+    rev: 0019cae9dc1e9d11aa03bc59681435ba7f21eea8
