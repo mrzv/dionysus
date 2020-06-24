@@ -1,6 +1,8 @@
 recursive-include . *
 recursive-exclude ./.hg *
+recursive-exclude ./.git *
 recursive-exclude ./doc/_build *
 recursive-exclude ./dist *
-exclude .hgignore .hgsubtree tags
+exclude .hgignore .hgsubtree ./tags
 recursive-exclude . *.orig
+recursive-exclude ./bindings/python/dionysus/__pycache__ *
