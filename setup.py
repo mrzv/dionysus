@@ -9,9 +9,9 @@ from setuptools.command.build_ext import build_ext
 from distutils.version import LooseVersion
 
 # ugly hack with paths to export __version__ directly from dionysus
-sys.path.append(os.path.dirname(os.path.abspath(sys.argv[0])) + '/bindings/python/dionysus')
+sys.path = [os.path.dirname(os.path.abspath(sys.argv[0])) + '/bindings/python/dionysus'] + sys.path
 from _version import __version__
-sys.path.pop()
+sys.path = sys.path[1:]
 
 with open('README.rst') as long_description_file:
     long_description = long_description_file.read()
