@@ -84,10 +84,14 @@ py_init_diagrams(const PyReducedMatrix& m, const PyFiltration& f)
 }
 
 bool
-homologous(PyReducedMatrix& m, PyReducedMatrix::Chain z1, const PyReducedMatrix::Chain& z2)
+homologous(PyReducedMatrix& m, PyReducedMatrix::Chain z1, PyReducedMatrix::Chain z2)
 {
     using Entry = PyReducedMatrix::Entry;
     auto entry_cmp = [&m](const Entry& e1, const Entry& e2) { return m.cmp()(e1.index(), e2.index()); };
+
+    std::sort(z1.begin(), z1.end(), entry_cmp);
+    std::sort(z2.begin(), z2.end(), entry_cmp);
+
     // z1 -= z2
     dionysus::Chain<PyReducedMatrix::Chain>::addto(z1, m.field().neg(m.field().id()), z2, m.field(), entry_cmp);
     m.reduce(z1);
