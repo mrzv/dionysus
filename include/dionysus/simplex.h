@@ -168,9 +168,10 @@ struct Simplex<V,D>::BoundaryIterator:
         {
             typedef     std::not_equal_to<V>                                NotEqualVertex;
 
+            using std::placeholders::_1;
             return      Simplex(dim_ - 1,
-                                boost::make_filter_iterator(std::bind2nd(NotEqualVertex(), *(this->base())), bg_,  end_),
-                                boost::make_filter_iterator(std::bind2nd(NotEqualVertex(), *(this->base())), end_, end_));
+                                boost::make_filter_iterator(std::bind(NotEqualVertex(), _1, *(this->base())), bg_,  end_),
+                                boost::make_filter_iterator(std::bind(NotEqualVertex(), _1, *(this->base())), end_, end_));
         }
 
         short unsigned  dim_;
