@@ -32,7 +32,6 @@ derivative works thereof, in binary and source code form.
 #include <memory>
 #include <unordered_set>
 
-#include "spdlog/spdlog.h"
 #include "auction_oracle.h"
 
 namespace hera {

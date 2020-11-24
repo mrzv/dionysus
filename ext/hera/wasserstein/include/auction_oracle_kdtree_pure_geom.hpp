@@ -54,12 +54,8 @@ template <class Real_, class PointContainer_>
 std::ostream& operator<<(std::ostream& output, const AuctionOracleKDTreePureGeom<Real_, PointContainer_>& oracle)
 {
     output << "Oracle " << &oracle << std::endl;
-    output << fmt::format("       max_val_ = {0}\n",
-                          oracle.max_val_);
-
-    output << fmt::format("       prices = {0}\n",
-                          format_container_to_log(oracle.prices));
-
+    output << "max_val_ = " <<  oracle.max_val_ << "\n";
+    output << "prices = " << format_container_to_log(oracle.prices) << "\n";
     output << "end of oracle " << &oracle << std::endl;
     return output;
 }
@@ -90,13 +86,6 @@ AuctionOracleKDTreePureGeom<Real_, PointContainer_>::AuctionOracleKDTreePureGeom
     max_val_ = 3*getFurthestDistance3Approx_pg(this->bidders, this->items, params.internal_p, params.dim);
     max_val_ = std::pow(max_val_, params.wasserstein_power);
     weight_adj_const_ = max_val_;
-
-    console_logger = spdlog::get("console");
-    if (not console_logger) {
-        console_logger = spdlog::stdout_logger_st("console");
-    }
-    console_logger->set_pattern("[%H:%M:%S.%e] %v");
-    console_logger->debug("KDTree Restricted oracle ctor done");
 }
 
 
@@ -181,26 +170,18 @@ template<class Real_, class PointContainer_>
 void AuctionOracleKDTreePureGeom<Real_, PointContainer_>::set_price(IdxType item_idx,
                                                     Real new_price)
 {
-
-    console_logger->debug("Enter set_price, item_idx = {0}, new_price = {1}, old price = {2}", item_idx, new_price, this->prices[item_idx]);
-
     assert(this->prices.size() == this->items.size());
 	// adjust_prices decreases prices,
     // also this variable must be true in reverse phases of FR-auction
 
     this->prices[item_idx] = new_price;
     kdtree_->change_weight( traits.handle(this->items[item_idx]), new_price);
-
-    console_logger->debug("Exit set_price, item_idx = {0}, new_price = {1}", item_idx, new_price);
 }
 
 
 template<class Real_, class PointContainer_>
 void AuctionOracleKDTreePureGeom<Real_, PointContainer_>::adjust_prices(Real delta)
 {
-    //console_logger->debug("Enter adjust_prices, delta = {0}", delta);
-    //std::cerr << *this << std::endl;
-
     if (delta == 0.0)
         return;
 
@@ -209,9 +190,6 @@ void AuctionOracleKDTreePureGeom<Real_, PointContainer_>::adjust_prices(Real del
     }
 
     kdtree_->adjust_weights(delta);
-
-    //std::cerr << *this << std::endl;
-    //console_logger->debug("Exit adjust_prices, delta = {0}", delta);
 }
 
 template<class Real_, class PointContainer_>

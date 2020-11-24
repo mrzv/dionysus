@@ -38,7 +38,6 @@ derivative works thereof, in binary and source code form.
 
 namespace ba = boost::adaptors;
 
-#include "spdlog/spdlog.h"
 #include "basic_defs_ws.h"
 #include "auction_oracle_base.h"
 #include "dnn/geometry/euclidean-dynamic.h"
@@ -81,8 +80,6 @@ struct AuctionOracleKDTreePureGeom : AuctionOracleBase<Real_, PointContainer_> {
     // debug routines
     DebugOptimalBidR get_optimal_bid_debug(IdxType bidder_idx) const;
     void sanity_check();
-
-    std::shared_ptr<spdlog::logger> console_logger;
 
     std::pair<Real, Real> get_minmax_price() const;
 

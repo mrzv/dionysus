@@ -196,7 +196,6 @@ private:
     std::unordered_set<size_t> never_assigned_bidders;
     std::unordered_set<size_t> never_assigned_items;
 
-    std::shared_ptr<spdlog::logger> console_logger;
 #ifdef LOG_AUCTION
     std::unordered_set<size_t> unassigned_normal_bidders;
     std::unordered_set<size_t> unassigned_diag_bidders;
@@ -247,22 +246,6 @@ private:
     // price change statistics
     std::vector<std::vector<size_t>> forward_price_change_cnt_vec;
     std::vector<std::vector<size_t>> reverse_price_change_cnt_vec;
-
-    const char* forward_plot_logger_name = "forward_plot_logger";
-    const char* reverse_plot_logger_name = "reverse_plot_logger";
-    const char* forward_price_stat_logger_name = "forward_price_stat_logger";
-    const char* reverse_price_stat_logger_name = "reverse_price_stat_logger";
-
-    std::string forward_plot_logger_file_name;
-    std::string reverse_plot_logger_file_name;
-    std::string forward_price_stat_logger_file_name;
-    std::string reverse_price_stat_logger_file_name;
-
-    std::shared_ptr<spdlog::logger> forward_plot_logger;
-    std::shared_ptr<spdlog::logger> reverse_plot_logger;
-    std::shared_ptr<spdlog::logger> forward_price_stat_logger;
-    std::shared_ptr<spdlog::logger> reverse_price_stat_logger;
-
 
     size_t parallel_threshold = 5000;
     int num_parallelizable_rounds { 0 };

@@ -127,70 +127,6 @@ AuctionRunnerFR<R, AO>::AuctionRunnerFR(const std::vector<DgmPoint>& A,
 #ifdef ORDERED_BY_PERSISTENCE
     batch_size = 5000;
 #endif
-
-    console_logger = spdlog::get("console");
-    if (not console_logger) {
-        console_logger = spdlog::stdout_logger_st("console");
-    }
-    console_logger->set_pattern("[%H:%M:%S.%e] %v");
-    console_logger->info("Forward-reverse runnder, max_num_phases = {0}, max_bids_per_round = {1}, gamma_threshold = {2}, unassigned_threshold = {3}",
-                          max_num_phases,
-                          max_bids_per_round,
-                          gamma_threshold,
-                          unassigned_threshold);
-
-
-//    check_epsilon_css();
-#ifdef LOG_AUCTION
-    parallel_threshold = bidders.size() / 100;
-    forward_plot_logger_file_name = log_filename_prefix + "_forward_plot.txt";
-    forward_plot_logger = spdlog::get(forward_plot_logger_name);
-    if (not forward_plot_logger) {
-        forward_plot_logger = spdlog::basic_logger_st(forward_plot_logger_name, forward_plot_logger_file_name);
-    }
-    forward_plot_logger->info("New forward plot starts here, diagram size = {0}, gamma_threshold = {1}, epsilon_common_ratio = {2}",
-                              bidders.size(),
-                              gamma_threshold,
-                              epsilon_common_ratio);
-    forward_plot_logger->set_pattern("%v");
-
-    reverse_plot_logger_file_name = log_filename_prefix + "_reverse_plot.txt";
-    reverse_plot_logger = spdlog::get(reverse_plot_logger_name);
-    if (not reverse_plot_logger) {
-        reverse_plot_logger = spdlog::basic_logger_st(reverse_plot_logger_name, reverse_plot_logger_file_name);
-    }
-    reverse_plot_logger->info("New reverse plot starts here, diagram size = {0}, gamma_threshold = {1}, epsilon_common_ratio = {2}",
-                              bidders.size(),
-                              gamma_threshold,
-                              epsilon_common_ratio);
-    reverse_plot_logger->set_pattern("%v");
-
-
-
-    forward_price_stat_logger_file_name = log_filename_prefix + "_forward_price_change_stat";
-    forward_price_stat_logger = spdlog::get(forward_price_stat_logger_name);
-    if (not forward_price_stat_logger) {
-        forward_price_stat_logger = spdlog::basic_logger_st(forward_price_stat_logger_name,
-                                                            forward_price_stat_logger_file_name);
-    }
-    forward_price_stat_logger->info("New forward price statistics starts here, diagram size = {0}, gamma_threshold = {1}, epsilon_common_ratio = {2}",
-                                     bidders.size(),
-                                     gamma_threshold,
-                                     epsilon_common_ratio);
-    forward_price_stat_logger->set_pattern("%v");
-
-    reverse_price_stat_logger_file_name = log_filename_prefix + "_reverse_price_change_stat";
-    reverse_price_stat_logger = spdlog::get(reverse_price_stat_logger_name);
-    if (not reverse_price_stat_logger) {
-        reverse_price_stat_logger = spdlog::basic_logger_st(reverse_price_stat_logger_name,
-                                                            reverse_price_stat_logger_file_name);
-    }
-    reverse_price_stat_logger->info("New reverse price statistics starts here, diagram size = {0}, gamma_threshold = {1}, epsilon_common_ratio = {2}",
-                                     bidders.size(),
-                                     gamma_threshold,
-                                     epsilon_common_ratio);
-    reverse_price_stat_logger->set_pattern("%v");
-#endif
 }
 
 template<class R, class AO>
@@ -270,7 +206,6 @@ void AuctionRunnerFR<R, AO>::reset_round_stat()
 template<class R, class AO>
 void AuctionRunnerFR<R, AO>::assign_forward(IdxType item_idx, IdxType bidder_idx)
 {
-    console_logger->debug("Enter assign_forward, item_idx = {0}, bidder_idx = {1}", item_idx, bidder_idx);
     sanity_check();
     // only unassigned bidders submit bids
     assert(bidders_to_items[bidder_idx] == k_invalid_index);
@@ -357,14 +292,12 @@ void AuctionRunnerFR<R, AO>::assign_forward(IdxType item_idx, IdxType bidder_idx
 #endif
 
     sanity_check();
-    console_logger->debug("Exit assign_forward, item_idx = {0}, bidder_idx = {1}", item_idx, bidder_idx);
 }
 
 
 template<class R, class AO>
 void AuctionRunnerFR<R, AO>::assign_reverse(IdxType item_idx, IdxType bidder_idx)
 {
-    console_logger->debug("Enter assign_reverse, item_idx = {0}, bidder_idx = {1}", item_idx, bidder_idx);
     // only unassigned items submit bids in reverse phase
     assert(items_to_bidders[item_idx] == k_invalid_index);
 
@@ -447,7 +380,6 @@ void AuctionRunnerFR<R, AO>::assign_reverse(IdxType item_idx, IdxType bidder_idx
     }
 
 #endif
-    console_logger->debug("Exit assign_reverse, item_idx = {0}, bidder_idx = {1}", item_idx, bidder_idx);
 }
 
 template<class R, class AO>
@@ -465,7 +397,6 @@ AuctionRunnerFR<R, AO>::get_item_bidder_cost(const size_t item_idx, const size_t
 template<class R, class AO>
 void AuctionRunnerFR<R, AO>::assign_to_best_bidder(IdxType item_idx)
 {
-    console_logger->debug("Enter assign_to_best_bidder, item_idx = {0}", item_idx);
     assert( item_idx >= 0 and item_idx < static_cast<IdxType>(num_items) );
     assert( forward_bid_table[item_idx].first != k_invalid_index);
 
@@ -482,13 +413,11 @@ void AuctionRunnerFR<R, AO>::assign_to_best_bidder(IdxType item_idx)
     forward_price_change_cnt_vec.back()[item_idx]++;
     reverse_price_change_cnt_vec.back()[best_bidder_idx]++;
 #endif
-    console_logger->debug("Exit assign_to_best_bidder, item_idx = {0}", item_idx);
 }
 
 template<class R, class AO>
 void AuctionRunnerFR<R, AO>::assign_to_best_item(IdxType bidder_idx)
 {
-    console_logger->debug("Enter assign_to_best_item, bidder_idx = {0}", bidder_idx);
     check_epsilon_css();
     assert( bidder_idx >= 0 and bidder_idx < static_cast<IdxType>(num_bidders) );
     assert( reverse_bid_table[bidder_idx].first != k_invalid_index);
@@ -506,7 +435,6 @@ void AuctionRunnerFR<R, AO>::assign_to_best_item(IdxType bidder_idx)
     reverse_price_change_cnt_vec.back()[bidder_idx]++;
 #endif
     check_epsilon_css();
-    console_logger->debug("Exit assign_to_best_item, bidder_idx = {0}", bidder_idx);
 }
 
 template<class R, class AO>
@@ -647,20 +575,10 @@ AuctionRunnerFR<R, AO>::get_relative_error(const bool debug_output) const
     // cost minus n epsilon
     Real reduced_cost = partial_cost - num_bidders * get_epsilon();
     if ( reduced_cost < 0) {
-#ifdef LOG_AUCTION
-        if (debug_output) {
-            console_logger->debug("Epsilon too large, reduced_cost = {0}", reduced_cost);
-        }
-#endif
         result = k_max_relative_error;
     } else {
         Real denominator = std::pow(reduced_cost, 1.0 / wasserstein_power) - gamma;
         if (denominator <= 0) {
-#ifdef LOG_AUCTION
-            if (debug_output) {
-                console_logger->debug("Epsilon too large, reduced_cost = {0}, denominator = {1}, gamma = {2}", reduced_cost, denominator, gamma);
-            }
-#endif
             result = k_max_relative_error;
         } else {
             Real numerator = 2 * gamma +
@@ -668,16 +586,6 @@ AuctionRunnerFR<R, AO>::get_relative_error(const bool debug_output) const
                              std::pow(reduced_cost, 1.0 / wasserstein_power);
 
             result = numerator / denominator;
-#ifdef LOG_AUCTION
-            if (debug_output) {
-                console_logger->debug("Reduced_cost = {0}, denominator = {1}, numerator {2}, error = {3},  gamma = {4}",
-                                      reduced_cost,
-                                      denominator,
-                                      numerator,
-                                      result,
-                                      gamma);
-            }
-#endif
         }
     }
     return result;
@@ -686,7 +594,6 @@ AuctionRunnerFR<R, AO>::get_relative_error(const bool debug_output) const
 template<class R, class AO>
 void AuctionRunnerFR<R, AO>::flush_assignment()
 {
-    console_logger->debug("Enter flush_assignment");
     for(auto& b2i : bidders_to_items) {
         b2i = k_invalid_index;
     }
@@ -751,7 +658,6 @@ void AuctionRunnerFR<R, AO>::flush_assignment()
     never_assigned_items = unassigned_items;
 #endif
     check_epsilon_css();
-    console_logger->debug("Exit flush_assignment");
 }
 
 template<class R, class AO>
@@ -814,10 +720,8 @@ void AuctionRunnerFR<R, AO>::run_auction_phase()
     while(continue_phase()) {
         forward_oracle.recompute_top_diag_items(true);
         forward_oracle.sanity_check();
-        console_logger->debug("forward_oracle recompute_top_diag_items done");
         run_forward_auction_phase();
         reverse_oracle.recompute_top_diag_items(true);
-        console_logger->debug("reverse_oracle recompute_top_diag_items done");
         reverse_oracle.sanity_check();
         run_reverse_auction_phase();
     }
@@ -831,87 +735,9 @@ void AuctionRunnerFR<R, AO>::run_auction_phases(const int max_num_phases, const 
     assert( reverse_oracle.get_epsilon() > 0 );
     for(int phase_num = 0; phase_num < max_num_phases; ++phase_num) {
         flush_assignment();
-        console_logger->info("Phase {0} started: eps = {1}",
-                              num_phase,
-                              get_epsilon());
 
         run_auction_phase();
         Real current_result = partial_cost;
-#ifdef LOG_AUCTION
-        console_logger->info("Phase {0} done: current_result = {1}, eps = {2}, unassigned_threshold = {3}, unassigned = {4}, error = {5}, gamma = {6}",
-                              num_phase,
-                              partial_cost,
-                              get_epsilon(),
-                              format_int<>(unassigned_threshold),
-                              unassigned_bidders.size(),
-                              get_relative_error(false),
-                              get_gamma());
-
-        console_logger->info("Phase {0} done: num_rounds / num_parallelizable_rounds = {1} / {2} = {3}, cumulative rounds = {4}",
-                              num_phase,
-                              format_int(num_rounds_non_cumulative),
-                              format_int(num_parallelizable_rounds),
-                              static_cast<double>(num_parallelizable_rounds) / static_cast<double>(num_rounds_non_cumulative),
-                              format_int(num_rounds)
-                              );
-
-        console_logger->info("parallelizable_forward_rounds / num_forward_rounds = {0} / {1} = {2}",
-                         format_int<>(num_parallelizable_forward_rounds),
-                         format_int<>(num_forward_rounds_non_cumulative),
-                         static_cast<double>(num_parallelizable_forward_rounds) / static_cast<double>(num_forward_rounds_non_cumulative)
-                        );
-
-        num_parallelizable_forward_rounds = 0;
-        num_forward_rounds_non_cumulative = 0;
-
-        console_logger->info("parallelizable_reverse_rounds / num_reverse_rounds = {0} / {1} = {2}",
-                         format_int<>(num_parallelizable_reverse_rounds),
-                         format_int<>(num_reverse_rounds_non_cumulative),
-                         static_cast<double>(num_parallelizable_reverse_rounds) / static_cast<double>(num_reverse_rounds_non_cumulative)
-                        );
-
-        num_parallelizable_reverse_rounds = 0;
-        num_reverse_rounds_non_cumulative = 0;
-
-        console_logger->info("num_parallel_bids / num_total_bids = {0} / {1} = {2}, num_parallel_assignments / num_total_assignments = {3} / {4} = {5}",
-                         format_int<>(num_parallel_bids),
-                         format_int<>(num_total_bids),
-                         static_cast<double>(num_parallel_bids) / static_cast<double>(num_total_bids),
-                         format_int<>(num_parallel_assignments),
-                         format_int<>(num_total_assignments),
-                         static_cast<double>(num_parallel_assignments) / static_cast<double>(num_total_assignments)
-                        );
-
-        auto forward_min_max_price = forward_oracle.get_minmax_price();
-        auto reverse_min_max_price = reverse_oracle.get_minmax_price();
-
-        console_logger->info("forward min price = {0}, max price = {1}; reverse min price = {2}, reverse max price = {3}",
-                             forward_min_max_price.first,
-                             forward_min_max_price.second,
-                             reverse_min_max_price.first,
-                             reverse_min_max_price.second
-                             );
-
-        for(size_t item_idx = 0; item_idx < num_items; ++item_idx) {
-            forward_price_stat_logger->info("{0} {1} {2} {3} {4}",
-                                            phase_num,
-                                            item_idx,
-                                            items[item_idx].getRealX(),
-                                            items[item_idx].getRealY(),
-                                            forward_price_change_cnt_vec.back()[item_idx]
-                                           );
-        }
-
-        for(size_t bidder_idx = 0; bidder_idx < num_bidders; ++bidder_idx) {
-            reverse_price_stat_logger->info("{0} {1} {2} {3} {4}",
-                                            phase_num,
-                                            bidder_idx,
-                                            bidders[bidder_idx].getRealX(),
-                                            bidders[bidder_idx].getRealY(),
-                                            reverse_price_change_cnt_vec.back()[bidder_idx]
-                                           );
-        }
-#endif
 
         if (get_relative_error(true) <= delta) {
             break;
@@ -923,9 +749,6 @@ void AuctionRunnerFR<R, AO>::run_auction_phases(const int max_num_phases, const 
 
         if (phase_can_be_final()) {
             unassigned_threshold = 0;
-#ifdef LOG_AUCTION
-            console_logger->info("Unassigned threshold set to zero!");
-#endif
         }
     }
 }
@@ -1038,7 +861,6 @@ void AuctionRunnerFR<R, AO>::remove_unassigned_bidder(const size_t bidder_idx)
 template<class R, class AO>
 void AuctionRunnerFR<R, AO>::remove_unassigned_item(const size_t item_idx)
 {
-    console_logger->debug("Enter remove_unassigned_item, unassigned_items.size = {0}", unassigned_items.size());
     unassigned_items_persistence -= get_cost_to_diagonal(items[item_idx]);
 
     never_assigned_items.erase(item_idx);
@@ -1059,7 +881,6 @@ void AuctionRunnerFR<R, AO>::remove_unassigned_item(const size_t item_idx)
         all_assigned_round_found = true;
     }
 #endif
-    console_logger->debug("Exit remove_unassigned_item, unassigned_items.size = {0}", unassigned_items.size());
 }
 
 template<class R, class AO>
@@ -1076,7 +897,6 @@ void AuctionRunnerFR<R, AO>::decrease_epsilon()
 template<class R, class AO>
 void AuctionRunnerFR<R, AO>::run_reverse_auction_phase()
 {
-    console_logger->debug("Enter run_reverse_auction_phase");
     size_t original_unassigned_items = unassigned_items.size();
 //    const size_t min_reverse_matching_increment = std::max( static_cast<size_t>(1), static_cast<size_t>(original_unassigned_items / 10));
     size_t min_reverse_matching_increment = 1;
@@ -1084,7 +904,6 @@ void AuctionRunnerFR<R, AO>::run_reverse_auction_phase()
     while (continue_reverse(original_unassigned_items, min_reverse_matching_increment)) {
         num_rounds++;
         num_rounds_non_cumulative++;
-        console_logger->debug("started round = {0}, reverse, unassigned = {1}", num_rounds, unassigned_items.size());
 
         check_epsilon_css();
 #ifdef LOG_AUCTION
@@ -1123,38 +942,6 @@ void AuctionRunnerFR<R, AO>::run_reverse_auction_phase()
         }
 
         check_epsilon_css();
-
-        console_logger->debug("ended round = {0}, reverse, unassigned = {1}", num_rounds, unassigned_items.size());
-
-#ifdef LOG_AUCTION
-
-        reverse_plot_logger->info("{0} {1} {2} {3} {4} {5} {6} {7} {8} {9} {10} {11} {12} {13} {14} {15} {16} {17} {18} {19} {20} {21} {22}",
-                                  num_phase,
-                                  num_rounds,
-                                  num_reverse_rounds,
-                                  unassigned_bidders.size(),
-                                  get_gamma(),
-                                  partial_cost,
-                                  reverse_oracle.get_epsilon(),
-                                  num_normal_reverse_bids_submitted,
-                                  num_diag_reverse_bids_submitted,
-                                  num_reverse_diag_to_diag_assignments,
-                                  num_reverse_diag_to_normal_assignments,
-                                  num_reverse_normal_to_diag_assignments,
-                                  num_reverse_normal_to_normal_assignments,
-                                  num_reverse_diag_from_diag_thefts,
-                                  num_reverse_diag_from_normal_thefts,
-                                  num_reverse_normal_from_diag_thefts,
-                                  num_reverse_normal_from_normal_thefts,
-                                  unassigned_normal_bidders.size(),
-                                  unassigned_diag_bidders.size(),
-                                  unassigned_normal_items.size(),
-                                  unassigned_diag_items.size(),
-                                  reverse_oracle.get_heap_top_size(),
-                                  get_relative_error(false)
-                                 );
-        sanity_check();
-#endif
     }
 }
 
@@ -1164,7 +951,6 @@ void AuctionRunnerFR<R, AO>::run_forward_bidding_step(const Range& active_bidder
 {
     clear_forward_bid_table();
     for(const auto bidder_idx : active_bidders) {
-        console_logger->debug("current bidder (forward): {0}, persistence = {1}", bidders[bidder_idx], bidders[bidder_idx].persistence_lp(1.0));
         submit_forward_bid(bidder_idx, forward_oracle.get_optimal_bid(bidder_idx));
         if (++num_forward_bids_submitted >= max_bids_per_round) {
             break;
@@ -1183,7 +969,6 @@ void AuctionRunnerFR<R, AO>::run_reverse_bidding_step(const Range& active_items)
                 [ki = k_invalid_index, kl = k_lowest_bid_value](const IdxValPairR& b) { return static_cast<size_t>(b.first) == ki and b.second == kl; }));
 
     for(const auto item_idx : active_items) {
-        console_logger->debug("current bidder (reverse): {0}, persistence = {1}", items[item_idx], items[item_idx].persistence_lp(1.0));
         submit_reverse_bid(item_idx, reverse_oracle.get_optimal_bid(item_idx));
         if (++num_reverse_bids_submitted >= max_bids_per_round) {
             break;
@@ -1199,7 +984,6 @@ void AuctionRunnerFR<R, AO>::run_forward_auction_phase()
 //    const size_t min_forward_matching_increment = std::max( static_cast<size_t>(1), static_cast<size_t>(original_unassigned_bidders / 10));
     const size_t min_forward_matching_increment = 1;
     while (continue_forward(original_unassigned_bidders, min_forward_matching_increment)) {
-        console_logger->debug("started round = {0}, forward, unassigned = {1}", num_rounds, unassigned_bidders.size());
         check_epsilon_css();
         num_rounds++;
 #ifdef LOG_AUCTION
@@ -1238,7 +1022,6 @@ void AuctionRunnerFR<R, AO>::run_forward_auction_phase()
             assign_to_best_bidder(item_idx);
         }
 
-        console_logger->debug("ended round = {0}, forward, unassigned = {1}", num_rounds, unassigned_bidders.size());
         check_epsilon_css();
 
 #ifdef LOG_AUCTION
@@ -1348,10 +1131,6 @@ void AuctionRunnerFR<R, AO>::sanity_check()
 
 #ifdef ORDERED_BY_PERSISTENCE
     assert(unassigned_bidders.size() == unassigned_bidders_by_persistence.size());
-    if (unassigned_items.size() != unassigned_items_by_persistence.size()) {
-        console_logger->error("unassigned_items.size() = {0}, unassigned_items_by_persistence.size() = {1}",  unassigned_items.size(),unassigned_items_by_persistence.size());
-        console_logger->error("unassigned_items = {0}, unassigned_items_by_persistence = {1}",  format_container_to_log(unassigned_items),format_pair_container_to_log(unassigned_items_by_persistence));
-    }
     assert(unassigned_items.size() == unassigned_items_by_persistence.size());
 
     for(size_t bidder_idx = 0; bidder_idx < num_bidders; ++bidder_idx) {
@@ -1393,17 +1172,6 @@ void AuctionRunnerFR<R, AO>::check_epsilon_css()
         for(size_t i = 0; i < num_items; ++i) {
             if(((is_bidder_normal(b) and is_item_diagonal(i)) or (is_bidder_diagonal(b) and is_item_normal(i))) and b != i)
                 continue;
-            if (b_prices[b] + i_prices[i] + eps < -get_item_bidder_cost(i, b) - 0.000001) {
-                console_logger->debug("b = {0}, i = {1}, eps = {2}, b_price = {3}, i_price[i] = {4}, cost = {5}, b_price + i_price + eps = {6}",
-                                       b,
-                                       i,
-                                       eps,
-                                       b_prices[b],
-                                       i_prices[i],
-                                       get_item_bidder_cost(i, b),
-                                       b_prices[b] + i_prices[i] + eps
-                                      );
-            }
             assert(b_prices[b] + i_prices[i] + eps >= -get_item_bidder_cost(i, b) - 0.000001);
         }
     }

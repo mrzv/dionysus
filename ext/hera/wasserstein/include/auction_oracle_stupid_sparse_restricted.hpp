@@ -52,31 +52,17 @@ namespace ws {
 template <int k_max_nn, class Real_, class PointContainer_>
 std::ostream& operator<<(std::ostream& output, const AuctionOracleStupidSparseRestricted<k_max_nn, Real_, PointContainer_>& oracle)
 {
-    output << "Oracle " << &oracle << std::endl;
-    output << fmt::format("       max_val_ = {0}, best_diagonal_items_computed_ = {1}, best_diagonal_item_value_ = {2}, second_best_diagonal_item_idx_ = {3}, second_best_diagonal_item_value_ = {4}\n",
-                          oracle.max_val_,
-                          oracle.best_diagonal_items_computed_,
-                          oracle.best_diagonal_item_value_,
-                          oracle.second_best_diagonal_item_idx_,
-                          oracle.second_best_diagonal_item_value_);
-
-    output << fmt::format("       prices = {0}\n",
-                          format_container_to_log(oracle.prices));
-
-    output << fmt::format("       diag_items_heap_ = {0}\n",
-                          losses_heap_to_string(oracle.diag_items_heap_));
-
-
-    output << fmt::format("       top_diag_indices_ = {0}\n",
-                          format_container_to_log(oracle.top_diag_indices_));
-
-    output << fmt::format("       top_diag_counter_ = {0}\n",
-                          oracle.top_diag_counter_);
-
-    output << fmt::format("       top_diag_lookup_ = {0}\n",
-                          format_container_to_log(oracle.top_diag_lookup_));
-
-
+    output << "Oracle: " << &oracle << std::endl;
+    output << "max_val_ = " << oracle.max_val_ << ", ";
+    output << "best_diagonal_items_computed_ = " << oracle.best_diagonal_items_computed_ << ", ";
+    output << "best_diagonal_item_value_ = " << oracle.best_diagonal_item_value_ << ", ";
+    output << "second_best_diagonal_item_idx_ = " << oracle.second_best_diagonal_item_idx_ << ", ";
+    output << "second_best_diagonal_item_value_ = " << oracle.second_best_diagonal_item_value_ << ", ";
+    output << "prices = " << format_container_to_log(oracle.prices) << "\n";
+    output << "diag_items_heap_ = " << losses_heap_to_string(oracle.diag_items_heap_) << "\n";
+    output << "top_diag_indices_ = " << format_container_to_log(oracle.top_diag_indices_) << "\n";
+    output << "top_diag_counter_ = " << oracle.top_diag_counter_ << "\n";
+    output << "top_diag_lookup_ = " << format_container_to_log(oracle.top_diag_lookup_) << "\n";
     output << "end of oracle " << &oracle << std::endl;
     return output;
 }
@@ -146,13 +132,6 @@ AuctionOracleStupidSparseRestricted<k_max_nn, Real_, PointContainer_>::AuctionOr
     }
     max_val_ = 3*getFurthestDistance3Approx<>(_bidders, _items, params.internal_p);
     max_val_ = std::pow(max_val_, params.wasserstein_power);
-
-    console_logger = spdlog::get("console");
-    if (not console_logger) {
-        console_logger = spdlog::stdout_logger_st("console");
-    }
-    console_logger->set_pattern("[%H:%M:%S.%e] %v");
-    console_logger->info("Stupid sparse oracle ctor done, k = {0}", k_max_nn);
 }
 
 
@@ -218,7 +197,6 @@ void AuctionOracleStupidSparseRestricted<k_max_nn, Real_, PointContainer_>::rese
 template<int k_max_nn, class Real_, class PointContainer_>
 void AuctionOracleStupidSparseRestricted<k_max_nn, Real_, PointContainer_>::recompute_top_diag_items(bool hard)
 {
-    console_logger->debug("Enter recompute_top_diag_items, hard = {0}", hard);
     assert(hard or top_diag_indices_.empty());
 
     if (hard) {
@@ -246,7 +224,6 @@ void AuctionOracleStupidSparseRestricted<k_max_nn, Real_, PointContainer_>::reco
 
     best_diagonal_items_computed_ = true;
     reset_top_diag_counter();
-    console_logger->debug("Exit recompute_top_diag_items, hard = {0}", hard);
 }
 
 template<int k_max_nn, class Real_, class PointContainer_>
@@ -365,9 +342,6 @@ IdxValPair<Real_> AuctionOracleStupidSparseRestricted<k_max_nn, Real_, PointCont
 template<int k_max_nn, class Real_, class PointContainer_>
 void AuctionOracleStupidSparseRestricted<k_max_nn, Real_, PointContainer_>::recompute_second_best_diag()
 {
-
-    console_logger->debug("Enter recompute_second_best_diag");
-
     if (top_diag_indices_.size() > 1) {
         second_best_diagonal_item_value_ = best_diagonal_item_value_;
         second_best_diagonal_item_idx_ = top_diag_indices_[0];
@@ -382,8 +356,6 @@ void AuctionOracleStupidSparseRestricted<k_max_nn, Real_, PointContainer_>::reco
             second_best_diagonal_item_idx_ = diag_iter->first;
         }
     }
-
-    console_logger->debug("Exit recompute_second_best_diag, second_best_diagonal_item_value_ = {0}, second_best_diagonal_item_idx_ = {1}", second_best_diagonal_item_value_, second_best_diagonal_item_idx_);
 }
 
 
@@ -392,9 +364,6 @@ void AuctionOracleStupidSparseRestricted<k_max_nn, Real_, PointContainer_>::set_
                                                     Real new_price,
                                                     const bool update_diag)
 {
-
-    console_logger->debug("Enter set_price, item_idx = {0}, new_price = {1}, old price = {2}, update_diag = {3}", item_idx, new_price, this->prices[item_idx], update_diag);
-
     assert(this->prices.size() == this->items.size());
     assert( 0 < diag_heap_handles_.size() and diag_heap_handles_.size() <= this->items.size());
 	// adjust_prices decreases prices,
@@ -423,17 +392,12 @@ void AuctionOracleStupidSparseRestricted<k_max_nn, Real_, PointContainer_>::set_
             }
         }
     }
-
-    console_logger->debug("Exit set_price, item_idx = {0}, new_price = {1}", item_idx, new_price);
 }
 
 
 template<int k_max_nn, class Real_, class PointContainer_>
 void AuctionOracleStupidSparseRestricted<k_max_nn, Real_, PointContainer_>::adjust_prices(Real delta)
 {
-    //console_logger->debug("Enter adjust_prices, delta = {0}", delta);
-    //std::cerr << *this << std::endl;
-
     if (delta == 0.0)
         return;
 
@@ -455,9 +419,6 @@ void AuctionOracleStupidSparseRestricted<k_max_nn, Real_, PointContainer_>::adju
 	}
     best_diagonal_item_value_ -= delta;
     second_best_diagonal_item_value_ -= delta;
-
-    //std::cerr << *this << std::endl;
-    //console_logger->debug("Exit adjust_prices, delta = {0}", delta);
 }
 
 template<int k_max_nn, class Real_, class PointContainer_>
@@ -542,20 +503,12 @@ void AuctionOracleStupidSparseRestricted<k_max_nn, Real_, PointContainer_>::sani
         }
 
         if (true_best_diag_value != best_diagonal_item_value_) {
-            console_logger->debug("best_diagonal_item_value_ = {0}, true value = {1}", best_diagonal_item_value_, true_best_diag_value);
             std::cerr << *this;
-            //console_logger->debug("{0}", *this);
         }
 
         assert(true_best_diag_value == best_diagonal_item_value_);
 
         assert(true_second_best_diag_idx != k_invalid_index);
-
-        if (true_second_best_diag_value != second_best_diagonal_item_value_) {
-            console_logger->debug("second_best_diagonal_item_value_ = {0}, true value = {1}", second_best_diagonal_item_value_, true_second_best_diag_value);
-            //console_logger->debug("{0}", *this);
-        }
-
         assert(true_second_best_diag_value == second_best_diagonal_item_value_);
     }
 #endif
