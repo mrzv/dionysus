@@ -21,7 +21,7 @@ if                          (${CMAKE_BUILD_TYPE} STREQUAL "Debug" OR
                              ${CMAKE_BUILD_TYPE} STREQUAL "RelWithDebInfo")
     add_definitions         (-DDEBUG)
 endif                       ()
-set                         (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+set                         (CMAKE_CXX_STANDARD 14)
 
 if                          (counters)
     add_definitions         (-DCOUNTERS)
