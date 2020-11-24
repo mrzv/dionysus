@@ -99,8 +99,6 @@ struct AuctionOracleStupidSparseRestricted : AuctionOracleBase<Real_, PointConta
     void remove_top_diag_index(const size_t item_idx);
     bool is_in_top_diag_indices(const size_t item_idx) const;
 
-    std::shared_ptr<spdlog::logger> console_logger;
-
     std::pair<Real, Real> get_minmax_price() const;
 
 };

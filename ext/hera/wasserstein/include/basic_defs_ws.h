@@ -45,12 +45,6 @@ derivative works thereof, in binary and source code form.
 #include <ciso646>
 #endif
 
-#ifndef FOR_R_TDA
-#include "spdlog/spdlog.h"
-#include "spdlog/fmt/fmt.h"
-#include "spdlog/fmt/ostr.h"
-#endif
-
 #include "hera_infinity.h"
 #include "dnn/geometry/euclidean-dynamic.h"
 #include "def_debug_ws.h"
@@ -107,7 +101,7 @@ namespace ws
     template<class R>
     inline std::ostream& operator<<(std::ostream& output, const IdxValPair<R> p)
     {
-        output << fmt::format("({0}, {1})", p.first, p.second);
+        output << "(" << p.first << ", " << p.second << ")";
         return output;
     }
 
@@ -213,16 +207,6 @@ namespace ws
     template <class Real = double>
     inline std::ostream& operator<<(std::ostream& output, const DiagramPoint<Real> p);
 #endif
-
-    template<class Real>
-    inline void format_arg(fmt::BasicFormatter<char> &f, const char *&format_str, const DiagramPoint<Real>&p) {
-        if (p.is_diagonal()) {
-            f.writer().write("({0},{1}, DIAG)", p.x, p.y);
-        } else {
-            f.writer().write("({0},{1}, NORM)", p.x, p.y);
-        }
-    }
-
 
     template<class Real, class Pt>
     struct DistImpl

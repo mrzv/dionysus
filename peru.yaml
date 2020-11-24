@@ -11,7 +11,8 @@ git module hera:
     drop:
         - bottleneck/tests
         - wasserstein/tests
-    rev: 0019cae9dc1e9d11aa03bc59681435ba7f21eea8
+    rev: b73ed1face2c609958556e6f2b7704bbd8aaa263
 
 git module pybind11:
     url: gh:pybind/pybind11
+    rev: 028812ae7eee307dca5f8f69d467af7b92cc41c8
