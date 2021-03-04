@@ -1,32 +1,23 @@
-import dionysus
+import dionysus as d
+import matplotlib.pyplot as plt
 
-# init the complex/filtration
-# any filtration that produces a diagram of only infinite points will work
-simplicies = [
-    ([0], 0),
-    ([1], 1),
-]
+def test_issue47():
+    # init the complex/filtration
+    # any filtration that produces a diagram of only infinite points will work
+    simplicies = [
+        ([0], 0),
+        ([1], 1),
+    ]
 
-# create the filtration
-filtr = dionysus.Filtration()
-for verts, idx in simplicies:
-    simplex = dionysus.Simplex(verts, idx)
-    filtr.append(simplex)
-filtr.sort()
+    # create the filtration
+    filtr = d.Filtration()
+    for verts, idx in simplicies:
+        simplex = d.Simplex(verts, idx)
+        filtr.append(simplex)
+    filtr.sort()
 
-# create the diagram
-m = dionysus.homology_persistence(filtr)
-dgm = dionysus.init_diagrams(m, filtr)
-dgm0 = dgm[0]
+    # create the diagram
+    m = d.homology_persistence(filtr)
+    dgm = d.init_diagrams(m, filtr)
 
-# trigger error
-# line fails with error:
-# Traceback (most recent call last):
-#   File "/home/dave/tmp/dionysus-bug/bug.py", line 25, in <module>
-#       dionysus.plot.plot_diagram(dgm0)
-#   File "/.../dionysus/plot.py",
-#       line 30, in plot_diagram
-#       min_death = min(p.death for p in dgm if p.death != inf)
-#       ValueError: min() arg is an empty sequence
-dionysus.plot.plot_diagram(dgm0)
-
+    d.plot.plot_diagram(dgm[0])
