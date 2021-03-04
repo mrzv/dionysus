@@ -25,10 +25,10 @@ def plot_diagram(dgm, show=False, labels=False, ax=None,
 
 
     inf = float('inf')
-    min_birth = min(p.birth for p in dgm if p.birth != inf)
-    max_birth = max(p.birth for p in dgm if p.birth != inf)
-    min_death = min(p.death for p in dgm if p.death != inf)
-    max_death = max(p.death for p in dgm if p.death != inf)
+    min_birth = min((p.birth for p in dgm if p.birth != inf), default=0)
+    max_birth = max((p.birth for p in dgm if p.birth != inf), default=1)
+    min_death = min((p.death for p in dgm if p.death != inf), default=min_birth)
+    max_death = max((p.death for p in dgm if p.death != inf), default=max_birth)
 
     if ax is None:
         ax = plt.axes()
