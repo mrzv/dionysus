@@ -28,6 +28,9 @@ void init_diagram(py::module& m)
                           return dgm;
                       }), "initialize diagram from a list of (birth,death) points")
         .def("append",          &PyDiagram::push_back, "p"_a,   "append point to the diagram")
+        .def("append",          [](PyDiagram& dgm, PyDiagram::Value birth, PyDiagram::Value death) { dgm.emplace_back(birth, death, 0); },
+                                "birth"_a, "death"_a,
+                                 "append point to the diagram")
         .def("__getitem__",     &PyDiagram::operator[],         "access `i`-th point")
         .def("__len__",         &PyDiagram::size,               "size of the diagram")
         .def("__iter__",        [](const PyDiagram& dgm) { return py::make_iterator(dgm.begin(), dgm.end()); },
@@ -60,6 +63,11 @@ void init_diagram(py::module& m)
 
     using Point = PyDiagram::Point;
     py::class_<Point>(m, "DiagramPoint", "persistence diagram point")
+        .def(py::init([](PyDiagram::Value birth, PyDiagram::Value death)
+                      {
+                          Point* p = new Point(birth, death, 0);
+                          return p;
+                      }), "initialize diagram point from (birth,death) values")
         .def_property_readonly("birth",  &Point::birth, "birth value")
         .def_property_readonly("death",  &Point::death, "death value")
         .def_readwrite("data",           &Point::data,  "auxiliary data associated to the point (e.g., birth index)")
