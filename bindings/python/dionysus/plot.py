@@ -1,5 +1,6 @@
 def plot_diagram(dgm, show=False, labels=False, ax=None,
-                 line_style=None, pt_style=None):
+                 line_style=None, pt_style=None,
+                 limits = None):
     """
     Plot the persistence diagram.
 
@@ -24,11 +25,14 @@ def plot_diagram(dgm, show=False, labels=False, ax=None,
         line_kwargs.update(line_style)
 
 
-    inf = float('inf')
-    min_birth = min((p.birth for p in dgm if p.birth != inf), default=0)
-    max_birth = max((p.birth for p in dgm if p.birth != inf), default=1)
-    min_death = min((p.death for p in dgm if p.death != inf), default=min_birth)
-    max_death = max((p.death for p in dgm if p.death != inf), default=max_birth)
+    if not limits:
+        inf = float('inf')
+        min_birth = min((p.birth for p in dgm if p.birth != inf), default=0)
+        max_birth = max((p.birth for p in dgm if p.birth != inf), default=1)
+        min_death = min((p.death for p in dgm if p.death != inf), default=min_birth)
+        max_death = max((p.death for p in dgm if p.death != inf), default=max_birth)
+    else:
+        min_birth, max_birth, min_death, max_death = limits
 
     if ax is None:
         ax = plt.axes()
