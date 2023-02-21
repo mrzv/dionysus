@@ -3,6 +3,7 @@
 
 #include <tuple>
 #include <type_traits>
+#include <deque>
 
 #include <boost/range/adaptor/filtered.hpp>
 #include <boost/range/adaptor/map.hpp>

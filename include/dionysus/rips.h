@@ -103,7 +103,7 @@ class Rips
 };
 
 template<class Distances_, class Simplex_>
-class Rips<Distances_, Simplex_>::Evaluator: public std::unary_function<const Simplex&, DistanceType>
+class Rips<Distances_, Simplex_>::Evaluator
 {
     public:
         typedef             Simplex_                                        Simplex;
@@ -118,7 +118,7 @@ class Rips<Distances_, Simplex_>::Evaluator: public std::unary_function<const Si
 };
 
 template<class Distances_, class Simplex_>
-class Rips<Distances_, Simplex_>::Comparison: public std::binary_function<const Simplex&, const Simplex&, bool>
+class Rips<Distances_, Simplex_>::Comparison
 {
     public:
         typedef             Simplex_                                        Simplex;

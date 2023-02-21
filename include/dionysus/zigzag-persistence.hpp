@@ -1,3 +1,5 @@
+#include <map>
+
 template<class F, class I, class C>
 template<class ChainRange>
 typename dionysus::ZigzagPersistence<F,I,C>::Index

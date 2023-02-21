@@ -2,6 +2,7 @@
 #define DIONYSUS_SIMPLEX_H
 
 #include <algorithm>
+#include <functional>
 
 //#include <boost/compressed_pair.hpp>
 #include <boost/range/iterator_range.hpp>
