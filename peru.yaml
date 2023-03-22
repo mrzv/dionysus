@@ -15,4 +15,4 @@ git module hera:
 
 git module pybind11:
     url: gh:pybind/pybind11
-    rev: 028812ae7eee307dca5f8f69d467af7b92cc41c8
+    rev: cf7d2e6f15be7622515a77466e84bd9414737680
