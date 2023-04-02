@@ -34,6 +34,7 @@ py_init_omni_diagrams(const PyOmniFieldPersistence& persistence, const PyFiltrat
 }
 
 PYBIND11_MAKE_OPAQUE(PyOmniFieldPersistence::ZpChain);      // persistence.cpp provides a binding for Chain, which is exactly what this is
+PYBIND11_MAKE_OPAQUE(PyOmniFieldPersistence::QChain);       // we want to provide our own binding for QChain
 
 void init_omnifield_persistence(py::module& m)
 {
