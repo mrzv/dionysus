@@ -99,6 +99,7 @@ homologous(PyReducedMatrix& m, PyReducedMatrix::Chain z1, PyReducedMatrix::Chain
 }
 
 PYBIND11_MAKE_OPAQUE(PyReducedMatrix::Chain);      // we want to provide our own binding for Chain
+PYBIND11_MAKE_OPAQUE(PyMatrixFiltration::Cell::BoundaryChain);      // we want to provide our own binding for BoundaryChain
 
 void init_persistence(py::module& m)
 {
@@ -126,6 +127,21 @@ void init_persistence(py::module& m)
         .def("__repr__",    [](const PyReducedMatrix& rm)
                             { std::ostringstream oss; oss << "Reduced matrix with " << rm.size() << " columns"; return oss.str(); })
     ;
-
     init_chain<PyReducedMatrix::Chain>(m);
+
+    py::class_<PyMatrixFiltration::Cell>(m, "MatrixFiltrationCell", "Cell-like adapter for a matrix column")
+        .def("__repr__",    [](const PyMatrixFiltration::Cell& mfc)
+                            { std::ostringstream oss; oss << "Cell " << mfc.i(); return oss.str(); })
+        .def("dimension",   &PyMatrixFiltration::Cell::dimension, "cell dimension")
+        .def("boundary",    &PyMatrixFiltration::Cell::boundary,  "boundary of the cell (the column in the matrix)")
+    ;
+
+    py::class_<PyMatrixFiltration>(m, "MatrixFiltration", "adapter to turn ReducedMatrix into something that looks and acts like a filtration")
+        .def(py::init<const PyReducedMatrix*, std::vector<short unsigned>>())
+        .def("__len__",     &PyMatrixFiltration::size,          "size of the matrix")
+        .def("__getitem__", &PyMatrixFiltration::operator[],    "access the 'cell' (column) at a given index")
+        .def("__repr__",    [](const PyMatrixFiltration& mf)
+                            { std::ostringstream oss; oss << "MatrixFiltration with " << mf.size() << " cells"; return oss.str(); })
+    ;
+    init_chain<PyMatrixFiltration::Cell::BoundaryChain>(m, "MF");
 }
