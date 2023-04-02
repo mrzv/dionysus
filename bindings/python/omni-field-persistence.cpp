@@ -8,6 +8,7 @@ namespace py = pybind11;
 #include "filtration.h"
 #include "diagram.h"
 #include "omni-field-persistence.h"
+#include "chain.h"
 
 PyOmniFieldPersistence
 omnifield_homology_persistence(const PyFiltration& filtration)
@@ -57,9 +58,15 @@ void init_omnifield_persistence(py::module& m)
                             }
                             return ofp.convert(ofp.q_chains()[i], ofp.zp(p));
                         },                                  "get the column over a specific prime")
+        .def("column",  [](const PyOmniFieldPersistence& ofp, Index i)
+                        {
+                            return ofp.q_chains()[i];
+                        },                                  "get the column over rationals")
         .def("special", &PyOmniFieldPersistence::special,   "test whether the column has a special value over the given prime")
         .def("__len__", &PyOmniFieldPersistence::size,      "size of the persistence object")
         .def("__repr__",    [](const PyOmniFieldPersistence& ofp)
                             { std::ostringstream oss; oss << "OmniFieldPersistence with " << ofp.size() << " columns"; return oss.str(); })
     ;
+
+    init_chain<PyOmniFieldPersistence::QChain>(m, "Q");
 }
