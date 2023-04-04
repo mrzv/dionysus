@@ -137,7 +137,7 @@ void init_persistence(py::module& m)
     ;
 
     py::class_<PyMatrixFiltration>(m, "MatrixFiltration", "adapter to turn ReducedMatrix into something that looks and acts like a filtration")
-        .def(py::init<const PyReducedMatrix*, std::vector<short unsigned>>())
+        .def(py::init<const PyReducedMatrix*, Dimensions>())
         .def("__len__",     &PyMatrixFiltration::size,          "size of the matrix")
         .def("__getitem__", &PyMatrixFiltration::operator[],    "access the 'cell' (column) at a given index")
         .def("__repr__",    [](const PyMatrixFiltration& mf)
