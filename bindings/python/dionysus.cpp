@@ -15,6 +15,8 @@ void init_diagram(py::module&);
 void init_bottleneck_distance(py::module&);
 void init_wasserstein_distance(py::module&);
 
+void init_boundary(py::module&);
+
 PYBIND11_MODULE(_dionysus, m)
 {
     m.doc() = "Dionysus python bindings";
@@ -32,4 +34,6 @@ PYBIND11_MODULE(_dionysus, m)
     init_diagram(m);
     init_bottleneck_distance(m);
     init_wasserstein_distance(m);
+
+    init_boundary(m);
 }
