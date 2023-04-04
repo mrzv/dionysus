@@ -2,6 +2,9 @@
 #include <pybind11/stl.h>
 namespace py = pybind11;
 
+#include <boost/range/adaptors.hpp>
+namespace ba = boost::adaptors;
+
 #include <dionysus/row-reduction.h>
 #include <dionysus/ordinary-persistence.h>
 #include <dionysus/standard-reduction.h>
@@ -101,6 +104,12 @@ homologous(PyReducedMatrix& m, PyReducedMatrix::Chain z1, PyReducedMatrix::Chain
 PYBIND11_MAKE_OPAQUE(PyReducedMatrix::Chain);      // we want to provide our own binding for Chain
 PYBIND11_MAKE_OPAQUE(PyMatrixFiltration::Cell::BoundaryChain);      // we want to provide our own binding for BoundaryChain
 
+// for pickling
+using Column = std::vector<std::tuple<PyReducedMatrix::FieldElement, PyReducedMatrix::Index>>;
+using Columns = std::vector<Column>;
+using Pairs = std::vector<PyReducedMatrix::Index>;
+using Skips = std::vector<bool>;
+
 void init_persistence(py::module& m)
 {
     using namespace pybind11::literals;
@@ -126,6 +135,53 @@ void init_persistence(py::module& m)
                                 "iterate over the columns of the matrix")
         .def("__repr__",    [](const PyReducedMatrix& rm)
                             { std::ostringstream oss; oss << "Reduced matrix with " << rm.size() << " columns"; return oss.str(); })
+        .def(py::pickle(
+            [](const PyReducedMatrix& m)        // __getstate__
+            {
+                Columns columns; columns.reserve(m.size());
+                Pairs pairs; pairs.reserve(m.size());
+                Skips skips; skips.reserve(m.size());
+
+                PyReducedMatrix::Index i = 0;
+                while (i < m.size())
+                {
+                    Column c;
+                    for (auto& e : m[i])
+                        c.emplace_back(e.element(), e.index());
+                    columns.emplace_back(std::move(c));
+                    pairs.emplace_back(m.pair(i));
+                    skips.emplace_back(m.skip(i));
+                    ++i;
+                }
+
+                return py::make_tuple(m.field().prime(), columns, pairs, skips);
+            },
+            [](py::tuple t)                     // __setstate__
+            {
+                if (t.size() != 1)
+                    throw std::runtime_error("Invalid state!");
+
+                auto prime = t[0].cast<PyReducedMatrix::FieldElement>();
+                Columns columns = t[1].cast<Columns>();
+                Pairs pairs = t[2].cast<Pairs>();
+                Skips skips = t[3].cast<Skips>();
+                PyReducedMatrix m(prime);
+                m.resize(columns.size());
+                PyReducedMatrix::Index i = 0;
+                for (auto& c : columns)
+                {
+                    m.set(i, c | ba::transformed([](const Column::value_type& e)
+                                                   {
+                                                     return PyReducedMatrix::Entry { std::get<0>(e), std::get<1>(e) };
+                                                   }));
+                    m.set_pair(i,pairs[i]);
+                    m.set_skip(i,skips[i]);
+                    ++i;
+                }
+
+                return m;
+            }
+        ));
     ;
     init_chain<PyReducedMatrix::Chain>(m);
 
