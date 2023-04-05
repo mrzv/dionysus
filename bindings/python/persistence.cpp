@@ -103,7 +103,7 @@ homologous(PyReducedMatrix& m, PyReducedMatrix::Chain z1, PyReducedMatrix::Chain
 }
 
 PYBIND11_MAKE_OPAQUE(PyReducedMatrix::Chain);      // we want to provide our own binding for Chain
-PYBIND11_MAKE_OPAQUE(PyMatrixFiltration::Cell::BoundaryChain);      // we want to provide our own binding for BoundaryChain
+PYBIND11_MAKE_OPAQUE(PyMatrixFiltration::Cell::BoundaryChain<>);      // we want to provide our own binding for BoundaryChain
 
 // for pickling
 using Column = std::vector<std::tuple<PyReducedMatrix::FieldElement, PyReducedMatrix::Index>>;
@@ -206,5 +206,5 @@ void init_persistence(py::module& m)
         .def("__repr__",    [](const PyMatrixFiltration& mf)
                             { std::ostringstream oss; oss << "MatrixFiltration with " << mf.size() << " cells"; return oss.str(); })
     ;
-    init_chain<PyMatrixFiltration::Cell::BoundaryChain>(m, "MF");
+    init_chain<PyMatrixFiltration::Cell::BoundaryChain<>>(m, "MF");
 }

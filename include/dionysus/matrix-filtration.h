@@ -49,13 +49,11 @@ class MatrixFiltrationCell
         using Field = typename Matrix::Field;
         using MatrixFiltration = MatrixFiltration<Matrix>;
 
-        template<class Field>
-        using ChainEntryField = ChainEntry<Field,MatrixFiltrationCell>;
-        template<class Field>
-        using BoundaryChainField = std::vector<ChainEntryField<Field>>;
+        template<class Field_ = Field>
+        using Entry = ChainEntry<Field_, MatrixFiltrationCell>;
 
-        using ChainEntry = ChainEntryField<Field>;
-        using BoundaryChain = std::vector<ChainEntry>;
+        template<class Field_ = Field>
+        using BoundaryChain = std::vector<Entry<Field_>>;
 
     public:
                 MatrixFiltrationCell(const MatrixFiltration* mf, size_t i):
@@ -66,20 +64,20 @@ class MatrixFiltrationCell
         bool            operator==(const MatrixFiltrationCell& other) const     { return i_ == other.i_; }
         bool            operator!=(const MatrixFiltrationCell& other) const     { return i_ != other.i_; }
 
-        BoundaryChain   boundary() const
+        BoundaryChain<> boundary() const
         {
-            BoundaryChain bdry;
+            BoundaryChain<> bdry;
             for (auto& entry : (*mf_->m_)[i_])
-                bdry.emplace_back(ChainEntry { entry.e, MatrixFiltrationCell(mf_, entry.i) });
+                bdry.emplace_back(Entry<> { entry.e, MatrixFiltrationCell(mf_, entry.i) });
             return bdry;
         }
 
         template<class Field_>
-        BoundaryChainField<Field_>   boundary(const Field_& field) const
+        BoundaryChain<Field_>   boundary(const Field_& field) const
         {
-            BoundaryChainField<Field_> bdry;
+            BoundaryChain<Field_> bdry;
             for (auto& entry : (*mf_->m_)[i_])
-                bdry.emplace_back(ChainEntryField<Field_> { field.init(entry.e), MatrixFiltrationCell(mf_, entry.i) });
+                bdry.emplace_back(Entry<Field_> { field.init(entry.e), MatrixFiltrationCell(mf_, entry.i) });
             return bdry;
         }
 

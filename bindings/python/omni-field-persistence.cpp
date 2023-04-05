@@ -6,27 +6,30 @@ namespace ba = boost::adaptors;
 namespace py = pybind11;
 
 #include "filtration.h"
+#include "persistence.h"        // for PyMatrixFiltration
 #include "diagram.h"
 #include "omni-field-persistence.h"
 #include "chain.h"
 
+template<class Filtration>
 PyOmniFieldPersistence
-omnifield_homology_persistence(const PyFiltration& filtration)
+omnifield_homology_persistence(const Filtration& filtration)
 {
     PyOmniFieldPersistence persistence;
     for(auto& s : filtration)
     {
-        using SimplexChainEntry = dionysus::ChainEntry<PyOmniFieldPersistence::Field, PySimplex>;
-        using ChainEntry        = dionysus::ChainEntry<PyOmniFieldPersistence::Field, PyOmniFieldPersistence::Index>;
+        using CellEntry = typename Filtration::Cell::template Entry<PyOmniFieldPersistence::Field>;
+        using ChainEntry = dionysus::ChainEntry<PyOmniFieldPersistence::Field, PyOmniFieldPersistence::Index>;
         persistence.add(s.boundary(persistence.field()) |
-                                                 ba::transformed([&filtration](const SimplexChainEntry& e)
+                                                 ba::transformed([&filtration](const CellEntry& e)
                                                  { return ChainEntry(e.element(), filtration.index(e.index())); }));
     }
     return persistence;
 }
 
+template<class Filtration>
 std::vector<PyDiagram>
-py_init_omni_diagrams(const PyOmniFieldPersistence& persistence, const PyFiltration& f, PyOmniFieldPersistence::BaseElement p)
+py_init_omni_diagrams(const PyOmniFieldPersistence& persistence, const Filtration& f, PyOmniFieldPersistence::BaseElement p)
 {
     return init_diagrams(prime_adapter(persistence, p), f,
                          [](const PySimplex& s)                         { return s.data(); },        // value
@@ -39,10 +42,12 @@ PYBIND11_MAKE_OPAQUE(PyOmniFieldPersistence::QChain);       // we want to provid
 void init_omnifield_persistence(py::module& m)
 {
     using namespace pybind11::literals;
-    m.def("omnifield_homology_persistence",   &omnifield_homology_persistence, "filtration"_a,
+    m.def("omnifield_homology_persistence",   &omnifield_homology_persistence<PyFiltration>, "filtration"_a,
           "compute homology persistence of the filtration (pair simplices) over all fields at once");
+    m.def("omnifield_homology_persistence",   &omnifield_homology_persistence<PyMatrixFiltration>, "filtration"_a,
+          "compute homology persistence of the matrix filtration over all fields at once");
 
-    m.def("init_diagrams",      &py_init_omni_diagrams,  "ofp"_a, "f"_a, "p"_a,  "initialize diagrams for a specific prime from omnifield persistence and filtration");
+    m.def("init_diagrams",      &py_init_omni_diagrams<PyFiltration>,  "ofp"_a, "f"_a, "p"_a,  "initialize diagrams for a specific prime from omnifield persistence and filtration");
 
     using Index         = PyOmniFieldPersistence::Index;
     using BaseElement   = PyOmniFieldPersistence::BaseElement;
@@ -63,7 +68,14 @@ void init_omnifield_persistence(py::module& m)
                         {
                             return ofp.q_chains()[i];
                         },                                  "get the column over rationals")
-        .def("special", &PyOmniFieldPersistence::special,   "test whether the column has a special value over the given prime")
+        .def("special", [](const PyOmniFieldPersistence& ofp)
+                        {
+                            return ofp.special();
+                        },                                  "get dictionary of special columns mapping to primes")
+        .def("special", [](const PyOmniFieldPersistence& ofp, Index i, BaseElement p)
+                        {
+                            return ofp.special(i,p);
+                        },                                  "test whether the column has a special value over the given prime")
         .def("__len__", &PyOmniFieldPersistence::size,      "size of the persistence object")
         .def("__repr__",    [](const PyOmniFieldPersistence& ofp)
                             { std::ostringstream oss; oss << "OmniFieldPersistence with " << ofp.size() << " columns"; return oss.str(); })

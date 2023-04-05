@@ -32,6 +32,9 @@ class Simplex
         using BoundaryChainRange = boost::iterator_range<BoundaryChainIterator<Field>>;
         using BoundaryRange      = boost::iterator_range<BoundaryIterator>;
 
+        template<class Field>
+        using Entry = ChainEntry<Field, Simplex>;
+
     public:
                         Simplex(const Data& d = Data()):
                             dim_(-1), data_(d)                                                  {}
