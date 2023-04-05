@@ -17,9 +17,9 @@ namespace ba = boost::adaptors;
 #include "chain.h"
 #include "progress.h"
 
-template<class Relative>
+template<class Filtration, class Relative>
 PyReducedMatrix
-compute_homology_persistence(const PyFiltration& filtration, const Relative& relative, PyZpField::Element prime, std::string method, const Progress& progress)
+compute_homology_persistence(const Filtration& filtration, const Relative& relative, PyZpField::Element prime, std::string method, const Progress& progress)
 {
     PyZpField field(prime);
 
@@ -58,10 +58,11 @@ compute_homology_persistence(const PyFiltration& filtration, const Relative& rel
         throw std::runtime_error("Unknown method: " + method);
 }
 
+template<class Filtration>
 PyReducedMatrix
-homology_persistence(const PyFiltration& filtration, PyZpField::Element prime, std::string method, bool progress)
+homology_persistence(const Filtration& filtration, PyZpField::Element prime, std::string method, bool progress)
 {
-    using Cell = PyFiltration::Cell;
+    using Cell = typename Filtration::Cell;
     if (progress)
         return compute_homology_persistence(filtration, [](const Cell&) { return false; }, prime, method, ShowProgress(filtration.size()));
     else
@@ -113,7 +114,10 @@ using Skips = std::vector<bool>;
 void init_persistence(py::module& m)
 {
     using namespace pybind11::literals;
-    m.def("homology_persistence",   &homology_persistence,
+    m.def("homology_persistence",   &homology_persistence<PyFiltration>,
+          "filtration"_a, "prime"_a = 2, "method"_a = "clearing", "progress"_a = false,
+          "compute homology persistence of the filtration (pair simplices); method is one of `clearing`, `row`, `column`, or `column_no_negative`");
+    m.def("homology_persistence",   &homology_persistence<PyMatrixFiltration>,
           "filtration"_a, "prime"_a = 2, "method"_a = "clearing", "progress"_a = false,
           "compute homology persistence of the filtration (pair simplices); method is one of `clearing`, `row`, `column`, or `column_no_negative`");
     m.def("homology_persistence",   &relative_homology_persistence,
@@ -189,11 +193,14 @@ void init_persistence(py::module& m)
         .def("__repr__",    [](const PyMatrixFiltration::Cell& mfc)
                             { std::ostringstream oss; oss << "Cell " << mfc.i(); return oss.str(); })
         .def("dimension",   &PyMatrixFiltration::Cell::dimension, "cell dimension")
-        .def("boundary",    &PyMatrixFiltration::Cell::boundary,  "boundary of the cell (the column in the matrix)")
+        .def("boundary",    [](const PyMatrixFiltration::Cell& mfc) { return mfc.boundary(); },
+                            "boundary of the cell (the column in the matrix)")
     ;
 
     py::class_<PyMatrixFiltration>(m, "MatrixFiltration", "adapter to turn ReducedMatrix into something that looks and acts like a filtration")
-        .def(py::init<const PyReducedMatrix*, Dimensions>())
+        .def(py::init<const PyReducedMatrix*, Dimensions>(),
+             py::keep_alive<1,2>()  // keep matrix alive, while matrix-filtration exists
+             )
         .def("__len__",     &PyMatrixFiltration::size,          "size of the matrix")
         .def("__getitem__", &PyMatrixFiltration::operator[],    "access the 'cell' (column) at a given index")
         .def("__repr__",    [](const PyMatrixFiltration& mf)

@@ -28,6 +28,11 @@ class MatrixFiltration
         Cell            operator[](size_t i) const      { return Cell(this, i); }
         size_t          size() const                    { return m_->size(); }
 
+        size_t          index(const Cell& c) const;
+
+        Cell            begin() const                   { return Cell(this, 0); }
+        Cell            end() const                     { return Cell(this, size()); }
+
     private:
         const Matrix*   m_;
         Dimensions      dimensions_;
@@ -43,7 +48,13 @@ class MatrixFiltrationCell
         using Matrix = Matrix_;
         using Field = typename Matrix::Field;
         using MatrixFiltration = MatrixFiltration<Matrix>;
-        using ChainEntry = ChainEntry<Field,MatrixFiltrationCell>;
+
+        template<class Field>
+        using ChainEntryField = ChainEntry<Field,MatrixFiltrationCell>;
+        template<class Field>
+        using BoundaryChainField = std::vector<ChainEntryField<Field>>;
+
+        using ChainEntry = ChainEntryField<Field>;
         using BoundaryChain = std::vector<ChainEntry>;
 
     public:
@@ -63,6 +74,22 @@ class MatrixFiltrationCell
             return bdry;
         }
 
+        template<class Field_>
+        BoundaryChainField<Field_>   boundary(const Field_& field) const
+        {
+            BoundaryChainField<Field_> bdry;
+            for (auto& entry : (*mf_->m_)[i_])
+                bdry.emplace_back(ChainEntryField<Field_> { field.init(entry.e), MatrixFiltrationCell(mf_, entry.i) });
+            return bdry;
+        }
+
+        // iterator interface
+        MatrixFiltrationCell    operator++(int)         { MatrixFiltrationCell copy = *this; i_++; return copy; }
+        MatrixFiltrationCell&   operator++()            { ++i_; return *this; }
+
+        const MatrixFiltrationCell& operator*() const   { return *this; }
+        MatrixFiltrationCell&       operator*()         { return *this; }
+
         size_t          i() const       { return i_; }
 
         friend
@@ -74,5 +101,11 @@ class MatrixFiltrationCell
         size_t                  i_;
 };
 
+template<class Matrix>
+size_t
+MatrixFiltration<Matrix>::index(const Cell& c) const
+{
+    return c.i();
+}
 
 }
