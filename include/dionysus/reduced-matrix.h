@@ -58,7 +58,8 @@ class ReducedMatrix
                                     field_(other.field_),
                                     cmp_(other.cmp_),
                                     reduced_(std::move(other.reduced_)),
-                                    pairs_(std::move(other.pairs_))             {}
+                                    pairs_(std::move(other.pairs_)),
+                                    skip_(std::move(other.skip_))               {}
 
         template<class ChainRange>
         Index                   add(const ChainRange& chain)                    { return add(Chain(std::begin(chain), std::end(chain))); }
