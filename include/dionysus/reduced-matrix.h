@@ -50,6 +50,9 @@ class ReducedMatrix
                                     cmp_(std::move(cmp)),
                                     visitors_(visitors...)                      {}
 
+                                ReducedMatrix(Self&& m) = default;
+                                ReducedMatrix(const Self& m) = default;
+
         template<template<class Self> class... OtherVisitors>
                                 ReducedMatrix(ReducedMatrix<Field, Index, Comparison, OtherVisitors...>&& other):
                                     field_(other.field_),

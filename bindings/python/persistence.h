@@ -7,5 +7,6 @@
 #include "field.h"
 
 using PyReducedMatrix = dionysus::ReducedMatrix<PyZpField>;
-using PyMatrixFiltration = dionysus::MatrixFiltration<PyReducedMatrix>;
-using Dimensions = std::vector<short unsigned>;
+using PyMatrixFiltration = dionysus::MatrixFiltration<PyReducedMatrix,PySimplex::Data>;
+using Dimensions = PyMatrixFiltration::Dimensions;
+using Values = PyMatrixFiltration::Values;

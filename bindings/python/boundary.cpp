@@ -8,13 +8,15 @@ namespace py = pybind11;
 #include "filtration.h"
 #include "persistence.h"
 
-std::tuple<PyReducedMatrix,Dimensions> boundary(const PyFiltration& f)
+PyMatrixFiltration boundary(const PyFiltration& f)
 {
     short prime = 3;
     PyReducedMatrix m(prime);
     Dimensions dimensions;
+    Values values;
     m.resize(f.size());
     dimensions.resize(f.size());
+    values.resize(f.size());
 
     using Cell = PyFiltration::Cell;
     using CellChainEntry = dionysus::ChainEntry<PyReducedMatrix::Field, Cell>;
@@ -24,6 +26,7 @@ std::tuple<PyReducedMatrix,Dimensions> boundary(const PyFiltration& f)
     for(auto& c : f)
     {
         dimensions[i] = c.dimension();
+        values[i] = c.data();
         m.set(i++, c.boundary(m.field()) | ba::transformed([&f,prime](const CellChainEntry& e)
                                            {
                                              short ee = e.element();
@@ -33,17 +36,19 @@ std::tuple<PyReducedMatrix,Dimensions> boundary(const PyFiltration& f)
                                            }));
     }
 
-    return std::make_tuple(m,dimensions);
+    return PyMatrixFiltration(std::move(m),dimensions,values);
 }
 
-std::tuple<PyReducedMatrix,Dimensions> coboundary(const PyFiltration& f)
+PyMatrixFiltration coboundary(const PyFiltration& f)
 {
     short prime = 3;
     PyReducedMatrix m(prime);
     Dimensions dimensions;
+    Values values;
     size_t n = f.size();
     m.resize(n);
     dimensions.resize(n);
+    values.resize(n);
 
     using Cell = PyFiltration::Cell;
     using CellChainEntry = dionysus::ChainEntry<PyReducedMatrix::Field, Cell>;
@@ -53,6 +58,7 @@ std::tuple<PyReducedMatrix,Dimensions> coboundary(const PyFiltration& f)
     for(auto& c : f)
     {
         dimensions[n - 1 - i] = c.dimension();
+        values[n - 1 - i] = c.data();
         for (auto x : c.boundary(m.field()) |
                         ba::transformed([&f,prime](const CellChainEntry& e)
                         {
@@ -70,7 +76,7 @@ std::tuple<PyReducedMatrix,Dimensions> coboundary(const PyFiltration& f)
     for (PyReducedMatrix::Index i = 0; i < m.size(); ++i)
         m.sort(m.column(i));
 
-    return std::make_tuple(m,dimensions);
+    return PyMatrixFiltration(std::move(m),dimensions,values);
 }
 
 

@@ -37,7 +37,7 @@ compute_homology_persistence(const Filtration& filtration, const Relative& relat
         using Reduction = dionysus::RowReduction<PyZpField>;
         Reduction   reduce(field);
         reduce(filtration, relative, &Reduction::no_report_pair, progress);
-        return reduce.persistence();
+        return std::move(reduce.persistence());
     } else if (method == "column")
     {
         using Persistence = dionysus::OrdinaryPersistence<PyZpField>;
@@ -198,9 +198,9 @@ void init_persistence(py::module& m)
     ;
 
     py::class_<PyMatrixFiltration>(m, "MatrixFiltration", "adapter to turn ReducedMatrix into something that looks and acts like a filtration")
-        .def(py::init<const PyReducedMatrix*, Dimensions>(),
-             py::keep_alive<1,2>()  // keep matrix alive, while matrix-filtration exists
-             )
+        .def(py::init<PyReducedMatrix, Dimensions, Values>())
+        .def("dimensions",  &PyMatrixFiltration::dimensions,    "list of cell dimensions")
+        .def("values",      &PyMatrixFiltration::values,        "list of cell values")
         .def("__len__",     &PyMatrixFiltration::size,          "size of the matrix")
         .def("__getitem__", &PyMatrixFiltration::operator[],    "access the 'cell' (column) at a given index")
         .def("__repr__",    [](const PyMatrixFiltration& mf)
