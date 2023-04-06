@@ -25,8 +25,8 @@ def plot_diagram(dgm, show=False, labels=False, ax=None,
         line_kwargs.update(line_style)
 
 
+    inf = float('inf')
     if not limits:
-        inf = float('inf')
         min_birth = min((p.birth for p in dgm if p.birth != inf), default=0)
         max_birth = max((p.birth for p in dgm if p.birth != inf), default=1)
         min_death = min((p.death for p in dgm if p.death != inf), default=min_birth)
@@ -40,7 +40,7 @@ def plot_diagram(dgm, show=False, labels=False, ax=None,
 
     min_diag = min(min_birth, min_death)
     max_diag = max(max_birth, max_death)
-    ax.scatter([p.birth for p in dgm], [p.death for p in dgm], **pt_kwargs)
+    ax.scatter([p.birth for p in dgm], [p.death if p.death != inf else max_death for p in dgm], **pt_kwargs)
     ax.plot([min_diag, max_diag], [min_diag, max_diag], **line_kwargs)
 
     if labels:
@@ -80,11 +80,17 @@ def plot_bars(dgm, order='birth', show=False, ax=None, **bar_style):
     else:
         generator = enumerate(dgm)
 
+    inf = float('inf')
+    max_death = max((p.death for p in dgm if p.death != inf), default = 1)
+
     if ax is None:
         ax = plt.axes()
 
     for i,p in generator:
-        ax.plot([p.birth, p.death], [i,i], **bar_kwargs)
+        if p.death != inf:
+            ax.plot([p.birth, p.death], [i,i], **bar_kwargs)
+        else:
+            ax.plot([p.birth, max_death], [i,i], **bar_kwargs)
 
     if show:
         plt.show()
