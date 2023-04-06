@@ -69,9 +69,9 @@ void init_omnifield_persistence(py::module& m)
                         {
                             return ofp.q_chains()[i];
                         },                                  "get the column over rationals")
-        .def("special", [](const PyOmniFieldPersistence& ofp)
+        .def("specials",[](const PyOmniFieldPersistence& ofp)
                         {
-                            return ofp.special();
+                            return ofp.specials();
                         },                                  "get dictionary of special columns mapping to primes")
         .def("special", [](const PyOmniFieldPersistence& ofp, Index i, BaseElement p)
                         {

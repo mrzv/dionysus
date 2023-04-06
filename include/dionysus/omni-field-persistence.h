@@ -62,7 +62,7 @@ class OmniFieldPersistence
         void                reduce(ZpChain& zp_chain, BaseElement p);
         ZpChain             convert(const QChain& c, const Zp& field) const;
         bool                special(Index i, BaseElement p) const   { auto it = zp_chains_.find(i); if (it == zp_chains_.end()) return false; if (it->second.find(p) == it->second.end()) return false; return true; }
-        Specials            special() const
+        Specials            specials() const
         {
             Specials specials;
             for (auto& x : zp_chains_)
