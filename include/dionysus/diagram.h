@@ -92,6 +92,14 @@ init_diagrams(const ReducedMatrix& m, const Filtration& f, const GetValue& get_v
             auto birth = get_value(s);
             auto death = get_value(f[pair]);
 
+            // hack to work with coboundaries
+            auto pd = f[pair].dimension();
+            if (pd < d)
+            {
+                d = pd;
+                std::swap(birth, death);
+            }
+
             if (birth != death)         // skip diagonal
                 diagrams[d].emplace_back(birth, death, get_data(i));
         } // else negative: do nothing

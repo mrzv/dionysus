@@ -39,7 +39,6 @@ PyMatrixFiltration boundary(const PyFiltration& f)
     return PyMatrixFiltration(std::move(m),dimensions,values);
 }
 
-// FIXME: currently broken
 PyMatrixFiltration coboundary(const PyFiltration& f)
 {
     short prime = 3;
@@ -84,5 +83,5 @@ PyMatrixFiltration coboundary(const PyFiltration& f)
 void init_boundary(py::module& m)
 {
     m.def("boundary", &boundary, "compute boundary matrix of the filtration");
-    //m.def("coboundary", &coboundary, "compute coboundary matrix of the filtration");
+    m.def("coboundary", &coboundary, "compute coboundary matrix of the filtration");
 }
