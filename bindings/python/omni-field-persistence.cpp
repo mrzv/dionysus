@@ -32,7 +32,7 @@ std::vector<PyDiagram>
 py_init_omni_diagrams(const PyOmniFieldPersistence& persistence, const Filtration& f, PyOmniFieldPersistence::BaseElement p)
 {
     return init_diagrams(prime_adapter(persistence, p), f,
-                         [](const PySimplex& s)                         { return s.data(); },        // value
+                         [](const typename Filtration::Cell& s)         { return s.data(); },        // value
                          [](PyOmniFieldPersistence::Index i) -> PyIndex { return i; });              // data
 }
 
@@ -47,7 +47,8 @@ void init_omnifield_persistence(py::module& m)
     m.def("omnifield_homology_persistence",   &omnifield_homology_persistence<PyMatrixFiltration>, "filtration"_a,
           "compute homology persistence of the matrix filtration over all fields at once");
 
-    m.def("init_diagrams",      &py_init_omni_diagrams<PyFiltration>,  "ofp"_a, "f"_a, "p"_a,  "initialize diagrams for a specific prime from omnifield persistence and filtration");
+    m.def("init_diagrams",      &py_init_omni_diagrams<PyFiltration>,       "ofp"_a, "f"_a, "p"_a,  "initialize diagrams for a specific prime from omnifield persistence and filtration");
+    m.def("init_diagrams",      &py_init_omni_diagrams<PyMatrixFiltration>, "ofp"_a, "f"_a, "p"_a,  "initialize diagrams for a specific prime from omnifield persistence and filtration");
 
     using Index         = PyOmniFieldPersistence::Index;
     using BaseElement   = PyOmniFieldPersistence::BaseElement;

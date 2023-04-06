@@ -79,11 +79,12 @@ relative_homology_persistence(const PyFiltration& filtration, const PyFiltration
         return compute_homology_persistence(filtration, [&relative](const Cell& c) { return relative.contains(c); }, prime, method, NoProgress());
 }
 
+template<class Filtration>
 std::vector<PyDiagram>
-py_init_diagrams(const PyReducedMatrix& m, const PyFiltration& f)
+py_init_diagrams(const PyReducedMatrix& m, const Filtration& f)
 {
     return init_diagrams(m, f,
-                         [](const PySimplex& s)                     { return s.data(); },       // value
+                         [](const typename Filtration::Cell& s)     { return s.data(); },       // value
                          [](PyReducedMatrix::Index i) -> PyIndex    { return i; });             // data
 }
 
@@ -124,7 +125,8 @@ void init_persistence(py::module& m)
           "filtration"_a, "relative"_a, "prime"_a = 2, "method"_a = "clearing", "progress"_a = false,
           "compute homology persistence of the filtration, relative to a subcomplex; method is one of `clearing`, `row`, `column`, or `column_no_negative`");
 
-    m.def("init_diagrams",      &py_init_diagrams,  "m"_a, "f"_a,  "initialize diagrams from reduced matrix and filtration");
+    m.def("init_diagrams",      &py_init_diagrams<PyFiltration>,        "m"_a, "f"_a,  "initialize diagrams from reduced matrix and filtration");
+    m.def("init_diagrams",      &py_init_diagrams<PyMatrixFiltration>,  "m"_a, "f"_a,  "initialize diagrams from reduced matrix and filtration");
 
     py::class_<PyReducedMatrix>(m, "ReducedMatrix", "matrix, where each column has a lowest non-zero entry in a unique row; supports iteration and indexing")
         .def(py::init<PyZpField>())

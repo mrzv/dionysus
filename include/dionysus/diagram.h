@@ -74,7 +74,7 @@ init_diagrams(const ReducedMatrix& m, const Filtration& f, const GetValue& get_v
         if (m.skip(i))
             continue;
 
-        auto& s = f[i];
+        auto  s = f[i];
         auto  d = s.dimension();
 
         while (d + 1 > diagrams.size())
