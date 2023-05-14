@@ -4,6 +4,7 @@
 #include <vector>
 #include <tuple>
 #include <functional>
+#include <limits>
 #include "chain.h"
 
 namespace dionysus
