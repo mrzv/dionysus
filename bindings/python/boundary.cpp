@@ -45,16 +45,18 @@ PyMatrixFiltration coboundary(const PyFiltration& f)
     PyReducedMatrix m(prime);
     Dimensions dimensions;
     Values values;
-    size_t n = f.size();
-    m.resize(n);
-    dimensions.resize(n);
-    values.resize(n);
 
     using Cell = PyFiltration::Cell;
     using CellChainEntry = dionysus::ChainEntry<PyReducedMatrix::Field, Cell>;
     using Entry = PyReducedMatrix::Entry;
+    using Index = PyReducedMatrix::Index;
 
-    PyReducedMatrix::Index i = 0;
+    Index n = static_cast<Index>(f.size());
+    m.resize(n);
+    dimensions.resize(n);
+    values.resize(n);
+
+    Index i = 0;
     for(auto& c : f)
     {
         dimensions[n - 1 - i] = c.dimension();
