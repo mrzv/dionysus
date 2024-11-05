@@ -12,6 +12,10 @@ Welcome to Dionysus 2 documentation!
        :maxdepth: 3
 
        tutorial/index
+
+    .. toctree::
+       :maxdepth: 2
+
        API
 
 Dionysus 2 is the second incarnation of the library for computing
