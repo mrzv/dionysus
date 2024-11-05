@@ -270,3 +270,37 @@ To determine if two chains are homologous, use :meth:`~dionysus._dionysus.Reduce
 
     >>> m.homologous(d.Chain([(1,0)]), d.Chain([(1,2)]))
     False
+
+.. _representative-cycles:
+
+Representative Cycles
+---------------------
+
+The following example shows how to extract a representative cycle that
+corresponds to a particular point in the persistence diagram (of an alpha shape
+filtration computed using `diode <https://github.com/mrzv/diode>`_ from a random point set).
+
+.. code-block:: python
+
+    import numpy as np
+    import dionysus as d
+    import diode
+
+    points = np.random.random((100,3))
+
+    f = diode.fill_alpha_shapes(points)
+    f = d.Filtration(f)
+
+    m = d.homology_persistence(f)
+    dgms = d.init_diagrams(m,f)
+
+    dim = 2     # dimension of the diagram we want
+    idx = 5     # index of the point we want
+    pt = dgms[dim][idx]
+
+    x = m.pair(pt.data)
+    for sei in m[x]:
+        s = f[sei.index]    # simplex
+        vertices = points[[v for v in s]]
+        print('#',s)
+        print(vertices)
