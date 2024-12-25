@@ -31,7 +31,7 @@ x_n y_n
 
 2. To use from your code:
 
-#include "bottleneck.h"
+#include <hera/bottleneck.h>
 
 // the functions hera::bottleneckDistExact, hera::bottleneckDistApprox
 // return the exact and approximate bottleneck distance.
@@ -79,20 +79,5 @@ See also code in example/bottleneck_dist.cpp.
 
 # License
 
-See licence.txt
+See `licence.txt` in the repository root folder.
 
-# Building
-
-CMakeLists.txt in the root directory can be used to build
-the command-line utility (in example/ directory).
-The library itself is header-only and does not require separate compilation.
-
-On Linux/Mac:
-
-mkdir build
-cd build
-cmake ..
-make
-
-On Windows:
-use cmake-gui to create the solution in build directory and build it with VS.

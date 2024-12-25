@@ -54,7 +54,7 @@ x_n y_n
 
 To use from your code:
 
-#include "wasserstein.h"
+#include <hera/wasserstein.h>
 
 // All classes and functions are in geom_ws namespace
 
@@ -81,20 +81,5 @@ See also code in wasserstein/example/wasserstein_dist.cpp.
 
 # License
 
-See ../license.txt
+See `licence.txt` in the repository root folder.
 
-# Building
-
-CMakeLists.txt in the root directory can be used to make the library (contained 
-in wasserstein/src/ directory) and the command-line utility (in wasserstein/example/ directory)
-to compute the distance between two diagrams in txt files.
-
-On Linux/Mac:
-
-mkdir build
-cd build
-cmake ..
-make
-
-On Windows (checked with Visual Studio 2015, Community version)
-use cmake-gui to create the solution in build directory and build it with VS.
