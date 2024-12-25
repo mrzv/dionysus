@@ -23,7 +23,7 @@ struct NoNegative
     struct Visitor: public EmptyVisitor<Field, Index, Self>
     {
         template<class Chain>
-        void        chain_initialized(Self* matrix, Chain& c)
+        void        chain_initialized(Self* matrix, Index, Chain& c)
         {
             for (auto cur = std::begin(c); cur != std::end(c); ++cur)
             {

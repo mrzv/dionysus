@@ -40,7 +40,7 @@ dionysus::ReducedMatrix<F,I,C,V...>::
 set(Index i, Chain&& c)
 {
     sort(c);
-    visitors_chain_initialized(c);
+    visitors_chain_initialized(i, c);
     reduced_[i] = std::move(c);
 }
 

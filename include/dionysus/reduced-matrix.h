@@ -111,11 +111,11 @@ class ReducedMatrix
         // Visitors::chain_initialized(c)
         template<class Chain, std::size_t I = 0>
         typename std::enable_if<I == sizeof...(Visitors), void>::type
-                                visitors_chain_initialized(Chain& c)        {}
+                                visitors_chain_initialized(Index i, Chain& c)        {}
 
         template<class Chain, std::size_t I = 0>
         typename std::enable_if<I < sizeof...(Visitors), void>::type
-                                visitors_chain_initialized(Chain& c)        { std::get<I>(visitors_).chain_initialized(this, c); visitors_chain_initialized<Chain, I+1>(c); }
+                                visitors_chain_initialized(Index i, Chain& c)        { std::get<I>(visitors_).chain_initialized(this, i, c); visitors_chain_initialized<Chain, I+1>(i, c); }
 
         // Visitors::addto(m, cl)
         template<std::size_t I = 0>
@@ -157,7 +157,7 @@ struct EmptyVisitor
 
 
     template<class Chain>
-    void        chain_initialized(Self*, Chain& c)                          {}
+    void        chain_initialized(Self*, Index i, Chain& c)                 {}
 
     void        addto(Self*, typename Field::Element m, Index cl)           {}
     void        reduction_finished(Self*)                                   {}
