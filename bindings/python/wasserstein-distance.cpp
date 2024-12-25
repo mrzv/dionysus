@@ -3,7 +3,22 @@ namespace py = pybind11;
 
 #include "diagram.h"
 
-#include <../ext/hera/wasserstein/include/wasserstein.h>
+#include <hera/wasserstein.h>
+
+namespace hera
+{
+template<>
+struct DiagramTraits<PyDiagram>
+{
+    using Container = PyDiagram;
+    using PointType = PyDiagram::Point;
+    using RealType  = PyDiagram::Value;
+
+    static RealType get_x(const PointType& p)       { return p[0]; }
+    static RealType get_y(const PointType& p)       { return p[1]; }
+    static int      get_id(const PointType& p)      { return 0; }
+};
+}
 
 double wasserstein_distance(const PyDiagram& dgm1, const PyDiagram& dgm2, int q, double delta, double internal_p, double initial_eps, double eps_factor)
 {

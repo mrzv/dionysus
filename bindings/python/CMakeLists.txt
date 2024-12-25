@@ -11,8 +11,8 @@ file                        (MAKE_DIRECTORY "${MODULE_OUTPUT_DIRECTORY}/dionysus
 file                        (GLOB DIONYSUS_PYTHON "${CMAKE_CURRENT_SOURCE_DIR}/dionysus/*.py")
 add_custom_target           (dionysus ALL ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/dionysus ${MODULE_OUTPUT_DIRECTORY}/dionysus DEPENDS ${DIONYSUS_PYTHON})
 
-# needed to make ext/hera/wasserstein compile
-include_directories         (${PROJECT_SOURCE_DIR}/ext/hera/wasserstein/include)
+# needed to make ext/hera compile
+include_directories         (${PROJECT_SOURCE_DIR}/ext/hera/include)
 
 pybind11_add_module         (_dionysus dionysus.cpp
                                        filtration.cpp

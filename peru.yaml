@@ -8,10 +8,12 @@ git module hera:
         - license.txt
         - bottleneck
         - wasserstein
+        - include/hera
     drop:
         - bottleneck/tests
         - wasserstein/tests
-    rev: b73ed1face2c609958556e6f2b7704bbd8aaa263
+        - include/hera/matching
+    rev: 71858a2890905f1ca3156950cca6452bb6b700a9
 
 git module pybind11:
     url: gh:pybind/pybind11

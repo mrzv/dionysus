@@ -3,7 +3,7 @@ namespace py = pybind11;
 
 #include "diagram.h"
 
-#include <../ext/hera/bottleneck/include/bottleneck.h>
+#include <hera/bottleneck.h>
 
 double bottleneck_distance(const PyDiagram& dgm1, const PyDiagram& dgm2, double delta)
 {
