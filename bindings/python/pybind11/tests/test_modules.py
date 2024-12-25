@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import builtins
 
 import pytest
@@ -36,6 +38,9 @@ def test_reference_internal():
     assert str(b.a1) == "A[42]"
     assert str(b.get_a2()) == "A[43]"
     assert str(b.a2) == "A[43]"
+
+    if env.GRAALPY:
+        pytest.skip("ConstructorStats is incompatible with GraalPy.")
 
     astats, bstats = ConstructorStats.get(ms.A), ConstructorStats.get(ms.B)
     assert astats.alive() == 2
@@ -95,9 +100,9 @@ def test_def_submodule_failures():
     sm = m.def_submodule(m, b"ScratchSubModuleName")  # Using bytes to show it works.
     assert sm.__name__ == m.__name__ + "." + "ScratchSubModuleName"
     malformed_utf8 = b"\x80"
-    if env.PYPY:
+    if env.PYPY or env.GRAALPY:
         # It is not worth the effort finding a trigger for a failure when running with PyPy.
-        pytest.skip("Sufficiently exercised on platforms other than PyPy.")
+        pytest.skip("Sufficiently exercised on platforms other than PyPy/GraalPy.")
     else:
         # Meant to trigger PyModule_GetName() failure:
         sm_name_orig = sm.__name__

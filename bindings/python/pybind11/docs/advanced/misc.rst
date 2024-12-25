@@ -62,7 +62,11 @@ will acquire the GIL before calling the Python callback. Similarly, the
 back into Python.
 
 When writing C++ code that is called from other C++ code, if that code accesses
-Python state, it must explicitly acquire and release the GIL.
+Python state, it must explicitly acquire and release the GIL. A separate
+document on deadlocks [#f8]_ elaborates on a particularly subtle interaction
+with C++'s block-scope static variable initializer guard mutexes.
+
+.. [#f8] See docs/advanced/deadlock.md
 
 The classes :class:`gil_scoped_release` and :class:`gil_scoped_acquire` can be
 used to acquire and release the global interpreter lock in the body of a C++
@@ -141,6 +145,9 @@ following checklist.
 - C++ destructors that invoke Python functions can be particularly troublesome as
   destructors can sometimes get invoked in weird and unexpected circumstances as a result
   of exceptions.
+
+- C++ static block-scope variable initialization that calls back into Python can
+  cause deadlocks; see [#f8]_ for a detailed discussion.
 
 - You should try running your code in a debug build. That will enable additional assertions
   within pybind11 that will throw exceptions on certain GIL handling errors
@@ -398,3 +405,32 @@ before they are used as a parameter or return type of a function:
         pyFoo.def(py::init<const ns::Bar&>());
         pyBar.def(py::init<const ns::Foo&>());
     }
+
+Setting inner type hints in docstrings
+======================================
+
+When you use pybind11 wrappers for ``list``, ``dict``, and other generic python
+types, the docstring will just display the generic type. You can convey the
+inner types in the docstring by using a special 'typed' version of the generic
+type.
+
+.. code-block:: cpp
+
+    PYBIND11_MODULE(example, m) {
+        m.def("pass_list_of_str", [](py::typing::List<py::str> arg) {
+            // arg can be used just like py::list
+        ));
+    }
+
+The resulting docstring will be ``pass_list_of_str(arg0: list[str]) -> None``.
+
+The following special types are available in ``pybind11/typing.h``:
+
+* ``py::Tuple<Args...>``
+* ``py::Dict<K, V>``
+* ``py::List<V>``
+* ``py::Set<V>``
+* ``py::Callable<Signature>``
+
+.. warning:: Just like in python, these are merely hints. They don't actually
+             enforce the types of their contents at runtime or compile time.
