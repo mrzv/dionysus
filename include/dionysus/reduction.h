@@ -34,13 +34,13 @@ struct Reduction
 
     template<class Chain1,
              class ChainsLookup,
-             class LowLookup,
+             class PairLookup,
              class Field,
              class Comparison = std::less<Index>>
     static
     Index reduce(Chain1&                     c,
                  const ChainsLookup&         chains,
-                 const LowLookup&            lows,
+                 const PairLookup&           pairs,
                  const Field&                field,
                  const AddtoVisitor<Field>&  visitor = [](typename Field::Element, Index) {},
                  const Comparison&           cmp     = Comparison())
@@ -52,18 +52,18 @@ struct Reduction
             //auto&  low = c.back();
             auto&  low = *(std::prev(c.end()));
             Index  l   = low.index();
-            Index  cl  = lows(l);
-            if (cl == unpaired)
+            Index  o   = pairs(l);
+            if (o == unpaired)
                 return l;
             else
             {
                 // Reduce further
-                auto&           co     = chains(cl);
+                auto&           co     = chains(o);
                 auto&           co_low = co.back();
                 FieldElement    m      = field.neg(field.div(low.element(), co_low.element()));
                 // c += m*co
                 Chain<Chain1>::addto(c, m, co, field, cmp);
-                visitor(m, cl);
+                visitor(m, o);
             }
         }
         return unpaired;

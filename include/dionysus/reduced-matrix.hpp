@@ -50,7 +50,7 @@ dionysus::ReducedMatrix<F,I,C,V...>::
 reduce(Index i)
 {
     Chain& c    = column(i);
-    Index  pair = reduce(c);
+    Index  pair = reduce(i, c);
 
     if (pair != unpaired())
         pairs_[pair] = i;
@@ -63,16 +63,17 @@ reduce(Index i)
 
 template<class F, typename I, class C, template<class Self> class... V>
 template<class ChainsLookup,
-         class LowLookup>
+         class PairLookup>
 typename dionysus::ReducedMatrix<F,I,C,V...>::Index
 dionysus::ReducedMatrix<F,I,C,V...>::
-reduce(      Chain&                c,
+reduce(      Index                 i,
+             Chain&                c,
        const ChainsLookup&         chains,
-       const LowLookup&            lows)
+       const PairLookup&           pairs)
 {
     auto entry_cmp = [this](const Entry& e1, const Entry& e2) { return this->cmp_(e1.index(), e2.index()); };
-    return Reduction<Index>::reduce(c, chains, lows, field_,
-                                    [this](FieldElement m, Index cl)
-                                    { this->visitors_addto<>(m, cl); },
+    return Reduction<Index>::reduce(c, chains, pairs, field_,
+                                    [this,i](FieldElement m, Index o)
+                                    { this->visitors_addto<>(i, m, o); },
                                     entry_cmp);
 }

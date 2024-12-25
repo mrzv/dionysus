@@ -99,7 +99,7 @@ homologous(PyReducedMatrix& m, PyReducedMatrix::Chain z1, PyReducedMatrix::Chain
 
     // z1 -= z2
     dionysus::Chain<PyReducedMatrix::Chain>::addto(z1, m.field().neg(m.field().id()), z2, m.field(), entry_cmp);
-    m.reduce(z1);
+    m.reduce(m.size(), z1);        // dummy m.size() index (only used for callbacks, which are empty here, so unused)
     return z1.empty();
 }
 

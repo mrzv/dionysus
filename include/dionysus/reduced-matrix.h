@@ -70,9 +70,9 @@ class ReducedMatrix
         void                    set(Index i, Chain&& chain);
 
         Index                   reduce(Index i);
-        Index                   reduce(Chain& c)                { return reduce(c, reduced_, pairs_); }
-        template<class ChainsLookup, class LowLookup>
-        Index                   reduce(Chain& c, const ChainsLookup& chains, const LowLookup& low);
+        Index                   reduce(Index i, Chain& c)       { return reduce(i, c, reduced_, pairs_); }
+        template<class ChainsLookup, class PairLookup>
+        Index                   reduce(Index i, Chain& c, const ChainsLookup& chains, const PairLookup& pair);
 
         Index                   reduce_upto(Index i);           // TODO
 
@@ -120,11 +120,11 @@ class ReducedMatrix
         // Visitors::addto(m, cl)
         template<std::size_t I = 0>
         typename std::enable_if<I == sizeof...(Visitors), void>::type
-                                visitors_addto(FieldElement m, Index cl)    {}
+                                visitors_addto(Index i, FieldElement m, Index cl)    {}
 
         template<std::size_t I = 0>
         typename std::enable_if<I < sizeof...(Visitors), void>::type
-                                visitors_addto(FieldElement m, Index cl)    { std::get<I>(visitors_).addto(this, m, cl); visitors_addto<I+1>(m, cl); }
+                                visitors_addto(Index i, FieldElement m, Index cl)    { std::get<I>(visitors_).addto(this, i, m, cl); visitors_addto<I+1>(i, m, cl); }
 
         // Visitors::reduction_finished(m, cl)
         template<std::size_t I = 0>
@@ -159,7 +159,7 @@ struct EmptyVisitor
     template<class Chain>
     void        chain_initialized(Self*, Index i, Chain& c)                 {}
 
-    void        addto(Self*, typename Field::Element m, Index cl)           {}
+    void        addto(Self*, Index i, typename Field::Element m, Index cl)  {}
     void        reduction_finished(Self*)                                   {}
 };
 

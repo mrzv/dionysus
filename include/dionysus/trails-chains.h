@@ -9,7 +9,7 @@ struct ChainsVisitor: public EmptyVisitor<Field, Index>
     template<class Chain>
     void        chain_initialized(Index i, Chain& c)                {}
 
-    void        addto(typename Field::Element m, Index cl)          {}
+    void        addto(Index i, typename Field::Element m, Index cl)          {}
     void        reduction_finished()                                {}
 };
 
