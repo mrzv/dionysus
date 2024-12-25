@@ -1,5 +1,5 @@
+cmake_minimum_required      (VERSION 3.11)
 project                     (Dionysus)
-cmake_minimum_required      (VERSION 3.1)
 
 # Default to Release
 if                          (NOT CMAKE_BUILD_TYPE)
@@ -14,7 +14,7 @@ option                      (build_examples         "Build examples"            
 option                      (build_python_bindings  "Build Python bindings"                         ON)
 mark_as_advanced            (debug_zigzag)
 
-find_package                (Boost)
+find_package                (Boost CONFIG)
 
 # Debugging
 if                          (${CMAKE_BUILD_TYPE} STREQUAL "Debug" OR
