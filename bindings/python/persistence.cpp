@@ -10,6 +10,8 @@ namespace ba = boost::adaptors;
 #include <dionysus/standard-reduction.h>
 #include <dionysus/clearing-reduction.h>
 
+#include <dionysus/trails-chains.h>
+
 #include "field.h"
 #include "filtration.h"
 #include "persistence.h"
@@ -18,7 +20,7 @@ namespace ba = boost::adaptors;
 #include "progress.h"
 
 template<class Filtration, class Relative>
-PyReducedMatrix
+py::object
 compute_homology_persistence(const Filtration& filtration, const Relative& relative, PyZpField::Element prime, std::string method, const Progress& progress)
 {
     PyZpField field(prime);
@@ -30,14 +32,14 @@ compute_homology_persistence(const Filtration& filtration, const Relative& relat
         Persistence persistence(field);
         Reduction   reduce(persistence);
         reduce(filtration, relative, &Reduction::no_report_pair, progress);
-        return std::move(reduce.persistence());
+        return py::cast(std::move(reduce.persistence()));
     }
     else if (method == "row")
     {
         using Reduction = dionysus::RowReduction<PyZpField>;
         Reduction   reduce(field);
         reduce(filtration, relative, &Reduction::no_report_pair, progress);
-        return std::move(reduce.persistence());
+        return py::cast(std::move(reduce.persistence()));
     } else if (method == "column")
     {
         using Persistence = dionysus::OrdinaryPersistence<PyZpField>;
@@ -45,7 +47,7 @@ compute_homology_persistence(const Filtration& filtration, const Relative& relat
         Persistence persistence(field);
         Reduction   reduce(persistence);
         reduce(filtration, relative, &Reduction::no_report_pair, progress);
-        return std::move(reduce.persistence());
+        return py::cast(std::move(reduce.persistence()));
     } else if (method == "column_no_negative")
     {
         using Persistence = dionysus::OrdinaryPersistenceNoNegative<PyZpField>;
@@ -53,13 +55,33 @@ compute_homology_persistence(const Filtration& filtration, const Relative& relat
         Persistence persistence(field);
         Reduction   reduce(persistence);
         reduce(filtration, relative, &Reduction::no_report_pair, progress);
-        return std::move(reduce.persistence());
+        return py::cast(std::move(reduce.persistence()));
+    } else if (method == "matrix_v")
+    {
+        using Persistence = dionysus::OrdinaryPersistenceWithV<PyZpField>;
+        using Reduction   = dionysus::StandardReduction<Persistence>;
+        Persistence persistence(field);
+        Reduction   reduce(persistence);
+        reduce(filtration, relative, &Reduction::no_report_pair, progress);
+        auto v = std::move(reduce.persistence().visitor<0>().v_);
+        auto r = std::move(reduce.persistence());
+        return py::cast(std::make_tuple(r, v));
+    } else if (method == "matrix_v_no_negative")
+    {
+        using Persistence = dionysus::OrdinaryPersistenceNoNegativeWithV<PyZpField>;
+        using Reduction   = dionysus::StandardReduction<Persistence>;
+        Persistence persistence(field);
+        Reduction   reduce(persistence);
+        reduce(filtration, relative, &Reduction::no_report_pair, progress);
+        auto v = std::move(reduce.persistence().visitor<1>().v_);
+        auto r = std::move(reduce.persistence());
+        return py::cast(std::make_tuple(r,v));
     } else
         throw std::runtime_error("Unknown method: " + method);
 }
 
 template<class Filtration>
-PyReducedMatrix
+py::object
 homology_persistence(const Filtration& filtration, PyZpField::Element prime, std::string method, bool progress)
 {
     using Cell = typename Filtration::Cell;
@@ -69,7 +91,7 @@ homology_persistence(const Filtration& filtration, PyZpField::Element prime, std
         return compute_homology_persistence(filtration, [](const Cell&) { return false; }, prime, method, NoProgress());
 }
 
-PyReducedMatrix
+py::object
 relative_homology_persistence(const PyFiltration& filtration, const PyFiltration& relative, PyZpField::Element prime, std::string method, bool progress)
 {
     using Cell = PyFiltration::Cell;
@@ -205,6 +227,8 @@ void init_persistence(py::module& m)
 
     export_reduced_matrix<PyReducedMatrix>(m, "ReducedMatrix");
     export_reduced_matrix<dionysus::OrdinaryPersistenceNoNegative<PyZpField>>(m, "ReducedMatrixNoNegative");
+    export_reduced_matrix<dionysus::OrdinaryPersistenceWithV<PyZpField>>(m, "ReducedMatrixWithV");
+    export_reduced_matrix<dionysus::OrdinaryPersistenceNoNegativeWithV<PyZpField>>(m, "ReducedMatrixNoNegativeWithV");
     init_chain<typename PyReducedMatrix::Chain>(m);
 
     py::class_<PyMatrixFiltration>(m, "MatrixFiltration", "adapter to turn ReducedMatrix into something that looks and acts like a filtration")
