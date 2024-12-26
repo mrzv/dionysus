@@ -3,7 +3,7 @@ imports:
     pybind11: ./bindings/python/pybind11
 
 git module hera:
-    url: git@bitbucket.org:grey_narn/hera.git
+    url: gh:anigmetov/hera
     pick:
         - license.txt
         - bottleneck
@@ -15,4 +15,4 @@ git module hera:
 
 git module pybind11:
     url: gh:pybind/pybind11
-    rev: cf7d2e6f15be7622515a77466e84bd9414737680
+    rev: cf020a1de25861d4b982081890c43e7eab1ff5e9

@@ -52,7 +52,23 @@ void bind_empty0(py::module_ &m) {
 }
 
 } // namespace pr4220_tripped_over_this
+
+namespace pr5396_forward_declared_class {
+class ForwardClass;
+class Args : public py::args {};
+} // namespace pr5396_forward_declared_class
+
 } // namespace test_class
+
+static_assert(py::detail::is_same_or_base_of<py::args, py::args>::value, "");
+static_assert(
+    py::detail::is_same_or_base_of<py::args,
+                                   test_class::pr5396_forward_declared_class::Args>::value,
+    "");
+static_assert(!py::detail::is_same_or_base_of<
+                  py::args,
+                  test_class::pr5396_forward_declared_class::ForwardClass>::value,
+              "");
 
 TEST_SUBMODULE(class_, m) {
     m.def("obj_class_name", [](py::handle obj) { return py::detail::obj_class_name(obj.ptr()); });
@@ -85,7 +101,7 @@ TEST_SUBMODULE(class_, m) {
         .def_static("new_instance", &NoConstructor::new_instance, "Return an instance");
 
     py::class_<NoConstructorNew>(m, "NoConstructorNew")
-        .def(py::init([](const NoConstructorNew &self) { return self; })) // Need a NOOP __init__
+        .def(py::init([]() { return nullptr; })) // Need a NOOP __init__
         .def_static("__new__",
                     [](const py::object &) { return NoConstructorNew::new_instance(); });
 
@@ -403,7 +419,7 @@ TEST_SUBMODULE(class_, m) {
         // [workaround(intel)] = default does not work here
         // Removing or defaulting this destructor results in linking errors with the Intel compiler
         // (in Debug builds only, tested with icpc (ICC) 2021.1 Beta 20200827)
-        ~PublicistB() override{}; // NOLINT(modernize-use-equals-default)
+        ~PublicistB() override {}; // NOLINT(modernize-use-equals-default)
         using ProtectedB::foo;
         using ProtectedB::get_self;
         using ProtectedB::void_foo;
@@ -461,8 +477,7 @@ TEST_SUBMODULE(class_, m) {
     py::class_<Nested>(base, "Nested")
         .def(py::init<>())
         .def("fn", [](Nested &, int, NestBase &, Nested &) {})
-        .def(
-            "fa", [](Nested &, int, NestBase &, Nested &) {}, "a"_a, "b"_a, "c"_a);
+        .def("fa", [](Nested &, int, NestBase &, Nested &) {}, "a"_a, "b"_a, "c"_a);
     base.def("g", [](NestBase &, Nested &) {});
     base.def("h", []() { return NestBase(); });
 
