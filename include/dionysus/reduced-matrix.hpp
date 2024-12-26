@@ -6,6 +6,8 @@ resize(size_t s)
     reduced_.resize(s);
     pairs_.resize(s, unpaired());
     skip_.resize(s, false);
+
+    visitors_resized(size());
 }
 
 template<class F, typename I, class C, template<class Self> class... V>
@@ -18,6 +20,8 @@ add(Chain&& chain)
     pairs_.emplace_back(unpaired());
     reduced_.emplace_back();
     skip_.push_back(false);
+
+    visitors_resized(size());
 
     set(i, std::move(chain));
 
@@ -32,6 +36,8 @@ add_skip()
     pairs_.emplace_back(unpaired());
     reduced_.emplace_back();
     skip_.push_back(true);
+
+    visitors_resized(size());
 }
 
 template<class F, typename I, class C, template<class Self> class... V>

@@ -22,7 +22,7 @@ class ReducedMatrix
 
         typedef                 std::tuple<Visitors<Self>...>   VisitorsTuple;
         template<size_t I>
-        using Visitor = std::tuple_element<I, VisitorsTuple>;
+        using Visitor = typename std::tuple_element<I, VisitorsTuple>::type;
 
         typedef                 typename Field::Element         FieldElement;
         typedef                 ChainEntry<Field, Index>        Entry;
@@ -60,6 +60,9 @@ class ReducedMatrix
                                     reduced_(std::move(other.reduced_)),
                                     pairs_(std::move(other.pairs_)),
                                     skip_(std::move(other.skip_))               {}
+
+                                    // FIXME
+                                    //visitors_(std::move(other.visitors_))       {}
 
         template<class ChainRange>
         Index                   add(const ChainRange& chain)                    { return add(Chain(std::begin(chain), std::end(chain))); }
@@ -108,6 +111,15 @@ class ReducedMatrix
         friend class ReducedMatrix;     // let's all be friends
 
     public:
+        // Visitors::resized(sz)
+        template<std::size_t I = 0>
+        typename std::enable_if<I == sizeof...(Visitors), void>::type
+                                visitors_resized(Index sz)                          {}
+
+        template<std::size_t I = 0>
+        typename std::enable_if<I < sizeof...(Visitors), void>::type
+                                visitors_resized(Index sz)                          { std::get<I>(visitors_).resized(this, sz); visitors_resized<I+1>(sz); }
+
         // Visitors::chain_initialized(c)
         template<class Chain, std::size_t I = 0>
         typename std::enable_if<I == sizeof...(Visitors), void>::type
@@ -156,10 +168,12 @@ struct EmptyVisitor
                 EmptyVisitor(const EmptyVisitor<Field, Index, OtherSelf>&)  {}
 
 
+    void        resized(Self*, Index sz)                                    {}
+
     template<class Chain>
     void        chain_initialized(Self*, Index i, Chain& c)                 {}
 
-    void        addto(Self*, Index i, typename Field::Element m, Index cl)  {}
+    void        addto(Self*, Index i, typename Field::Element m, Index o)   {}
     void        reduction_finished(Self*)                                   {}
 };
 
