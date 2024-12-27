@@ -6,10 +6,11 @@ namespace py = pybind11;
 #include "simplex.h"
 #include "filtration.h"
 
-void init_filtration(py::module& m)
+template<class PyFiltration>
+void export_filtration(py::module& m, std::string name)
 {
     using namespace pybind11::literals;
-    py::class_<PyFiltration>(m, "Filtration", "store an ordered sequence of simplices, providing lookup")
+    py::class_<PyFiltration>(m, name.c_str(), "store an ordered sequence of simplices, providing lookup")
         .def(py::init<>(),      "initialize empty filtration")
         .def(py::init([](const std::vector<PySimplex>& simplices)
                       {
@@ -33,8 +34,6 @@ void init_filtration(py::module& m)
                           return f;
                       }), "initialize filtration from a list of tuples of vertices and values")
         .def("append",          [](PyFiltration* f, const PySimplex& s) { f->push_back(s); },  "s"_a, "append simplex to the filtration")
-        .def("add",             [](PyFiltration* f, const PySimplex& s) { return f->add(s); }, "s"_a,
-                                "append simplex to the filtration, if not already in the filtration; either way return the index of the simplex")
         .def("__len__",         &PyFiltration::size,        "size of the filtration")
         .def("__getitem__",     &PyFiltration::operator[],  "access the simplex at the given index")
         .def("__setitem__",     &PyFiltration::replace,     "replace the simplex at the given index")
@@ -54,4 +53,10 @@ void init_filtration(py::module& m)
         .def("rearrange",       &PyFiltration::rearrange, "indices"_a, "rearrange simplices into the given order")
         .def("__repr__",        [](const PyFiltration& f) { std::ostringstream oss; oss << "Filtration with " << f.size() << " simplices"; return oss.str(); })
     ;
+}
+
+void init_filtration(py::module& m)
+{
+    export_filtration<PyFiltration>(m, "Filtration");
+    export_filtration<PyMultiFiltration>(m, "MultiFiltration");
 }

@@ -8,6 +8,7 @@ namespace py = pybind11;
 #include "filtration.h"
 #include "persistence.h"
 
+template<class PyFiltration>
 PyMatrixFiltration boundary(const PyFiltration& f)
 {
     short prime = 3;
@@ -18,7 +19,7 @@ PyMatrixFiltration boundary(const PyFiltration& f)
     dimensions.resize(f.size());
     values.resize(f.size());
 
-    using Cell = PyFiltration::Cell;
+    using Cell = typename PyFiltration::Cell;
     using CellChainEntry = dionysus::ChainEntry<PyReducedMatrix::Field, Cell>;
     using Entry = PyReducedMatrix::Entry;
 
@@ -40,6 +41,7 @@ PyMatrixFiltration boundary(const PyFiltration& f)
     return PyMatrixFiltration(std::move(m),dimensions,values);
 }
 
+template<class PyFiltration>
 PyMatrixFiltration coboundary(const PyFiltration& f)
 {
     short prime = 3;
@@ -47,7 +49,7 @@ PyMatrixFiltration coboundary(const PyFiltration& f)
     Dimensions dimensions;
     Values values;
 
-    using Cell = PyFiltration::Cell;
+    using Cell = typename PyFiltration::Cell;
     using CellChainEntry = dionysus::ChainEntry<PyReducedMatrix::Field, Cell>;
     using Entry = PyReducedMatrix::Entry;
     using Index = PyReducedMatrix::Index;
@@ -85,6 +87,8 @@ PyMatrixFiltration coboundary(const PyFiltration& f)
 
 void init_boundary(py::module& m)
 {
-    m.def("boundary", &boundary, "compute boundary matrix of the filtration");
-    m.def("coboundary", &coboundary, "compute coboundary matrix of the filtration");
+    m.def("boundary", &boundary<PyFiltration>, "compute boundary matrix of the filtration");
+    m.def("coboundary", &coboundary<PyFiltration>, "compute coboundary matrix of the filtration");
+    m.def("boundary", &boundary<PyMultiFiltration>, "compute boundary matrix of the filtration");
+    m.def("coboundary", &coboundary<PyMultiFiltration>, "compute coboundary matrix of the filtration");
 }

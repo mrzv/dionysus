@@ -66,10 +66,6 @@ class Filtration
 
         void                replace(size_t i, const Cell& s)                    { cells_.template get<order>().replace(begin() + i, s); }
 
-        // return index of the cell, adding it, if necessary
-        size_t              add(const Cell& s)                                  { size_t i = (iterator(s) - begin()); if (i == size()) emplace_back(s); return i; }
-        size_t              add(Cell&& s)                                       { size_t i = (iterator(s) - begin()); if (i == size()) emplace_back(std::move(s)); return i; }
-
         template<class... Args>
         void                emplace_back(Args&&... args)                        { cells_.template get<order>().emplace_back(std::forward<Args>(args)...); }
 

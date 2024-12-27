@@ -203,6 +203,7 @@ void export_reduced_matrix(py::module& m, std::string name)
     using namespace pybind11::literals;
     m.def("init_diagrams",      &py_init_diagrams<PyReducedMatrix, PyFiltration>,        "m"_a, "f"_a,  "initialize diagrams from reduced matrix and filtration");
     m.def("init_diagrams",      &py_init_diagrams<PyReducedMatrix, PyMatrixFiltration>,  "m"_a, "f"_a,  "initialize diagrams from reduced matrix and filtration");
+    m.def("init_diagrams",      &py_init_diagrams<PyReducedMatrix, PyMultiFiltration>,   "m"_a, "f"_a,  "initialize diagrams from reduced matrix and filtration");
 }
 
 void init_persistence(py::module& m)
@@ -212,6 +213,9 @@ void init_persistence(py::module& m)
           "filtration"_a, "prime"_a = 2, "method"_a = "clearing", "progress"_a = false,
           "compute homology persistence of the filtration (pair simplices); method is one of `clearing`, `row`, `column`, or `column_no_negative`");
     m.def("homology_persistence",   &homology_persistence<PyMatrixFiltration>,
+          "filtration"_a, "prime"_a = 2, "method"_a = "clearing", "progress"_a = false,
+          "compute homology persistence of the filtration (pair simplices); method is one of `clearing`, `row`, `column`, or `column_no_negative`");
+    m.def("homology_persistence",   &homology_persistence<PyMultiFiltration>,
           "filtration"_a, "prime"_a = 2, "method"_a = "clearing", "progress"_a = false,
           "compute homology persistence of the filtration (pair simplices); method is one of `clearing`, `row`, `column`, or `column_no_negative`");
     m.def("homology_persistence",   &relative_homology_persistence,
