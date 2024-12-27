@@ -34,15 +34,16 @@ int main()
     Persistence     persistence(k);
 
     unsigned op = 0;
+    size_t i = 0;
     for(auto& c : filtration)
     {
         fmt::print("[{}] Adding: {} : {}\n", op++, c, boost::distance(c.boundary(persistence.field())));
         Index pair = persistence.add(c.boundary(persistence.field()) |
-                                                ba::transformed([&filtration](const CellChainEntry& e)
-                                                { return ChainEntry(e.element(), filtration.index(e.index())); }));
+                                                ba::transformed([&filtration,i](const CellChainEntry& e)
+                                                { return ChainEntry(e.element(), filtration.index(e.index(),i)); }));
         //if (pair != persistence.unpaired())
         //    std::cout << "[" << pair << " - " << i << "]" << std::endl;
-        //++i;
+        ++i;
     }
 
     for (int i = 6; i >= 0; --i)

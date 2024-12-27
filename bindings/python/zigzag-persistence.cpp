@@ -125,7 +125,7 @@ zigzag_homology_persistence(const PyFiltration&     f,
             Index pair = persistence.add(c.boundary(persistence.field()) |
                                                     ba::transformed([&](const CellChainEntry& e)
                                                     {
-                                                        auto idx = f.index(e.index());
+                                                        auto idx = f.index(e.index(),i);
                                                         return ChainEntry(e.element(), cells[idx]);
                                                     }));
 

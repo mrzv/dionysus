@@ -16,13 +16,15 @@ PyOmniFieldPersistence
 omnifield_homology_persistence(const Filtration& filtration)
 {
     PyOmniFieldPersistence persistence;
+    size_t i = 0;
     for(auto& s : filtration)
     {
         using CellEntry = typename Filtration::Cell::template Entry<PyOmniFieldPersistence::Field>;
         using ChainEntry = dionysus::ChainEntry<PyOmniFieldPersistence::Field, PyOmniFieldPersistence::Index>;
         persistence.add(s.boundary(persistence.field()) |
-                                                 ba::transformed([&filtration](const CellEntry& e)
-                                                 { return ChainEntry(e.element(), filtration.index(e.index())); }));
+                                                 ba::transformed([&filtration,i](const CellEntry& e)
+                                                 { return ChainEntry(e.element(), filtration.index(e.index(), i)); }));
+        ++i;
     }
     return persistence;
 }
@@ -31,9 +33,10 @@ template<class Filtration>
 std::vector<PyDiagram>
 py_init_omni_diagrams(const PyOmniFieldPersistence& persistence, const Filtration& f, PyOmniFieldPersistence::BaseElement p)
 {
+    using Index = PyOmniFieldPersistence::Index;
     return init_diagrams(prime_adapter(persistence, p), f,
-                         [](const typename Filtration::Cell& s)         { return s.data(); },        // value
-                         [](PyOmniFieldPersistence::Index i) -> PyIndex { return i; });              // data
+                         [](const typename Filtration::Cell& s, Index)  { return s.data(); },        // value
+                         [](Index i) -> PyIndex                         { return i; });              // data
 }
 
 PYBIND11_MAKE_OPAQUE(PyOmniFieldPersistence::ZpChain);      // persistence.cpp provides a binding for Chain, which is exactly what this is

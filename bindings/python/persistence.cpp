@@ -105,9 +105,10 @@ template<class PyReducedMatrix, class Filtration>
 std::vector<PyDiagram>
 py_init_diagrams(const PyReducedMatrix& m, const Filtration& f)
 {
+    using Index = typename PyReducedMatrix::Index;
     return init_diagrams(m, f,
-                         [](const typename Filtration::Cell& s)             { return s.data(); },       // value
-                         [](typename PyReducedMatrix::Index i) -> PyIndex   { return i; });             // data
+                         [](const typename Filtration::Cell& s, Index)      { return s.data(); },       // value
+                         [](Index i) -> PyIndex                             { return i; });             // data
 }
 
 bool

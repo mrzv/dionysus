@@ -33,7 +33,7 @@ class MatrixFiltration
         Cell            operator[](size_t i) const      { return Cell(this, i); }
         size_t          size() const                    { return m_.size(); }
 
-        size_t          index(const Cell& c) const;
+        size_t          index(const Cell& c, size_t) const;
 
         Cell            begin() const                   { return Cell(this, 0); }
         Cell            end() const                     { return Cell(this, size()); }
@@ -112,7 +112,7 @@ class MatrixFiltrationCell
 
 template<class Matrix, class CellValue>
 size_t
-MatrixFiltration<Matrix,CellValue>::index(const Cell& c) const
+MatrixFiltration<Matrix,CellValue>::index(const Cell& c, size_t) const
 {
     return c.i();
 }

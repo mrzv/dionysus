@@ -36,11 +36,13 @@ int main()
 
     Filtration filtration { Simplex{0}, Simplex{1}, Simplex{2}, Simplex{0,1}, Simplex{0,2}, Simplex{1,2}, Simplex{0,1,2} };
 
+    size_t i = 0;
     for (auto& s : filtration)
     {
-        fmt::print("{} at {}\n", s, filtration.index(s));
+        fmt::print("{} at {}\n", s, filtration.index(s,i));
         for (auto sb : s.boundary(k))
-            fmt::print("   {} * {} at {}\n", sb.element(), sb.index(), filtration.index(sb.index()));
+            fmt::print("   {} * {} at {}\n", sb.element(), sb.index(), filtration.index(sb.index(),i));
+        ++i;
     }
 
     //Persistence                             persistence(k);

@@ -57,8 +57,11 @@ namespace detail
     template<class ReducedMatrix, class Filtration, class GetValue, class GetData>
     struct Diagrams
     {
-        using Value = decltype(std::declval<GetValue>()(std::declval<typename Filtration::Cell>()));
-        using Data  = decltype(std::declval<GetData>()(std::declval<typename ReducedMatrix::Index>()));
+        using Cell = typename Filtration::Cell;
+        using Index = typename ReducedMatrix::Index;
+
+        using Value = decltype(std::declval<GetValue>()(std::declval<Cell>(), std::declval<Index>()));
+        using Data  = decltype(std::declval<GetData>()(std::declval<Index>()));
         using type  = std::vector<Diagram<Value, Data>>;
     };
 }
@@ -84,14 +87,14 @@ init_diagrams(const ReducedMatrix& m, const Filtration& f, const GetValue& get_v
         auto pair = m.pair(i);
         if (pair == m.unpaired())
         {
-            auto  birth = get_value(s);
+            auto  birth = get_value(s,i);
             using Value = decltype(birth);
             Value death = std::numeric_limits<Value>::infinity();
             diagrams[d].emplace_back(birth, death, get_data(i));
         } else if (pair > i)       // positive
         {
-            auto birth = get_value(s);
-            auto death = get_value(f[pair]);
+            auto birth = get_value(s,i);
+            auto death = get_value(f[pair],pair);
 
             // hack to work with coboundaries
             auto pd = f[pair].dimension();

@@ -32,15 +32,17 @@ int main()
     Persistence     persistence(k);
 
     unsigned op = 0;
+    size_t i = 0;
     for(auto& c : filtration)
     {
         fmt::print("[{}] Adding: {} : {}\n", op++, c, boost::distance(c.boundary(persistence.field())));
         persistence.add_both(c.boundary(persistence.field()) |
-                                        ba::transformed([&filtration](const CellChainEntry& e)
+                                        ba::transformed([&filtration,i](const CellChainEntry& e)
                                         {
-                                            Index idx = filtration.index(e.index());
+                                            Index idx = filtration.index(e.index(),i);
                                             return ChainEntry(e.element(), idx);
                                         }));
+        ++i;
     }
 
     for (int i = 6; i >= 0; --i)

@@ -27,13 +27,14 @@ PyMatrixFiltration boundary(const PyFiltration& f)
     {
         dimensions[i] = c.dimension();
         values[i] = c.data();
-        m.set(i++, c.boundary(m.field()) | ba::transformed([&f,prime](const CellChainEntry& e)
-                                           {
-                                             short ee = e.element();
-                                             if (ee > prime / 2)
-                                                ee -= prime;
-                                             return Entry(ee, f.index(e.index()));
-                                           }));
+        m.set(i, c.boundary(m.field()) | ba::transformed([&f,prime,i](const CellChainEntry& e)
+                                         {
+                                           short ee = e.element();
+                                           if (ee > prime / 2)
+                                              ee -= prime;
+                                           return Entry(ee, f.index(e.index(),i));
+                                         }));
+        ++i;
     }
 
     return PyMatrixFiltration(std::move(m),dimensions,values);
@@ -62,12 +63,12 @@ PyMatrixFiltration coboundary(const PyFiltration& f)
         dimensions[n - 1 - i] = c.dimension();
         values[n - 1 - i] = c.data();
         for (auto x : c.boundary(m.field()) |
-                        ba::transformed([&f,prime](const CellChainEntry& e)
+                        ba::transformed([&f,prime,i](const CellChainEntry& e)
                         {
                           short ee = e.element();
                           if (ee > prime / 2)
                              ee -= prime;
-                          return Entry(ee, f.index(e.index()));
+                          return Entry(ee, f.index(e.index(),i));
                         }))
         {
             m.column(n - 1 - x.index()).emplace_back(Entry { x.element(), n - 1 - i });
