@@ -28,8 +28,8 @@ void init_diagram(py::module& m)
                           return dgm;
                       }), "initialize diagram from a list of (birth,death) points")
         .def("append",          &PyDiagram::push_back, "p"_a,   "append point to the diagram")
-        .def("append",          [](PyDiagram& dgm, PyDiagram::Value birth, PyDiagram::Value death) { dgm.emplace_back(birth, death, 0); },
-                                "birth"_a, "death"_a,
+        .def("append",          [](PyDiagram& dgm, PyDiagram::Value birth, PyDiagram::Value death, PyDiagram::Data data) { dgm.emplace_back(birth, death, data); },
+                                "birth"_a, "death"_a, "data"_a = 0,
                                  "append point to the diagram")
         .def("__getitem__",     &PyDiagram::operator[],         "access `i`-th point")
         .def("__len__",         &PyDiagram::size,               "size of the diagram")
