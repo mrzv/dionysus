@@ -22,7 +22,7 @@ class ReducedMatrix
 
         typedef                 std::tuple<Visitors<Self>...>   VisitorsTuple;
         template<size_t I>
-        using Visitor = std::tuple_element<I, VisitorsTuple>;
+        using Visitor = typename std::tuple_element<I, VisitorsTuple>::type;
 
         typedef                 typename Field::Element         FieldElement;
         typedef                 ChainEntry<Field, Index>        Entry;
@@ -61,6 +61,9 @@ class ReducedMatrix
                                     pairs_(std::move(other.pairs_)),
                                     skip_(std::move(other.skip_))               {}
 
+                                    // FIXME
+                                    //visitors_(std::move(other.visitors_))       {}
+
         template<class ChainRange>
         Index                   add(const ChainRange& chain)                    { return add(Chain(std::begin(chain), std::end(chain))); }
         Index                   add(Chain&& chain);
@@ -70,9 +73,9 @@ class ReducedMatrix
         void                    set(Index i, Chain&& chain);
 
         Index                   reduce(Index i);
-        Index                   reduce(Chain& c)                { return reduce(c, reduced_, pairs_); }
-        template<class ChainsLookup, class LowLookup>
-        Index                   reduce(Chain& c, const ChainsLookup& chains, const LowLookup& low);
+        Index                   reduce(Index i, Chain& c)       { return reduce(i, c, reduced_, pairs_); }
+        template<class ChainsLookup, class PairLookup>
+        Index                   reduce(Index i, Chain& c, const ChainsLookup& chains, const PairLookup& pair);
 
         Index                   reduce_upto(Index i);           // TODO
 
@@ -108,23 +111,32 @@ class ReducedMatrix
         friend class ReducedMatrix;     // let's all be friends
 
     public:
+        // Visitors::resized(sz)
+        template<std::size_t I = 0>
+        typename std::enable_if<I == sizeof...(Visitors), void>::type
+                                visitors_resized(Index sz)                          {}
+
+        template<std::size_t I = 0>
+        typename std::enable_if<I < sizeof...(Visitors), void>::type
+                                visitors_resized(Index sz)                          { std::get<I>(visitors_).resized(this, sz); visitors_resized<I+1>(sz); }
+
         // Visitors::chain_initialized(c)
         template<class Chain, std::size_t I = 0>
         typename std::enable_if<I == sizeof...(Visitors), void>::type
-                                visitors_chain_initialized(Chain& c)        {}
+                                visitors_chain_initialized(Index i, Chain& c)        {}
 
         template<class Chain, std::size_t I = 0>
         typename std::enable_if<I < sizeof...(Visitors), void>::type
-                                visitors_chain_initialized(Chain& c)        { std::get<I>(visitors_).chain_initialized(this, c); visitors_chain_initialized<Chain, I+1>(c); }
+                                visitors_chain_initialized(Index i, Chain& c)        { std::get<I>(visitors_).chain_initialized(this, i, c); visitors_chain_initialized<Chain, I+1>(i, c); }
 
         // Visitors::addto(m, cl)
         template<std::size_t I = 0>
         typename std::enable_if<I == sizeof...(Visitors), void>::type
-                                visitors_addto(FieldElement m, Index cl)    {}
+                                visitors_addto(Index i, FieldElement m, Index cl)    {}
 
         template<std::size_t I = 0>
         typename std::enable_if<I < sizeof...(Visitors), void>::type
-                                visitors_addto(FieldElement m, Index cl)    { std::get<I>(visitors_).addto(this, m, cl); visitors_addto<I+1>(m, cl); }
+                                visitors_addto(Index i, FieldElement m, Index cl)    { std::get<I>(visitors_).addto(this, i, m, cl); visitors_addto<I+1>(i, m, cl); }
 
         // Visitors::reduction_finished(m, cl)
         template<std::size_t I = 0>
@@ -156,10 +168,12 @@ struct EmptyVisitor
                 EmptyVisitor(const EmptyVisitor<Field, Index, OtherSelf>&)  {}
 
 
-    template<class Chain>
-    void        chain_initialized(Self*, Chain& c)                          {}
+    void        resized(Self*, Index sz)                                    {}
 
-    void        addto(Self*, typename Field::Element m, Index cl)           {}
+    template<class Chain>
+    void        chain_initialized(Self*, Index i, Chain& c)                 {}
+
+    void        addto(Self*, Index i, typename Field::Element m, Index o)   {}
     void        reduction_finished(Self*)                                   {}
 };
 

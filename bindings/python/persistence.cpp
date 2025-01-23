@@ -10,6 +10,8 @@ namespace ba = boost::adaptors;
 #include <dionysus/standard-reduction.h>
 #include <dionysus/clearing-reduction.h>
 
+#include <dionysus/trails-chains.h>
+
 #include "field.h"
 #include "filtration.h"
 #include "persistence.h"
@@ -18,7 +20,7 @@ namespace ba = boost::adaptors;
 #include "progress.h"
 
 template<class Filtration, class Relative>
-PyReducedMatrix
+py::object
 compute_homology_persistence(const Filtration& filtration, const Relative& relative, PyZpField::Element prime, std::string method, const Progress& progress)
 {
     PyZpField field(prime);
@@ -30,14 +32,14 @@ compute_homology_persistence(const Filtration& filtration, const Relative& relat
         Persistence persistence(field);
         Reduction   reduce(persistence);
         reduce(filtration, relative, &Reduction::no_report_pair, progress);
-        return std::move(reduce.persistence());
+        return py::cast(std::move(reduce.persistence()));
     }
     else if (method == "row")
     {
         using Reduction = dionysus::RowReduction<PyZpField>;
         Reduction   reduce(field);
         reduce(filtration, relative, &Reduction::no_report_pair, progress);
-        return std::move(reduce.persistence());
+        return py::cast(std::move(reduce.persistence()));
     } else if (method == "column")
     {
         using Persistence = dionysus::OrdinaryPersistence<PyZpField>;
@@ -45,7 +47,7 @@ compute_homology_persistence(const Filtration& filtration, const Relative& relat
         Persistence persistence(field);
         Reduction   reduce(persistence);
         reduce(filtration, relative, &Reduction::no_report_pair, progress);
-        return std::move(reduce.persistence());
+        return py::cast(std::move(reduce.persistence()));
     } else if (method == "column_no_negative")
     {
         using Persistence = dionysus::OrdinaryPersistenceNoNegative<PyZpField>;
@@ -53,13 +55,33 @@ compute_homology_persistence(const Filtration& filtration, const Relative& relat
         Persistence persistence(field);
         Reduction   reduce(persistence);
         reduce(filtration, relative, &Reduction::no_report_pair, progress);
-        return std::move(reduce.persistence());
+        return py::cast(std::move(reduce.persistence()));
+    } else if (method == "matrix_v")
+    {
+        using Persistence = dionysus::OrdinaryPersistenceWithV<PyZpField>;
+        using Reduction   = dionysus::StandardReduction<Persistence>;
+        Persistence persistence(field);
+        Reduction   reduce(persistence);
+        reduce(filtration, relative, &Reduction::no_report_pair, progress);
+        auto v = std::move(reduce.persistence().visitor<0>().v_);
+        auto r = std::move(reduce.persistence());
+        return py::cast(std::make_tuple(r, v));
+    } else if (method == "matrix_v_no_negative")
+    {
+        using Persistence = dionysus::OrdinaryPersistenceNoNegativeWithV<PyZpField>;
+        using Reduction   = dionysus::StandardReduction<Persistence>;
+        Persistence persistence(field);
+        Reduction   reduce(persistence);
+        reduce(filtration, relative, &Reduction::no_report_pair, progress);
+        auto v = std::move(reduce.persistence().visitor<1>().v_);
+        auto r = std::move(reduce.persistence());
+        return py::cast(std::make_tuple(r,v));
     } else
         throw std::runtime_error("Unknown method: " + method);
 }
 
 template<class Filtration>
-PyReducedMatrix
+py::object
 homology_persistence(const Filtration& filtration, PyZpField::Element prime, std::string method, bool progress)
 {
     using Cell = typename Filtration::Cell;
@@ -69,7 +91,7 @@ homology_persistence(const Filtration& filtration, PyZpField::Element prime, std
         return compute_homology_persistence(filtration, [](const Cell&) { return false; }, prime, method, NoProgress());
 }
 
-PyReducedMatrix
+py::object
 relative_homology_persistence(const PyFiltration& filtration, const PyFiltration& relative, PyZpField::Element prime, std::string method, bool progress)
 {
     using Cell = PyFiltration::Cell;
@@ -79,13 +101,13 @@ relative_homology_persistence(const PyFiltration& filtration, const PyFiltration
         return compute_homology_persistence(filtration, [&relative](const Cell& c) { return relative.contains(c); }, prime, method, NoProgress());
 }
 
-template<class Filtration>
+template<class PyReducedMatrix, class Filtration>
 std::vector<PyDiagram>
 py_init_diagrams(const PyReducedMatrix& m, const Filtration& f)
 {
     return init_diagrams(m, f,
-                         [](const typename Filtration::Cell& s)     { return s.data(); },       // value
-                         [](PyReducedMatrix::Index i) -> PyIndex    { return i; });             // data
+                         [](const typename Filtration::Cell& s)             { return s.data(); },       // value
+                         [](typename PyReducedMatrix::Index i) -> PyIndex   { return i; });             // data
 }
 
 bool
@@ -99,36 +121,23 @@ homologous(PyReducedMatrix& m, PyReducedMatrix::Chain z1, PyReducedMatrix::Chain
 
     // z1 -= z2
     dionysus::Chain<PyReducedMatrix::Chain>::addto(z1, m.field().neg(m.field().id()), z2, m.field(), entry_cmp);
-    m.reduce(z1);
+    m.reduce(m.size(), z1);        // dummy m.size() index (only used for callbacks, which are empty here, so unused)
     return z1.empty();
 }
 
 PYBIND11_MAKE_OPAQUE(PyReducedMatrix::Chain);      // we want to provide our own binding for Chain
 PYBIND11_MAKE_OPAQUE(PyMatrixFiltration::Cell::BoundaryChain<>);      // we want to provide our own binding for BoundaryChain
 
-// for pickling
-using Column = std::vector<std::tuple<PyReducedMatrix::FieldElement, PyReducedMatrix::Index>>;
-using Columns = std::vector<Column>;
-using Pairs = std::vector<PyReducedMatrix::Index>;
-using Skips = std::vector<bool>;
-
-void init_persistence(py::module& m)
+template<class PyReducedMatrix>
+void export_reduced_matrix(py::module& m, std::string name)
 {
-    using namespace pybind11::literals;
-    m.def("homology_persistence",   &homology_persistence<PyFiltration>,
-          "filtration"_a, "prime"_a = 2, "method"_a = "clearing", "progress"_a = false,
-          "compute homology persistence of the filtration (pair simplices); method is one of `clearing`, `row`, `column`, or `column_no_negative`");
-    m.def("homology_persistence",   &homology_persistence<PyMatrixFiltration>,
-          "filtration"_a, "prime"_a = 2, "method"_a = "clearing", "progress"_a = false,
-          "compute homology persistence of the filtration (pair simplices); method is one of `clearing`, `row`, `column`, or `column_no_negative`");
-    m.def("homology_persistence",   &relative_homology_persistence,
-          "filtration"_a, "relative"_a, "prime"_a = 2, "method"_a = "clearing", "progress"_a = false,
-          "compute homology persistence of the filtration, relative to a subcomplex; method is one of `clearing`, `row`, `column`, or `column_no_negative`");
+    // for pickling
+    using Column = std::vector<std::tuple<typename PyReducedMatrix::FieldElement, typename PyReducedMatrix::Index>>;
+    using Columns = std::vector<Column>;
+    using Pairs = std::vector<typename PyReducedMatrix::Index>;
+    using Skips = std::vector<bool>;
 
-    m.def("init_diagrams",      &py_init_diagrams<PyFiltration>,        "m"_a, "f"_a,  "initialize diagrams from reduced matrix and filtration");
-    m.def("init_diagrams",      &py_init_diagrams<PyMatrixFiltration>,  "m"_a, "f"_a,  "initialize diagrams from reduced matrix and filtration");
-
-    py::class_<PyReducedMatrix>(m, "ReducedMatrix", "matrix, where each column has a lowest non-zero entry in a unique row; supports iteration and indexing")
+    py::class_<PyReducedMatrix>(m, name.c_str(), "matrix, where each column has a lowest non-zero entry in a unique row; supports iteration and indexing")
         .def(py::init<PyZpField>())
         .def("__len__",     &PyReducedMatrix::size,         "size of the matrix")
         .def("__getitem__", &PyReducedMatrix::operator[],   "access the column at a given index")
@@ -148,7 +157,7 @@ void init_persistence(py::module& m)
                 Pairs pairs; pairs.reserve(m.size());
                 Skips skips; skips.reserve(m.size());
 
-                PyReducedMatrix::Index i = 0;
+                typename PyReducedMatrix::Index i = 0;
                 while (i < m.size())
                 {
                     Column c;
@@ -167,18 +176,18 @@ void init_persistence(py::module& m)
                 if (t.size() != 1)
                     throw std::runtime_error("Invalid state!");
 
-                auto prime = t[0].cast<PyReducedMatrix::FieldElement>();
+                auto prime = t[0].cast<typename PyReducedMatrix::FieldElement>();
                 Columns columns = t[1].cast<Columns>();
                 Pairs pairs = t[2].cast<Pairs>();
                 Skips skips = t[3].cast<Skips>();
                 PyReducedMatrix m(prime);
                 m.resize(columns.size());
-                PyReducedMatrix::Index i = 0;
+                typename PyReducedMatrix::Index i = 0;
                 for (auto& c : columns)
                 {
-                    m.set(i, c | ba::transformed([](const Column::value_type& e)
+                    m.set(i, c | ba::transformed([](const typename Column::value_type& e)
                                                    {
-                                                     return PyReducedMatrix::Entry { std::get<0>(e), std::get<1>(e) };
+                                                     return typename PyReducedMatrix::Entry { std::get<0>(e), std::get<1>(e) };
                                                    }));
                     m.set_pair(i,pairs[i]);
                     m.set_skip(i,skips[i]);
@@ -189,7 +198,24 @@ void init_persistence(py::module& m)
             }
         ));
     ;
-    init_chain<PyReducedMatrix::Chain>(m);
+
+    using namespace pybind11::literals;
+    m.def("init_diagrams",      &py_init_diagrams<PyReducedMatrix, PyFiltration>,        "m"_a, "f"_a,  "initialize diagrams from reduced matrix and filtration");
+    m.def("init_diagrams",      &py_init_diagrams<PyReducedMatrix, PyMatrixFiltration>,  "m"_a, "f"_a,  "initialize diagrams from reduced matrix and filtration");
+}
+
+void init_persistence(py::module& m)
+{
+    using namespace pybind11::literals;
+    m.def("homology_persistence",   &homology_persistence<PyFiltration>,
+          "filtration"_a, "prime"_a = 2, "method"_a = "clearing", "progress"_a = false,
+          "compute homology persistence of the filtration (pair simplices); method is one of `clearing`, `row`, `column`, or `column_no_negative`");
+    m.def("homology_persistence",   &homology_persistence<PyMatrixFiltration>,
+          "filtration"_a, "prime"_a = 2, "method"_a = "clearing", "progress"_a = false,
+          "compute homology persistence of the filtration (pair simplices); method is one of `clearing`, `row`, `column`, or `column_no_negative`");
+    m.def("homology_persistence",   &relative_homology_persistence,
+          "filtration"_a, "relative"_a, "prime"_a = 2, "method"_a = "clearing", "progress"_a = false,
+          "compute homology persistence of the filtration, relative to a subcomplex; method is one of `clearing`, `row`, `column`, or `column_no_negative`");
 
     py::class_<PyMatrixFiltration::Cell>(m, "MatrixFiltrationCell", "Cell-like adapter for a matrix column")
         .def("__repr__",    [](const PyMatrixFiltration::Cell& mfc)
@@ -198,6 +224,12 @@ void init_persistence(py::module& m)
         .def("boundary",    [](const PyMatrixFiltration::Cell& mfc) { return mfc.boundary(); },
                             "boundary of the cell (the column in the matrix)")
     ;
+
+    export_reduced_matrix<PyReducedMatrix>(m, "ReducedMatrix");
+    export_reduced_matrix<dionysus::OrdinaryPersistenceNoNegative<PyZpField>>(m, "ReducedMatrixNoNegative");
+    export_reduced_matrix<dionysus::OrdinaryPersistenceWithV<PyZpField>>(m, "ReducedMatrixWithV");
+    export_reduced_matrix<dionysus::OrdinaryPersistenceNoNegativeWithV<PyZpField>>(m, "ReducedMatrixNoNegativeWithV");
+    init_chain<typename PyReducedMatrix::Chain>(m);
 
     py::class_<PyMatrixFiltration>(m, "MatrixFiltration", "adapter to turn ReducedMatrix into something that looks and acts like a filtration")
         .def(py::init<PyReducedMatrix, Dimensions, Values>())
