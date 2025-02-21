@@ -21,20 +21,12 @@ for s,times in zip(simplices,times):
         sx = d.Simplex(s,inf).join(w)
         combined.append(sx, len(combined)-1)     # link to the previous appearance
 
-# TODO: Dionysus still uses Python 2-style cmp; change this to key
-def cone_cmp(s1, s2):
-    cone_1 = w in s1
-    cone_2 = w in s2
+def cone_key(s):
+    cone = w in s
+    ww = cone and s.dimension() == 0
+    return (not ww, cone, s.data if not cone else -s.data, s)
 
-    w1 = cone_1 and s1.dimension() == 0
-    w2 = cone_2 and s2.dimension() == 0
-
-    t1 = (not w1, cone_1, s1.data if not cone_1 else -s1.data, s1)
-    t2 = (not w2, cone_2, s2.data if not cone_2 else -s2.data, s2)
-
-    return (t1 > t2) - (t1 < t2)
-
-combined.sort(cone_cmp)
+combined.sort(key = cone_key)
 
 for i,s in enumerate(combined):
     print(combined.index(s,i), combined.index(s), s)
