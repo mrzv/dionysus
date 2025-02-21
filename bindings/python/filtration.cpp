@@ -1,3 +1,5 @@
+#include <iostream>
+
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 #include <pybind11/functional.h>
@@ -25,9 +27,21 @@ void export_filtration(py::class_<PyFiltration>& cls)
                                 "reverse"_a = false,
                                 "sort the filtration with respect to data, breaking ties using dimension, and then lexicographically")
         .def("sort",            [](PyFiltration& f, std::function<int (const PySimplex&, const PySimplex&)> cmp, bool reverse)
-                                { f.sort([cmp,reverse](const PySimplex& s1, const PySimplex& s2) { return reverse ? cmp(s1, s2) > 0 : cmp(s1, s2) < 0; }); },
+                                {
+                                    std::cerr << "Warning: cmp-based sort is deprecated (to match Python 3); use key-based sort instead" << std::endl;
+                                    f.sort([cmp,reverse](const PySimplex& s1, const PySimplex& s2) { return reverse ? cmp(s1, s2) > 0 : cmp(s1, s2) < 0; });
+                                },
                                 "cmp"_a, "reverse"_a = false,
                                 "sort the filtration with respect to the given functor")
+        .def("sort",            [](PyFiltration& f, std::function<py::tuple (const PySimplex& s)> key, bool reverse)
+                                {
+                                    f.sort([key,reverse](const PySimplex& s1, const PySimplex& s2)
+                                           {
+                                               return reverse ? key(s1) > key(s2) : key(s1) < key(s2);
+                                           });
+                                },
+                                py::kw_only(), "key"_a, "reverse"_a = false,
+                                "sort the filtration with respect to the given key")
         .def("rearrange",       &PyFiltration::rearrange, "indices"_a, "rearrange simplices into the given order")
         .def("__repr__",        [](const PyFiltration& f) { std::ostringstream oss; oss << "Filtration with " << f.size() << " simplices"; return oss.str(); })
     ;
