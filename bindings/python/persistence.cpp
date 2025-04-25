@@ -160,6 +160,7 @@ void export_reduced_matrix(py::module& m, std::string name)
                                "index representing lack of pair")
         .def("homologous",  &homologous,                    "test if two cycles are homologous")
         .def("resize",      &PyReducedMatrix::resize,       "resize the number of columns")
+        .def("field",       &PyReducedMatrix::field,        "access the field used for the reduction")
         .def("__iter__",    [](const PyReducedMatrix& rm)   { return py::make_iterator(rm.columns().begin(), rm.columns().end()); },
                                 py::keep_alive<0, 1>() /* Essential: keep object alive while iterator exists */,
                                 "iterate over the columns of the matrix")
