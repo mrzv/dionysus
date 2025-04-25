@@ -41,7 +41,7 @@ set                         (CMAKE_INCLUDE_SYSTEM_FLAG_CXX "-isystem")
 include_directories         (${CMAKE_CURRENT_BINARY_DIR}
                              ${CMAKE_CURRENT_SOURCE_DIR}
                              ${CMAKE_CURRENT_SOURCE_DIR}/include
-                             SYSTEM ${Boost_INCLUDE_DIR})
+                             SYSTEM ${Boost_INCLUDE_DIRS})
 
 # backward.cpp
 if                          (debug)
