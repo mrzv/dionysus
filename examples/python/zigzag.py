@@ -17,3 +17,9 @@ for dim,type_dgm in enumerate(dgms):
         print("Type:", t)
         for pt in dgm:
             print(pt)
+            apex_rep = d.apex(pt,r,v,cone)
+            for x,lst in apex_rep.items():
+                print(f"{cone[x]}: ", end='')
+                for (t1,c1),(t2,c2) in zip(lst,lst[1:]):
+                    print(f"[{t1},{t2}] ⋅ {c1}", end = '  ')
+                print()

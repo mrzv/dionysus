@@ -1,3 +1,4 @@
+from collections import defaultdict
 import dionysus as d
 
 w = -1      # cone vertex
@@ -7,7 +8,6 @@ def fast_zigzag(simplices, times):
     combined = d.LinkedMultiFiltration()
     combined.append(d.Simplex([w]), 0)
     for s,times in zip(simplices,times):
-        print(s,times)
         for i,t in enumerate(times):
             if i % 2 == 0:
                 sx = d.Simplex(s,t)
@@ -66,3 +66,74 @@ def init_zigzag_diagrams(r,f):
                 dgms[f[i].dimension()]['cc'].append(i_data, j_data, i)
 
     return dgms
+
+def apex(pt,r,v,f):
+    i = pt.data
+    birth = pt.birth
+    death = pt.death
+
+    # determine the type
+    j = r.pair(i)
+    i_cone = w in f[i]
+    j_cone = w in f[j]
+
+    i_data = f[i].data
+    j_data = f[j].data
+
+    k = r.field()
+
+    if not i_cone and not j_cone:
+        # ordinary (closed-open)
+        return lift_cycle(v[j], (death, birth), None, f, k)
+    elif i_cone and j_cone:
+        # relative (open-closed)
+        return lift_cycle(restrict_to_base(r[j],f), (birth, death), None, f, k)
+    else:
+        assert not i_cone and j_cone
+        if i_data > j_data:     # TODO: can we check this non-numerically?
+            # extended (open-open)
+            return lift_cycle(r[j], (death,birth), None, f, k)
+        else:
+            # extended (closed-closed)
+            return lift_cycle(restrict_to_base(v[j], f), (birth, death), negate(r[j], k), f, k)
+
+def restrict_to_base(c, f):
+    return type(c)([(x.element, x.index) for x in c if w not in f[x.index]])
+
+# TODO: migrate this functionality to Chain
+def negate(c, k):
+    return type(c)([(k.neg(x.element), x.index) for x in c])
+
+def lift_cycle(z, dir, w, fltr, k):
+    start,finish = dir
+
+    cofaces = defaultdict(list)
+    for y in z:
+        s = fltr[y.index]
+        if ((start < finish) and (start <= s.data <= finish)) or ((start > finish) and (start >= s.data >= finish)):
+            a = k.id()    # +1
+            for sb in s.boundary():
+                sb_idx = fltr.index(sb, y.index)
+                cofaces[sb_idx].append((s.data, k.mul(a, y.element)))
+                a = k.neg(a)    # a = -a
+
+    result = defaultdict(list)
+    lifted = defaultdict(int)
+    if w is not None:
+        for x in w:
+            result[x.index].append((start, x.element))
+            lifted[x.index] = x.element
+
+    # TODO: record vertical cells for completeness
+    for s_idx, lst in cofaces.items():
+        lst.sort(reverse = (start > finish))
+        for time,coeff in lst:
+            new_coeff = k.add(lifted[s_idx], coeff)
+            result[s_idx].append((time,new_coeff))
+            lifted[s_idx] = new_coeff
+
+    for idx,coeff in lifted.items():
+        if not k.is_zero(coeff):
+            result[idx].append((finish, 0))
+
+    return result
