@@ -41,14 +41,14 @@ def init_zigzag_diagrams(r,f):
         j = r.pair(i)
         if j < i: continue      # skip negative
 
-        if j == r.unpaired:
-            j_cone = True
-        else:
-            j_cone = w in f[j]
+        # f has to be a cone, so everything is paired, except for w, which we skip
+        assert j != r.unpaired
+
+        j_cone = w in f[j]
         i_cone = w in f[i]
 
         i_data = f[i].data
-        j_data = float('inf') if j == r.unpaired else f[j].data
+        j_data = f[j].data
 
         if not i_cone and not j_cone:
             # ordinary (closed-open)
