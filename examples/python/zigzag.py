@@ -11,7 +11,9 @@ print(dgms)
 
 # TODO: lift apex representatives
 
-for dim,dgm in enumerate(dgms):
+for dim,type_dgm in enumerate(dgms):
     print("Dimension:", dim)
-    for pt in dgm:
-        print(pt)
+    for t,dgm in type_dgm.items():
+        print("Type:", t)
+        for pt in dgm:
+            print(pt)

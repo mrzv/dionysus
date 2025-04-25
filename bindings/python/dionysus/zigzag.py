@@ -33,7 +33,8 @@ def fast_zigzag(simplices, times):
     return combined
 
 def init_zigzag_diagrams(r,f):
-    dgms = [d.Diagram() for _ in range(max(s.dimension() for s in f if w not in s) + 1)]
+    dgms = [{ t : d.Diagram() for t in ['co','oc','oo','cc']} \
+                 for _ in range(max(s.dimension() for s in f if w not in s) + 1)]
 
     assert w in f[0] and f[0].dimension() == 0
     for i in range(1,len(r)):
@@ -51,17 +52,17 @@ def init_zigzag_diagrams(r,f):
 
         if not i_cone and not j_cone:
             # ordinary (closed-open)
-            dgms[f[i].dimension()].append(i_data, j_data, i)
+            dgms[f[i].dimension()]['co'].append(i_data, j_data, i)
         elif i_cone and j_cone:
             # relative (open-closed)
-            dgms[f[i].dimension() - 1].append(j_data, i_data, i)
+            dgms[f[i].dimension() - 1]['oc'].append(j_data, i_data, i)
         else:
             assert not i_cone and j_cone
             if i_data > j_data:     # TODO: can we check this non-numerically?
                 # extended (open-open)
-                dgms[f[i].dimension() - 1].append(j_data, i_data, i)
+                dgms[f[i].dimension() - 1]['oo'].append(j_data, i_data, i)
             else:
                 # extended (closed-closed)
-                dgms[f[i].dimension()].append(i_data, j_data, i)
+                dgms[f[i].dimension()]['cc'].append(i_data, j_data, i)
 
     return dgms
