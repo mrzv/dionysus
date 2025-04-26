@@ -18,3 +18,5 @@ git module hera:
 git module pybind11:
     url: gh:pybind/pybind11
     rev: cf020a1de25861d4b982081890c43e7eab1ff5e9
+    drop:
+        - tests
