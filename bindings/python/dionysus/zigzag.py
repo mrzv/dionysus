@@ -95,7 +95,13 @@ def apex(pt,r,v,f):
             return lift_cycle(r[j], (death,birth), None, f, k)
         else:
             # extended (closed-closed)
-            return lift_cycle(restrict_to_base(v[j], f), (birth, death), negate(r[j], k), f, k)
+            # There is an implicit assumption in the SoCG paper (that needs to
+            # be spelled out in the journal version) that we are computing
+            # H(cK,w), meaning the row of w needs to be removed.  This is
+            # accounted for below, when we compute the boundary, but when r[j]
+            # is 0-dimensional, it may get w in it, too, so we need to remove it.
+            return lift_cycle(restrict_to_base(v[j], f), (birth, death),
+                              negate(restrict_to_base(r[j],f), k), f, k)
 
 def restrict_to_base(c, f):
     return type(c)([(x.element, x.index) for x in c if w not in f[x.index]])
@@ -114,7 +120,11 @@ def lift_cycle(z, dir, w, fltr, k):
             a = k.id()    # +1
             for sb in s.boundary():
                 sb_idx = fltr.index(sb, y.index)
-                cofaces[sb_idx].append((s.data, k.mul(a, y.element)))
+                if sb_idx != 0:
+                    cofaces[sb_idx].append((s.data, k.mul(a, y.element)))
+                else:
+                    # skip w; it's technically not in the boundary for H(cK,w)
+                    assert sb_idx.dimension() == 0 and sb[0] == w
                 a = k.neg(a)    # a = -a
 
     result = defaultdict(list)
