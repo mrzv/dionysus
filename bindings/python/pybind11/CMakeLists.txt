@@ -10,7 +10,7 @@ if(NOT CMAKE_VERSION VERSION_LESS "3.27")
   cmake_policy(GET CMP0148 _pybind11_cmp0148)
 endif()
 
-cmake_minimum_required(VERSION 3.15...3.30)
+cmake_minimum_required(VERSION 3.15...4.0)
 
 if(_pybind11_cmp0148)
   cmake_policy(SET CMP0148 ${_pybind11_cmp0148})
@@ -81,7 +81,7 @@ if(CMAKE_SOURCE_DIR STREQUAL PROJECT_SOURCE_DIR)
 else()
   set(PYBIND11_MASTER_PROJECT OFF)
   set(pybind11_system SYSTEM)
-  set(_pybind11_findpython_default OFF)
+  set(_pybind11_findpython_default COMPAT)
 endif()
 
 # Options
@@ -92,8 +92,6 @@ option(PYBIND11_DISABLE_HANDLE_TYPE_NAME_DEFAULT_IMPLEMENTATION
        "To enforce that a handle_type_name<> specialization exists" OFF)
 option(PYBIND11_SIMPLE_GIL_MANAGEMENT
        "Use simpler GIL management logic that does not support disassociation" OFF)
-option(PYBIND11_NUMPY_1_ONLY
-       "Disable NumPy 2 support to avoid changes to previous pybind11 versions." OFF)
 set(PYBIND11_INTERNALS_VERSION
     ""
     CACHE STRING "Override the ABI version, may be used to enable the unstable ABI.")
@@ -105,16 +103,15 @@ endif()
 if(PYBIND11_SIMPLE_GIL_MANAGEMENT)
   add_compile_definitions(PYBIND11_SIMPLE_GIL_MANAGEMENT)
 endif()
-if(PYBIND11_NUMPY_1_ONLY)
-  add_compile_definitions(PYBIND11_NUMPY_1_ONLY)
-endif()
 
 cmake_dependent_option(
   USE_PYTHON_INCLUDE_DIR
   "Install pybind11 headers in Python include directory instead of default installation prefix"
   OFF "PYBIND11_INSTALL" OFF)
 
-option(PYBIND11_FINDPYTHON "Force new FindPython" ${_pybind11_findpython_default})
+set(PYBIND11_FINDPYTHON
+    ${_pybind11_findpython_default}
+    CACHE STRING "Force new FindPython - NEW, OLD, COMPAT")
 
 # Allow PYTHON_EXECUTABLE if in FINDPYTHON mode and building pybind11's tests
 # (makes transition easier while we support both modes).
@@ -131,12 +128,18 @@ set(PYBIND11_HEADERS
     include/pybind11/detail/common.h
     include/pybind11/detail/cpp_conduit.h
     include/pybind11/detail/descr.h
+    include/pybind11/detail/dynamic_raw_ptr_cast_if_possible.h
+    include/pybind11/detail/exception_translation.h
+    include/pybind11/detail/function_record_pyobject.h
     include/pybind11/detail/init.h
     include/pybind11/detail/internals.h
+    include/pybind11/detail/native_enum_data.h
+    include/pybind11/detail/pybind11_namespace_macros.h
+    include/pybind11/detail/struct_smart_holder.h
     include/pybind11/detail/type_caster_base.h
     include/pybind11/detail/typeid.h
+    include/pybind11/detail/using_smart_holder.h
     include/pybind11/detail/value_and_holder.h
-    include/pybind11/detail/exception_translation.h
     include/pybind11/attr.h
     include/pybind11/buffer_info.h
     include/pybind11/cast.h
@@ -155,8 +158,10 @@ set(PYBIND11_HEADERS
     include/pybind11/eval.h
     include/pybind11/gil.h
     include/pybind11/gil_safe_call_once.h
+    include/pybind11/gil_simple.h
     include/pybind11/iostream.h
     include/pybind11/functional.h
+    include/pybind11/native_enum.h
     include/pybind11/numpy.h
     include/pybind11/operators.h
     include/pybind11/pybind11.h
@@ -164,6 +169,7 @@ set(PYBIND11_HEADERS
     include/pybind11/stl.h
     include/pybind11/stl_bind.h
     include/pybind11/stl/filesystem.h
+    include/pybind11/trampoline_self_life_support.h
     include/pybind11/type_caster_pyobject_ptr.h
     include/pybind11/typing.h
     include/pybind11/warnings.h)
