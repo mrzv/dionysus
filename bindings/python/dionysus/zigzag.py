@@ -111,6 +111,8 @@ def negate(c, k):
     return type(c)([(k.neg(x.element), x.index) for x in c])
 
 def lift_cycle(z, dir, w, fltr, k):
+    print(f"{z=},{dir=},{w=}")
+
     start,finish = dir
 
     cofaces = defaultdict(list)
