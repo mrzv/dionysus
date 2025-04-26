@@ -51,7 +51,7 @@ def build_expected_version_hex(matches: dict[str, str]) -> str:
 # PYBIND11_GLOBAL_SDIST will build a different sdist, with the python-headers
 # files, and the sys.prefix files (CMake and headers).
 
-global_sdist = os.environ.get("PYBIND11_GLOBAL_SDIST", False)
+global_sdist = os.environ.get("PYBIND11_GLOBAL_SDIST")
 
 setup_py = Path(
     "tools/setup_global.py.in" if global_sdist else "tools/setup_main.py.in"
@@ -143,6 +143,10 @@ with remove_output("pybind11/include", "pybind11/share"):
             stdout=sys.stdout,
             stderr=sys.stderr,
         )
+
+    # pkgconf-pypi needs pybind11/share/pkgconfig to be importable
+    Path("pybind11/share/__init__.py").touch()
+    Path("pybind11/share/pkgconfig/__init__.py").touch()
 
     txt = get_and_replace(setup_py, version=version, extra_cmd=extra_cmd)
     code = compile(txt, setup_py, "exec")
