@@ -19,10 +19,10 @@ for dim,type_dgm in enumerate(dgms):
         for pt in dgm:
             print(pt)
             apex_rep = d.apex(pt,r,v,cone)
-            for x,lst in apex_rep.items():
-                print(f"{cone[x]} × ", end='')
-                print(" + ".join(f"[{t1},{t2}] ⋅ {c1}" for (t1,c1),(t2,c2) in zip(lst,lst[1:])))
+            print("apex representative: ", end='')
+            for (t1,t2, (x,c)) in apex_rep:
+                print(f"{cone[x]} × [{t1},{t2}] ⋅ {c}")
 
             middle = (pt.birth + pt.death)/2
             middle_representative = d.point_representative(apex_rep, middle)
-            print(' + '.join(f"{coeff} ⋅ {cone[idx]}" for (idx,coeff) in middle_representative))
+            print(f"midpoint ({middle}) representative:", ' + '.join(f"{coeff} ⋅ {cone[idx]}" for (idx,coeff) in middle_representative))

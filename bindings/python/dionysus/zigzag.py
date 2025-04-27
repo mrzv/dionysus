@@ -1,5 +1,6 @@
 from collections import defaultdict
 import dionysus as d
+from intervaltree import IntervalTree
 
 w = -1      # cone vertex
 
@@ -112,7 +113,7 @@ def negate(c, k):
 
 # TODO: deal with degeneracies in the input times
 def lift_cycle(z, dir, w, fltr, k):
-    print(f"{z=},{dir=},{w=}")
+    # print(f"{z=},{dir=},{w=}")
 
     start,finish = dir
 
@@ -152,14 +153,17 @@ def lift_cycle(z, dir, w, fltr, k):
     for i,lst in result.items():
         lst.sort()
 
-    return result
+    # build interval trees
+    tree = IntervalTree()
+    for idx, lst in result.items():
+        for (t1,c),(t2,_) in zip(lst, lst[1:]):
+            if t1 != t2:
+                tree[t1:t2] = (idx,c)
 
-# Brute-force for now; can and should make this more efficient with interval trees
+    return tree
+
 def point_representative(apex_representative, time):
     result = []
-    for idx, lst in apex_representative.items():
-        for (t1,c),(t2,_) in zip(lst, lst[1:]):
-            if t1 <= time < t2:
-                result.append((idx,c))
+    for (t1,t2,(idx,c)) in apex_representative[time]:
+        result.append((idx,c))
     return result
-            
