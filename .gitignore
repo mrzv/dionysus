@@ -1,2 +1,4 @@
 .peru
 **/__pycache__/
+build/
+dionysus.egg-info/
