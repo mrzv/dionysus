@@ -12,8 +12,6 @@ r,v = d.homology_persistence(cone, method = 'matrix_v')
 dgms = d.init_zigzag_diagrams(r,cone)
 print(dgms)
 
-# TODO: lift apex representatives
-
 for dim,type_dgm in enumerate(dgms):
     print("Dimension:", dim)
     for t,dgm in type_dgm.items():
@@ -24,3 +22,7 @@ for dim,type_dgm in enumerate(dgms):
             for x,lst in apex_rep.items():
                 print(f"{cone[x]} × ", end='')
                 print(" + ".join(f"[{t1},{t2}] ⋅ {c1}" for (t1,c1),(t2,c2) in zip(lst,lst[1:])))
+
+            middle = (pt.birth + pt.death)/2
+            middle_representative = d.point_representative(apex_rep, middle)
+            print(' + '.join(f"{coeff} ⋅ {cone[idx]}" for (idx,coeff) in middle_representative))

@@ -110,6 +110,7 @@ def restrict_to_base(c, f):
 def negate(c, k):
     return type(c)([(k.neg(x.element), x.index) for x in c])
 
+# TODO: deal with degeneracies in the input times
 def lift_cycle(z, dir, w, fltr, k):
     print(f"{z=},{dir=},{w=}")
 
@@ -148,4 +149,17 @@ def lift_cycle(z, dir, w, fltr, k):
         if not k.is_zero(coeff):
             result[idx].append((finish, 0))
 
+    for i,lst in result.items():
+        lst.sort()
+
     return result
+
+# Brute-force for now; can and should make this more efficient with interval trees
+def point_representative(apex_representative, time):
+    result = []
+    for idx, lst in apex_representative.items():
+        for (t1,c),(t2,_) in zip(lst, lst[1:]):
+            if t1 <= time < t2:
+                result.append((idx,c))
+    return result
+            
