@@ -12,6 +12,7 @@ r,v = d.homology_persistence(cone, method = 'matrix_v')
 dgms = d.init_zigzag_diagrams(r,cone)
 print(dgms)
 
+max_t = max(max(t) for t in times)
 for dim,type_dgm in enumerate(dgms):
     print("Dimension:", dim)
     for t,dgm in type_dgm.items():
@@ -23,6 +24,9 @@ for dim,type_dgm in enumerate(dgms):
             for (t1,t2, (x,c)) in apex_rep:
                 print(f"{cone[x]} × [{t1},{t2}] ⋅ {c}")
 
-            middle = (pt.birth + pt.death)/2
+            if pt.death != float('inf'):
+                middle = (pt.birth + pt.death)/2
+            else:
+                middle = max_t + 1
             middle_representative = d.point_representative(apex_rep, middle)
             print(f"midpoint ({middle}) representative:", ' + '.join(f"{coeff} ⋅ {cone[idx]}" for (idx,coeff) in middle_representative))
