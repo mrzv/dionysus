@@ -21,8 +21,8 @@ for dim,type_dgm in enumerate(dgms):
             print(pt)
             apex_rep = d.apex(pt,r,v,cone)
             print("apex representative: ", end='')
-            for (t1,t2, (x,c)) in apex_rep:
-                print(f"{cone[x]} × [{t1},{t2}] ⋅ {c}")
+            for (time, (x,c)) in apex_rep:
+                print(f"{cone[x]} × {time} ⋅ {c}")
 
             if pt.death != float('inf'):
                 middle = (pt.birth + pt.death)/2

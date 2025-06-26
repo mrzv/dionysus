@@ -4,6 +4,43 @@ from intervaltree import IntervalTree
 
 w = -1      # cone vertex
 
+class ApexRepresentative:
+    def __init__(self, dir):
+        self.dir = dir
+        self.horizontal = IntervalTree()
+        self.vertical = []
+        self.changes = set()
+
+    def add(self, times, data):
+        self.horizontal[times[0]:times[1]] = data
+        self.changes.add(times[0])
+        self.changes.add(times[1])
+
+    def add_vertical(self, time, data):
+        self.changes.add(time)
+        self.vertical.append((time, data))
+
+    def representative(self, time):
+        if time in self.changes:
+            # TODO: perturb the time
+            print(f"Warning: {time} is critical")
+            pass
+
+        result = []
+        for (t1,t2,(idx,c)) in self.horizontal[time]:
+            result.append((idx,c))
+        return result
+
+    def __iter__(self):
+        # report horizontal cells
+        for (t1,t2, data) in self.horizontal:
+            yield (t1,t2), data
+
+        # report vertical cells
+        for (t, data) in self.vertical:
+            yield t, data
+
+
 def fast_zigzag(simplices, times):
     """Build the cone to compute extended persistence equivalent to the given zigzag."""
 
@@ -160,18 +197,15 @@ def lift_cycle(z, dir, w, fltr, k):
         lst.sort()
 
     # build interval trees
-    tree = IntervalTree()
+    rep = ApexRepresentative(dir)
     for idx, lst in result.items():
         for (t1,c),(t2,_) in zip(lst, lst[1:]):
             if t1 != t2:
-                tree[t1:t2] = (idx,c)
+                rep.add((t1,t2), (idx,c))
 
-    return tree
+    return rep
 
 def point_representative(apex_representative, time):
     """Given an apex representative, return zigzag representative at the given `time`."""
 
-    result = []
-    for (t1,t2,(idx,c)) in apex_representative[time]:
-        result.append((idx,c))
-    return result
+    return apex_representative.representative(time)
