@@ -5,6 +5,8 @@ from intervaltree import IntervalTree
 w = -1      # cone vertex
 
 def fast_zigzag(simplices, times):
+    """Build the cone to compute extended persistence equivalent to the given zigzag."""
+
     inf = float('inf')
     combined = d.LinkedMultiFiltration()
     combined.append(d.Simplex([w]), 0)
@@ -34,6 +36,8 @@ def fast_zigzag(simplices, times):
     return combined
 
 def init_zigzag_diagrams(r,f):
+    """Given the cone `f` and its reduced matrix `r`, initialize zigzag diagrams."""
+
     dgms = [{ t : d.Diagram() for t in ['co','oc','oo','cc']} \
                  for _ in range(max(s.dimension() for s in f if w not in s) + 1)]
 
@@ -69,6 +73,8 @@ def init_zigzag_diagrams(r,f):
     return dgms
 
 def apex(pt,r,v,f):
+    """Given a point `pt` in a zigzag diagram, matrices `r` and `v`, and the cone filtration `f`, return the apex representative."""
+
     i = pt.data
     birth = pt.birth
     death = pt.death
@@ -163,6 +169,8 @@ def lift_cycle(z, dir, w, fltr, k):
     return tree
 
 def point_representative(apex_representative, time):
+    """Given an apex representative, return zigzag representative at the given `time`."""
+
     result = []
     for (t1,t2,(idx,c)) in apex_representative[time]:
         result.append((idx,c))
