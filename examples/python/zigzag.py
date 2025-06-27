@@ -21,12 +21,18 @@ for dim,type_dgm in enumerate(dgms):
             print(pt)
             apex_rep = d.apex(pt,r,v,cone)
             print("apex representative: ", end='')
-            for (time, (x,c)) in apex_rep:
-                print(f"{cone[x]} × {time} ⋅ {c}")
+            print(" + ".join(f"{cone[x]} × {time} ⋅ {c}" for (time, (x,c)) in apex_rep))
 
+            bottom = pt.birth
+            top = pt.death
             if pt.death != float('inf'):
                 middle = (pt.birth + pt.death)/2
             else:
                 middle = max_t + 1
+                top = middle
+            bottom_representative = d.point_representative(apex_rep, bottom)
             middle_representative = d.point_representative(apex_rep, middle)
+            top_representative = d.point_representative(apex_rep, top)
+            print(f"bottom ({bottom}) representative:", ' + '.join(f"{coeff} ⋅ {cone[idx]}" for (idx,coeff) in bottom_representative))
             print(f"midpoint ({middle}) representative:", ' + '.join(f"{coeff} ⋅ {cone[idx]}" for (idx,coeff) in middle_representative))
+            print(f"top ({top}) representative:", ' + '.join(f"{coeff} ⋅ {cone[idx]}" for (idx,coeff) in top_representative))

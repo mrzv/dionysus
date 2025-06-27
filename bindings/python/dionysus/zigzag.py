@@ -1,6 +1,8 @@
 from collections import defaultdict
 import dionysus as d
+
 from intervaltree import IntervalTree
+from sortedcontainers import SortedSet
 
 w = -1      # cone vertex
 
@@ -9,7 +11,7 @@ class ApexRepresentative:
         self.dir = dir
         self.horizontal = IntervalTree()
         self.vertical = []
-        self.changes = set()
+        self.changes = SortedSet()
 
     def add(self, times, data):
         self.horizontal[times[0]:times[1]] = data
@@ -22,9 +24,12 @@ class ApexRepresentative:
 
     def representative(self, time):
         if time in self.changes:
-            # TODO: perturb the time
-            print(f"Warning: {time} is critical")
-            pass
+            # perturb the time
+            idx = self.changes.index(time)
+            if idx != 0:    # perturb left, unless at the end
+                time = (self.changes[idx - 1] + self.changes[idx])/2
+            else:
+                time = (self.changes[idx + 1] + self.changes[idx])/2
 
         result = []
         for (t1,t2,(idx,c)) in self.horizontal[time]:
@@ -154,7 +159,6 @@ def restrict_to_base(c, f):
 def negate(c, k):
     return type(c)([(k.neg(x.element), x.index) for x in c])
 
-# TODO: deal with degeneracies in the input times
 def lift_cycle(z, dir, w, fltr, k):
     # print(f"{z=},{dir=},{w=}")
 

@@ -75,6 +75,7 @@ setup(
     long_description=long_description,
     install_requires=[
         'intervaltree>=3.1.0',
+        'sortedcontainers>=2.4.0',
     ],
     ext_modules=[CMakeExtension('dionysus')],
     packages=['dionysus'],
