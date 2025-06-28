@@ -7,6 +7,8 @@ from sortedcontainers import SortedSet
 w = -1      # cone vertex
 
 class ApexRepresentative:
+    """Apex representative"""
+
     def __init__(self, dir):
         self.dir = dir
         self.horizontal = IntervalTree()

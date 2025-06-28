@@ -1,5 +1,11 @@
+.. _zigzag-persistence:
+
 Zigzag Persistence
 ------------------
+
+.. note::
+
+   A better way to work with zigzag persistence is via :ref:`fast zigzags and apex representatives <fast-zigzag-apex>`.
 
 .. testsetup::
 
