@@ -35,21 +35,25 @@ int main()
 
     fmt::print("Boundary matrix over Q\n");
     d::Q<> q;
+    size_t i = 0;
     for (auto& s : filtration)
     {
-        fmt::print("{} at {}\n", s, filtration.index(s));
+        fmt::print("{} at {}\n", s, filtration.index(s,i));
         for (auto sb : s.boundary(q))
-            fmt::print("   {} * {} at {}\n", sb.element(), sb.index(), filtration.index(sb.index()));
+            fmt::print("   {} * {} at {}\n", sb.element(), sb.index(), filtration.index(sb.index(),i));
+        ++i;
     }
 
     Persistence     persistence;
+    i = 0;
     for(auto& s : filtration)
     {
         using SimplexChainEntry = d::ChainEntry<Persistence::Field, Simplex>;
         using ChainEntry        = d::ChainEntry<Persistence::Field, Persistence::Index>;
         persistence.add(s.boundary(persistence.field()) |
-                                                 ba::transformed([&filtration](const SimplexChainEntry& e)
-                                                 { return ChainEntry(e.element(), filtration.index(e.index())); }));
+                                                 ba::transformed([&filtration,i](const SimplexChainEntry& e)
+                                                 { return ChainEntry(e.element(), filtration.index(e.index(),i)); }));
+        ++i;
     }
     fmt::print("Reduction finished\n");
 
@@ -58,7 +62,7 @@ int main()
         fmt::print(" {}", x);
     fmt::print("\n");
 
-    unsigned i = 0;
+    i = 0;
     fmt::print("Q chains finished\n");
     for (auto& c : persistence.q_chains())
     {
@@ -96,7 +100,7 @@ int main()
         else
             fmt::print("Over Z_{}:\n", p);
         auto diagrams = init_diagrams(prime_adapter(persistence, p), filtration,
-                                      [&](const Simplex& s) -> float  { return filtration.index(s); },        // inefficient, but works
+                                      [&](const Simplex& s, Persistence::Index i) -> float  { return filtration.index(s,i); },        // inefficient, but works
                                       [](Persistence::Index i)        { return i; });
         i = 0;
         for (auto& dgm : diagrams)

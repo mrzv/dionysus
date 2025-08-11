@@ -51,6 +51,9 @@ struct ChainEntry: public FieldElement<Field_>, public Extra...
                 ChainEntry(Element e_, Index&& i_):
                     Parent(e_), i(std::move(i_))       {}
 
+                ChainEntry(std::tuple<Element,Index> x):
+                    Parent(std::get<0>(x)), i(std::get<1>(x))   {}
+
     const Index& index() const              { return i; }
     Index&      index()                     { return i; }
 

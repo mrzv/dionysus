@@ -20,6 +20,9 @@ Filtration
 
 .. autofunction:: dionysus._dionysus.fill_freudenthal
 
+.. autofunction:: dionysus.fast_zigzag
+
+
 
 Persistence
 -----------
@@ -37,6 +40,8 @@ Diagrams
 --------
 
 .. autofunction:: dionysus._dionysus.init_diagrams
+
+.. autofunction:: dionysus.init_zigzag_diagrams
 
 .. autoclass:: dionysus._dionysus.Diagram
     :members:
@@ -88,6 +93,8 @@ Matrices
     :special-members: __len__, __iter__
 
 .. autoclass:: dionysus._dionysus.Zp
+
+.. autoclass:: dionysus.zigzag.ApexRepresentative
 
 
 Plotting

@@ -73,6 +73,10 @@ setup(
     description='Library for computing persistent homology',
     license='BSD',
     long_description=long_description,
+    install_requires=[
+        'intervaltree>=3.1.0',
+        'sortedcontainers>=2.4.0',
+    ],
     ext_modules=[CMakeExtension('dionysus')],
     packages=['dionysus'],
     package_dir = { 'dionysus' : 'bindings/python/dionysus' },

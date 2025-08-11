@@ -38,8 +38,8 @@ operator()(const Filtration& filtration, const Relative& relative, const ReportP
         //std::cout << "Adding: " << c << " : " << boost::distance(c.boundary(persistence_.field())) << std::endl;
         Index pair = persistence_.add(c.boundary(persistence_.field()) |
                                                  ba::filtered([relative](const CellChainEntry& e) { return !relative(e.index()); }) |
-                                                 ba::transformed([this,&filtration](const CellChainEntry& e)
-                                                 { return ChainEntry(e.element(), filtration.index(e.index())); }));
+                                                 ba::transformed([this,&filtration,i](const CellChainEntry& e)
+                                                 { return ChainEntry(e.element(), filtration.index(e.index(), i)); }));
         if (pair != persistence_.unpaired())
             report_pair(c.dimension(), pair, i);
         ++i;

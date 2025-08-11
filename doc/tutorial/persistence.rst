@@ -7,5 +7,6 @@ Persistence
    omni-field
    cohomology
    zigzags
+   fast-zigzag-apex
 
 

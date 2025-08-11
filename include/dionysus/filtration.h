@@ -58,17 +58,13 @@ class Filtration
         // Lookup
         const Cell&         operator[](size_t i) const                          { return cells_.template get<order>()[i]; }
         OrderConstIterator  iterator(const Cell& s) const                       { return bmi::project<order>(cells_, cells_.find(s)); }
-        size_t              index(const Cell& s) const;
+        size_t              index(const Cell& s, size_t) const;
         bool                contains(const Cell& s) const                       { return cells_.find(s) != cells_.end(); }
 
         void                push_back(const Cell& s)                            { cells_.template get<order>().push_back(s); }
         void                push_back(Cell&& s)                                 { cells_.template get<order>().push_back(s); }
 
         void                replace(size_t i, const Cell& s)                    { cells_.template get<order>().replace(begin() + i, s); }
-
-        // return index of the cell, adding it, if necessary
-        size_t              add(const Cell& s)                                  { size_t i = (iterator(s) - begin()); if (i == size()) emplace_back(s); return i; }
-        size_t              add(Cell&& s)                                       { size_t i = (iterator(s) - begin()); if (i == size()) emplace_back(std::move(s)); return i; }
 
         template<class... Args>
         void                emplace_back(Args&&... args)                        { cells_.template get<order>().emplace_back(std::forward<Args>(args)...); }
@@ -97,7 +93,7 @@ class Filtration
 template<class C, class CLI, bool checked_index>
 size_t
 dionysus::Filtration<C,CLI,checked_index>::
-index(const Cell& s) const
+index(const Cell& s, size_t) const
 {
     auto it = iterator(s);
     if (checked_index && it == end())

@@ -47,10 +47,12 @@ operator()(const Filtration& filtration, const Relative& relative, const ReportP
         if (persistence_.pair(i) != persistence_.unpaired())
             continue;
 
+        // It's fortuitous that indices don't change the filtration. It means
+        // the lookup of index(..., i) does the right thing (in case of a MultiFiltration)
         persistence_.set(i, c.boundary(persistence_.field()) |
                                        ba::filtered([relative](const CellChainEntry& e) { return !relative(e.index()); }) |
-                                       ba::transformed([this,&filtration](const CellChainEntry& e)
-                                       { return ChainEntry(e.element(), filtration.index(e.index())); }));
+                                       ba::transformed([this,&filtration,i](const CellChainEntry& e)
+                                       { return ChainEntry(e.element(), filtration.index(e.index(), i)); }));
 
         Index pair = persistence_.reduce(i);
         if (pair != persistence_.unpaired())

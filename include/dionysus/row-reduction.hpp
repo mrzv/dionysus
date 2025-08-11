@@ -45,8 +45,8 @@ operator()(const Filtration& filtration, const Relative& relative, const ReportP
 
         persistence_.set(i, c.boundary(field) |
                                        ba::filtered([relative](const CellChainEntry& e) { return !relative(e.index()); }) |
-                                       ba::transformed([this,&filtration](const CellChainEntry& e)
-                                       { return ChainEntry(e.element(), filtration.index(e.index())); }));
+                                       ba::transformed([this,&filtration,i](const CellChainEntry& e)
+                                       { return ChainEntry(e.element(), filtration.index(e.index(), i)); }));
         if (!persistence_[i].empty())
         {
             auto& x = persistence_[i].back();

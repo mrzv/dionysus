@@ -32,9 +32,10 @@ cohomology_persistence(const PyFiltration& filtration, PyZpField::Element prime,
 std::vector<PyDiagram>
 py_init_diagrams(const PyCohomologyPersistence& m, const PyFiltration& f)
 {
+    using Index = PyCohomologyPersistence::Index;
     return init_diagrams(m, f,
-                         [](const PySimplex& s)                             { return s.data(); },       // value
-                         [](PyCohomologyPersistence::Index i) -> PyIndex    { return i; });             // data
+                         [](const PySimplex& s, Index)  { return s.data(); },       // value
+                         [](Index i) -> PyIndex         { return i; });             // data
 }
 
 PYBIND11_MAKE_OPAQUE(PyCohomologyPersistence::Column);      // we want to provide our own binding for the cochain

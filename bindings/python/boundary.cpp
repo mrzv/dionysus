@@ -8,6 +8,7 @@ namespace py = pybind11;
 #include "filtration.h"
 #include "persistence.h"
 
+template<class PyFiltration>
 PyMatrixFiltration boundary(const PyFiltration& f)
 {
     short prime = 3;
@@ -18,7 +19,7 @@ PyMatrixFiltration boundary(const PyFiltration& f)
     dimensions.resize(f.size());
     values.resize(f.size());
 
-    using Cell = PyFiltration::Cell;
+    using Cell = typename PyFiltration::Cell;
     using CellChainEntry = dionysus::ChainEntry<PyReducedMatrix::Field, Cell>;
     using Entry = PyReducedMatrix::Entry;
 
@@ -27,18 +28,20 @@ PyMatrixFiltration boundary(const PyFiltration& f)
     {
         dimensions[i] = c.dimension();
         values[i] = c.data();
-        m.set(i++, c.boundary(m.field()) | ba::transformed([&f,prime](const CellChainEntry& e)
-                                           {
-                                             short ee = e.element();
-                                             if (ee > prime / 2)
-                                                ee -= prime;
-                                             return Entry(ee, f.index(e.index()));
-                                           }));
+        m.set(i, c.boundary(m.field()) | ba::transformed([&f,prime,i](const CellChainEntry& e)
+                                         {
+                                           short ee = e.element();
+                                           if (ee > prime / 2)
+                                              ee -= prime;
+                                           return Entry(ee, f.index(e.index(),i));
+                                         }));
+        ++i;
     }
 
     return PyMatrixFiltration(std::move(m),dimensions,values);
 }
 
+template<class PyFiltration>
 PyMatrixFiltration coboundary(const PyFiltration& f)
 {
     short prime = 3;
@@ -46,7 +49,7 @@ PyMatrixFiltration coboundary(const PyFiltration& f)
     Dimensions dimensions;
     Values values;
 
-    using Cell = PyFiltration::Cell;
+    using Cell = typename PyFiltration::Cell;
     using CellChainEntry = dionysus::ChainEntry<PyReducedMatrix::Field, Cell>;
     using Entry = PyReducedMatrix::Entry;
     using Index = PyReducedMatrix::Index;
@@ -62,12 +65,12 @@ PyMatrixFiltration coboundary(const PyFiltration& f)
         dimensions[n - 1 - i] = c.dimension();
         values[n - 1 - i] = c.data();
         for (auto x : c.boundary(m.field()) |
-                        ba::transformed([&f,prime](const CellChainEntry& e)
+                        ba::transformed([&f,prime,i](const CellChainEntry& e)
                         {
                           short ee = e.element();
                           if (ee > prime / 2)
                              ee -= prime;
-                          return Entry(ee, f.index(e.index()));
+                          return Entry(ee, f.index(e.index(),i));
                         }))
         {
             m.column(n - 1 - x.index()).emplace_back(Entry { x.element(), n - 1 - i });
@@ -84,6 +87,8 @@ PyMatrixFiltration coboundary(const PyFiltration& f)
 
 void init_boundary(py::module& m)
 {
-    m.def("boundary", &boundary, "compute boundary matrix of the filtration");
-    m.def("coboundary", &coboundary, "compute coboundary matrix of the filtration");
+    m.def("boundary", &boundary<PyFiltration>, "compute boundary matrix of the filtration");
+    m.def("coboundary", &coboundary<PyFiltration>, "compute coboundary matrix of the filtration");
+    m.def("boundary", &boundary<PyMultiFiltration>, "compute boundary matrix of the filtration");
+    m.def("coboundary", &coboundary<PyMultiFiltration>, "compute coboundary matrix of the filtration");
 }

@@ -105,9 +105,10 @@ template<class PyReducedMatrix, class Filtration>
 std::vector<PyDiagram>
 py_init_diagrams(const PyReducedMatrix& m, const Filtration& f)
 {
+    using Index = typename PyReducedMatrix::Index;
     return init_diagrams(m, f,
-                         [](const typename Filtration::Cell& s)             { return s.data(); },       // value
-                         [](typename PyReducedMatrix::Index i) -> PyIndex   { return i; });             // data
+                         [](const typename Filtration::Cell& s, Index)      { return s.data(); },       // value
+                         [](Index i) -> PyIndex                             { return i; });             // data
 }
 
 bool
@@ -131,25 +132,40 @@ PYBIND11_MAKE_OPAQUE(PyMatrixFiltration::Cell::BoundaryChain<>);      // we want
 template<class PyReducedMatrix>
 void export_reduced_matrix(py::module& m, std::string name)
 {
+    using namespace pybind11::literals;
+
     // for pickling
     using Column = std::vector<std::tuple<typename PyReducedMatrix::FieldElement, typename PyReducedMatrix::Index>>;
     using Columns = std::vector<Column>;
     using Pairs = std::vector<typename PyReducedMatrix::Index>;
     using Skips = std::vector<bool>;
+    using Index = typename PyReducedMatrix::Index;
+    using Chain = typename PyReducedMatrix::Chain;
 
     py::class_<PyReducedMatrix>(m, name.c_str(), "matrix, where each column has a lowest non-zero entry in a unique row; supports iteration and indexing")
-        .def(py::init<PyZpField>())
+        .def(py::init([](PyZpField field, size_t sz)
+                      {
+                        PyReducedMatrix* m = new PyReducedMatrix(field);
+                        m->resize(sz);
+                        return m;
+                      }), "field"_a = PyZpField(2), "size"_a = 0)
         .def("__len__",     &PyReducedMatrix::size,         "size of the matrix")
         .def("__getitem__", &PyReducedMatrix::operator[],   "access the column at a given index")
+        .def("__setitem__", [](PyReducedMatrix* m, Index i, Column c) { m->set(i,std::move(c)); },
+                                                            "set the column at a given index")
+        .def("__setitem__", [](PyReducedMatrix* m, Index i, Chain c) { m->set(i,std::move(c)); },
+                                                            "set the column at a given index")
         .def("pair",        &PyReducedMatrix::pair,         "pair of the given index")
         .def_property_readonly("unpaired",      [](const PyReducedMatrix&) { return PyReducedMatrix::unpaired(); },
                                "index representing lack of pair")
         .def("homologous",  &homologous,                    "test if two cycles are homologous")
+        .def("resize",      &PyReducedMatrix::resize,       "resize the number of columns")
+        .def("field",       &PyReducedMatrix::field,        "access the field used for the reduction")
         .def("__iter__",    [](const PyReducedMatrix& rm)   { return py::make_iterator(rm.columns().begin(), rm.columns().end()); },
                                 py::keep_alive<0, 1>() /* Essential: keep object alive while iterator exists */,
                                 "iterate over the columns of the matrix")
         .def("__repr__",    [](const PyReducedMatrix& rm)
-                            { std::ostringstream oss; oss << "Reduced matrix with " << rm.size() << " columns"; return oss.str(); })
+                            { std::ostringstream oss; oss << "Reduced matrix with " << rm.size() << " columns over " << py::repr(py::cast(rm.field())); return oss.str(); })
         .def(py::pickle(
             [](const PyReducedMatrix& m)        // __getstate__
             {
@@ -199,9 +215,10 @@ void export_reduced_matrix(py::module& m, std::string name)
         ));
     ;
 
-    using namespace pybind11::literals;
-    m.def("init_diagrams",      &py_init_diagrams<PyReducedMatrix, PyFiltration>,        "m"_a, "f"_a,  "initialize diagrams from reduced matrix and filtration");
-    m.def("init_diagrams",      &py_init_diagrams<PyReducedMatrix, PyMatrixFiltration>,  "m"_a, "f"_a,  "initialize diagrams from reduced matrix and filtration");
+    m.def("init_diagrams",      &py_init_diagrams<PyReducedMatrix, PyFiltration>,            "m"_a, "f"_a,  "initialize diagrams from reduced matrix and filtration");
+    m.def("init_diagrams",      &py_init_diagrams<PyReducedMatrix, PyMatrixFiltration>,      "m"_a, "f"_a,  "initialize diagrams from reduced matrix and filtration");
+    m.def("init_diagrams",      &py_init_diagrams<PyReducedMatrix, PyMultiFiltration>,       "m"_a, "f"_a,  "initialize diagrams from reduced matrix and filtration");
+    m.def("init_diagrams",      &py_init_diagrams<PyReducedMatrix, PyLinkedMultiFiltration>, "m"_a, "f"_a,  "initialize diagrams from reduced matrix and filtration");
 }
 
 void init_persistence(py::module& m)
@@ -211,6 +228,12 @@ void init_persistence(py::module& m)
           "filtration"_a, "prime"_a = 2, "method"_a = "clearing", "progress"_a = false,
           "compute homology persistence of the filtration (pair simplices); method is one of `clearing`, `row`, `column`, or `column_no_negative`");
     m.def("homology_persistence",   &homology_persistence<PyMatrixFiltration>,
+          "filtration"_a, "prime"_a = 2, "method"_a = "clearing", "progress"_a = false,
+          "compute homology persistence of the filtration (pair simplices); method is one of `clearing`, `row`, `column`, or `column_no_negative`");
+    m.def("homology_persistence",   &homology_persistence<PyMultiFiltration>,
+          "filtration"_a, "prime"_a = 2, "method"_a = "clearing", "progress"_a = false,
+          "compute homology persistence of the filtration (pair simplices); method is one of `clearing`, `row`, `column`, or `column_no_negative`");
+    m.def("homology_persistence",   &homology_persistence<PyLinkedMultiFiltration>,
           "filtration"_a, "prime"_a = 2, "method"_a = "clearing", "progress"_a = false,
           "compute homology persistence of the filtration (pair simplices); method is one of `clearing`, `row`, `column`, or `column_no_negative`");
     m.def("homology_persistence",   &relative_homology_persistence,
