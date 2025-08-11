@@ -72,8 +72,8 @@ def fast_zigzag(simplices, times):
 
     combined.sort(key = cone_key)
 
-    for i,s in enumerate(combined):
-        print(combined.index(s,i), combined.index(s), s)
+    # for i,s in enumerate(combined):
+    #     print(combined.index(s,i), combined.index(s), s)
 
     return combined
 
