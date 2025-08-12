@@ -81,7 +81,9 @@ using is_pyobject = std::is_base_of<pyobject_tag, remove_reference_t<T>>;
 \endrst */
 template <typename Derived>
 class object_api : public pyobject_tag {
+    object_api() = default;
     const Derived &derived() const { return static_cast<const Derived &>(*this); }
+    friend Derived;
 
 public:
     /** \rst
@@ -276,7 +278,7 @@ public:
         inc_ref_counter(1);
 #endif
 #ifdef PYBIND11_ASSERT_GIL_HELD_INCREF_DECREF
-        if (m_ptr != nullptr && !PyGILState_Check()) {
+        if (m_ptr != nullptr && PyGILState_Check() == 0) {
             throw_gilstate_error("pybind11::handle::inc_ref()");
         }
 #endif
@@ -291,7 +293,7 @@ public:
     \endrst */
     const handle &dec_ref() const & {
 #ifdef PYBIND11_ASSERT_GIL_HELD_INCREF_DECREF
-        if (m_ptr != nullptr && !PyGILState_Check()) {
+        if (m_ptr != nullptr && PyGILState_Check() == 0) {
             throw_gilstate_error("pybind11::handle::dec_ref()");
         }
 #endif
@@ -2583,7 +2585,8 @@ str_attr_accessor object_api<D>::doc() const {
 
 template <typename D>
 object object_api<D>::annotations() const {
-#if PY_MAJOR_VERSION == 3 && PY_MINOR_VERSION <= 9
+// This is needed again because of the lazy annotations added in 3.14+
+#if PY_VERSION_HEX < 0x030A0000 || PY_VERSION_HEX >= 0x030E0000
     // https://docs.python.org/3/howto/annotations.html#accessing-the-annotations-dict-of-an-object-in-python-3-9-and-older
     if (!hasattr(derived(), "__annotations__")) {
         setattr(derived(), "__annotations__", dict());

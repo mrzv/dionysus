@@ -18,8 +18,6 @@ Adds the following functions::
 
 #]======================================================]
 
-include_guard(GLOBAL)
-
 # If we are in subdirectory mode, all IMPORTED targets must be GLOBAL. If we
 # are in CONFIG mode, they should be "normal" targets instead.
 # In CMake 3.11+ you can promote a target to global after you create it,
@@ -28,8 +26,13 @@ get_property(
   is_config
   TARGET pybind11::headers
   PROPERTY IMPORTED)
+
 if(NOT is_config)
+  include_guard(GLOBAL)
   set(optional_global GLOBAL)
+else()
+  include_guard(DIRECTORY)
+  set(optional_global "")
 endif()
 
 # If not run in Python mode, we still would like this to at least
@@ -200,19 +203,21 @@ elseif(
   else()
     include("${CMAKE_CURRENT_LIST_DIR}/pybind11NewTools.cmake")
 
-    message(
-      "Using compatibility mode for Python, set PYBIND11_FINDPYTHON to NEW/OLD to silence this message"
-    )
-    set(PYTHON_EXECUTABLE "${Python_EXECUTABLE}")
-    set(PYTHON_INCLUDE_DIR "${Python_INCLUDE_DIR}")
-    set(Python_INCLUDE_DIRS "${Python_INCLUDE_DIRS}")
-    set(PYTHON_LIBRARY "${Python_LIRARY}")
-    set(PYTHON_LIBRARIES "${Python_LIRARIES}")
-    set(PYTHON_VERSION "${Python_VERSION}")
-    set(PYTHON_VERSION_STRING "${Python_VERSION_STRING}")
-    set(PYTHON_VERSION_MAJOR "${Python_VERSION_MAJOR}")
-    set(PYTHON_VERSION_MINOR "${Python_VERSION_MINOR}")
-    set(PYTHON_VERSION_PATCH "${Python_VERSION_PATCH}")
+    if(PYBIND11_FINDPYTHON STREQUAL "COMPAT")
+      message(
+        "Using compatibility mode for Python, set PYBIND11_FINDPYTHON to NEW/OLD to silence this message"
+      )
+      set(PYTHON_EXECUTABLE "${Python_EXECUTABLE}")
+      set(PYTHON_INCLUDE_DIR "${Python_INCLUDE_DIR}")
+      set(Python_INCLUDE_DIRS "${Python_INCLUDE_DIRS}")
+      set(PYTHON_LIBRARY "${Python_LIBRARY}")
+      set(PYTHON_LIBRARIES "${Python_LIBRARIES}")
+      set(PYTHON_VERSION "${Python_VERSION}")
+      set(PYTHON_VERSION_STRING "${Python_VERSION_STRING}")
+      set(PYTHON_VERSION_MAJOR "${Python_VERSION_MAJOR}")
+      set(PYTHON_VERSION_MINOR "${Python_VERSION_MINOR}")
+      set(PYTHON_VERSION_PATCH "${Python_VERSION_PATCH}")
+    endif()
   endif()
 
 else()

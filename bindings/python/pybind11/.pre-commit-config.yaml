@@ -25,22 +25,22 @@ repos:
 
 # Clang format the codebase automatically
 - repo: https://github.com/pre-commit/mirrors-clang-format
-  rev: "v20.1.0"
+  rev: "v20.1.8"
   hooks:
   - id: clang-format
     types_or: [c++, c, cuda]
 
 # Ruff, the Python auto-correcting linter/formatter written in Rust
 - repo: https://github.com/astral-sh/ruff-pre-commit
-  rev: v0.11.4
+  rev: v0.12.7
   hooks:
-  - id: ruff
+  - id: ruff-check
     args: ["--fix", "--show-fixes"]
   - id: ruff-format
 
 # Check static types with mypy
 - repo: https://github.com/pre-commit/mirrors-mypy
-  rev: "v1.15.0"
+  rev: "v1.17.1"
   hooks:
   - id: mypy
     args: []
@@ -95,7 +95,7 @@ repos:
 
 # Avoid directional quotes
 - repo: https://github.com/sirosen/texthooks
-  rev: "0.6.8"
+  rev: "0.7.1"
   hooks:
   - id: fix-ligatures
   - id: fix-smartquotes
@@ -107,15 +107,6 @@ repos:
   - id: rst-backticks
   - id: rst-directive-colons
   - id: rst-inline-touching-normal
-
-# Checks the manifest for missing files (native support)
-- repo: https://github.com/mgedmin/check-manifest
-  rev: "0.50"
-  hooks:
-  - id: check-manifest
-    # This is a slow hook, so only run this if --hook-stage manual is passed
-    stages: [manual]
-    additional_dependencies: [cmake, ninja]
 
 # Check for spelling
 # Use tools/codespell_ignore_lines_from_errors.py
@@ -144,14 +135,14 @@ repos:
 
 # PyLint has native support - not always usable, but works for us
 - repo: https://github.com/PyCQA/pylint
-  rev: "v3.3.6"
+  rev: "v3.3.7"
   hooks:
   - id: pylint
     files: ^pybind11
 
 # Check schemas on some of our YAML files
 - repo: https://github.com/python-jsonschema/check-jsonschema
-  rev: 0.32.1
+  rev: 0.33.2
   hooks:
   - id: check-readthedocs
   - id: check-github-workflows

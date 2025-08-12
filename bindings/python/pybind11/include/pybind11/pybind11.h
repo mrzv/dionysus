@@ -20,6 +20,7 @@
 #include "gil.h"
 #include "gil_safe_call_once.h"
 #include "options.h"
+#include "trampoline_self_life_support.h"
 #include "typing.h"
 
 #include <cassert>
@@ -602,6 +603,10 @@ protected:
         if (rec->sibling) {
             if (PyCFunction_Check(rec->sibling.ptr())) {
                 auto *self = PyCFunction_GET_SELF(rec->sibling.ptr());
+                if (self == nullptr) {
+                    pybind11_fail(
+                        "initialize_generic: Unexpected nullptr from PyCFunction_GET_SELF");
+                }
                 chain = detail::function_record_ptr_from_PyObject(self);
                 if (chain && !chain->scope.is(rec->scope)) {
                     /* Never append a method to an overload chain of a parent class;
@@ -626,7 +631,6 @@ protected:
                 = reinterpret_cast<PyCFunction>(reinterpret_cast<void (*)()>(dispatcher));
             rec->def->ml_flags = METH_VARARGS | METH_KEYWORDS;
 
-            detail::function_record_PyTypeObject_PyType_Ready(); // Call-once initialization.
             object py_func_rec = detail::function_record_PyObject_New();
             ((detail::function_record_PyObject *) py_func_rec.ptr())->cpp_func_rec
                 = unique_rec.release();
@@ -1251,7 +1255,7 @@ PYBIND11_NAMESPACE_END(function_record_PyTypeObject_methods)
 
 template <>
 struct handle_type_name<cpp_function> {
-    static constexpr auto name = const_name("Callable");
+    static constexpr auto name = const_name("collections.abc.Callable");
 };
 
 PYBIND11_NAMESPACE_END(detail)
@@ -1266,6 +1270,29 @@ private:
     bool flag_;
 };
 
+class multiple_interpreters {
+public:
+    enum class level {
+        not_supported,      /// Use to activate Py_MOD_MULTIPLE_INTERPRETERS_NOT_SUPPORTED
+        shared_gil,         /// Use to activate Py_MOD_MULTIPLE_INTERPRETERS_SUPPORTED
+        per_interpreter_gil /// Use to activate Py_MOD_PER_INTERPRETER_GIL_SUPPORTED
+    };
+
+    static multiple_interpreters not_supported() {
+        return multiple_interpreters(level::not_supported);
+    }
+    static multiple_interpreters shared_gil() { return multiple_interpreters(level::shared_gil); }
+    static multiple_interpreters per_interpreter_gil() {
+        return multiple_interpreters(level::per_interpreter_gil);
+    }
+
+    explicit constexpr multiple_interpreters(level l) : level_(l) {}
+    level value() const { return level_; }
+
+private:
+    level level_;
+};
+
 PYBIND11_NAMESPACE_BEGIN(detail)
 
 inline bool gil_not_used_option() { return false; }
@@ -1278,6 +1305,112 @@ inline bool gil_not_used_option(mod_gil_not_used f, O &&...o) {
 template <typename F, typename... O>
 inline bool gil_not_used_option(F &&, O &&...o) {
     return gil_not_used_option(o...);
+}
+
+#ifdef Py_mod_multiple_interpreters
+inline void *multi_interp_slot() { return Py_MOD_MULTIPLE_INTERPRETERS_NOT_SUPPORTED; }
+template <typename... O>
+inline void *multi_interp_slot(multiple_interpreters mi, O &&...o) {
+    switch (mi.value()) {
+        case multiple_interpreters::level::per_interpreter_gil:
+            return Py_MOD_PER_INTERPRETER_GIL_SUPPORTED;
+        case multiple_interpreters::level::shared_gil:
+            return Py_MOD_MULTIPLE_INTERPRETERS_SUPPORTED;
+        case multiple_interpreters::level::not_supported:
+            return Py_MOD_MULTIPLE_INTERPRETERS_NOT_SUPPORTED;
+    }
+    // silence warnings with this unreachable line:
+    return multi_interp_slot(o...);
+}
+template <typename F, typename... O>
+inline void *multi_interp_slot(F &&, O &&...o) {
+    return multi_interp_slot(o...);
+}
+#endif
+
+/*
+Return a borrowed reference to the named module if it has been successfully initialized within this
+interpreter before. nullptr if it has not been successfully initialized.
+*/
+inline PyObject *get_cached_module(pybind11::str const &nameobj) {
+    dict state = detail::get_python_state_dict();
+    if (!state.contains("__pybind11_module_cache")) {
+        return nullptr;
+    }
+    dict cache = state["__pybind11_module_cache"];
+    if (!cache.contains(nameobj)) {
+        return nullptr;
+    }
+    return cache[nameobj].ptr();
+}
+
+/*
+Add successfully initialized a module object to the internal cache.
+
+The module must have a __spec__ attribute with a name attribute.
+*/
+inline void cache_completed_module(pybind11::object const &mod) {
+    dict state = detail::get_python_state_dict();
+    if (!state.contains("__pybind11_module_cache")) {
+        state["__pybind11_module_cache"] = dict();
+    }
+    state["__pybind11_module_cache"][mod.attr("__spec__").attr("name")] = mod;
+}
+
+/*
+A Py_mod_create slot function which will return the previously created module from the cache if one
+exists, and otherwise will create a new module object.
+*/
+inline PyObject *cached_create_module(PyObject *spec, PyModuleDef *) {
+    (void) &cache_completed_module; // silence unused-function warnings, it is used in a macro
+
+    auto nameobj = getattr(reinterpret_borrow<object>(spec), "name", none());
+    if (nameobj.is_none()) {
+        set_error(PyExc_ImportError, "module spec is missing a name");
+        return nullptr;
+    }
+
+    auto *mod = get_cached_module(nameobj);
+    if (mod) {
+        Py_INCREF(mod);
+    } else {
+        mod = PyModule_NewObject(nameobj.ptr());
+    }
+    return mod;
+}
+
+/// Must be a POD type, and must hold enough entries for all of the possible slots PLUS ONE for
+/// the sentinel (0) end slot.
+using slots_array = std::array<PyModuleDef_Slot, 5>;
+
+/// Initialize an array of slots based on the supplied exec slot and options.
+template <typename... Options>
+inline slots_array init_slots(int (*exec_fn)(PyObject *), Options &&...options) noexcept {
+    /* NOTE: slots_array MUST be large enough to hold all possible options.  If you add an option
+    here, you MUST also increase the size of slots_array in the type alias above! */
+    slots_array slots;
+    size_t next_slot = 0;
+
+    slots[next_slot++] = {Py_mod_create, reinterpret_cast<void *>(&cached_create_module)};
+
+    if (exec_fn != nullptr) {
+        slots[next_slot++] = {Py_mod_exec, reinterpret_cast<void *>(exec_fn)};
+    }
+
+#ifdef Py_mod_multiple_interpreters
+    slots[next_slot++] = {Py_mod_multiple_interpreters, multi_interp_slot(options...)};
+#endif
+
+    if (gil_not_used_option(options...)) {
+#if defined(Py_mod_gil) && defined(Py_GIL_DISABLED)
+        slots[next_slot++] = {Py_mod_gil, Py_MOD_GIL_NOT_USED};
+#endif
+    }
+
+    // slots must have a zero end sentinel
+    slots[next_slot++] = {0, nullptr};
+
+    return slots;
 }
 
 PYBIND11_NAMESPACE_END(detail)
@@ -1341,13 +1474,18 @@ public:
         // GraalPy doesn't support PyModule_GetFilenameObject,
         // so getting by attribute (see PR #5584)
         handle this_module = m_ptr;
-        result.attr("__file__") = this_module.attr("__file__");
+        if (object this_file = getattr(this_module, "__file__", none())) {
+            result.attr("__file__") = this_file;
+        }
 #else
         handle this_file = PyModule_GetFilenameObject(m_ptr);
-        if (!this_file) {
+        if (this_file) {
+            result.attr("__file__") = this_file;
+        } else if (PyErr_ExceptionMatches(PyExc_SystemError) != 0) {
+            PyErr_Clear();
+        } else {
             throw error_already_set();
         }
-        result.attr("__file__") = this_file;
 #endif
         attr(name) = result;
         return result;
@@ -1388,19 +1526,19 @@ public:
         PyModule_AddObject(ptr(), name, obj.inc_ref().ptr() /* steals a reference */);
     }
 
-    using module_def = PyModuleDef; // TODO: Can this be removed (it was needed only for Python 2)?
+    // DEPRECATED (since PR #5688): Use PyModuleDef directly instead.
+    using module_def = PyModuleDef;
 
     /** \rst
         Create a new top-level module that can be used as the main module of a C extension.
 
-        ``def`` should point to a statically allocated module_def.
+        ``def`` should point to a statically allocated PyModuleDef.
     \endrst */
     static module_ create_extension_module(const char *name,
                                            const char *doc,
-                                           module_def *def,
+                                           PyModuleDef *def,
                                            mod_gil_not_used gil_not_used
                                            = mod_gil_not_used(false)) {
-        // module_def is PyModuleDef
         // Placement new (not an allocation).
         new (def) PyModuleDef{/* m_base */ PyModuleDef_HEAD_INIT,
                               /* m_name */ name,
@@ -1427,68 +1565,6 @@ public:
         //       returned from PyInit_...
         //       For Python 2, reinterpret_borrow was correct.
         return reinterpret_borrow<module_>(m);
-    }
-
-    /// Must be a POD type, and must hold enough entries for all of the possible slots PLUS ONE for
-    /// the sentinel (0) end slot.
-    using slots_array = std::array<PyModuleDef_Slot, 3>;
-
-    /** \rst
-        Initialized a module def for use with multi-phase module initialization.
-
-        ``def`` should point to a statically allocated module_def.
-        ``slots`` must already contain a Py_mod_exec or Py_mod_create slot and will be filled with
-            additional slots from the supplied options (and the empty sentinel slot).
-    \endrst */
-    template <typename... Options>
-    static object initialize_multiphase_module_def(const char *name,
-                                                   const char *doc,
-                                                   module_def *def,
-                                                   slots_array &slots,
-                                                   Options &&...options) {
-        size_t next_slot = 0;
-        size_t term_slot = slots.size() - 1;
-
-        // find the end of the supplied slots
-        while (next_slot < term_slot && slots[next_slot].slot != 0) {
-            ++next_slot;
-        }
-
-        bool nogil PYBIND11_MAYBE_UNUSED = detail::gil_not_used_option(options...);
-        if (nogil) {
-#if defined(Py_mod_gil) && defined(Py_GIL_DISABLED)
-            if (next_slot >= term_slot) {
-                pybind11_fail("initialize_multiphase_module_def: not enough space in slots");
-            }
-            slots[next_slot++] = {Py_mod_gil, Py_MOD_GIL_NOT_USED};
-#endif
-        }
-
-        // slots must have a zero end sentinel
-        if (next_slot > term_slot) {
-            pybind11_fail("initialize_multiphase_module_def: not enough space in slots");
-        }
-        slots[next_slot++] = {0, nullptr};
-
-        // module_def is PyModuleDef
-        // Placement new (not an allocation).
-        new (def) PyModuleDef{/* m_base */ PyModuleDef_HEAD_INIT,
-                              /* m_name */ name,
-                              /* m_doc */ options::show_user_defined_docstrings() ? doc : nullptr,
-                              /* m_size */ 0,
-                              /* m_methods */ nullptr,
-                              /* m_slots */ &slots[0],
-                              /* m_traverse */ nullptr,
-                              /* m_clear */ nullptr,
-                              /* m_free */ nullptr};
-        auto *m = PyModuleDef_Init(def);
-        if (m == nullptr) {
-            if (PyErr_Occurred()) {
-                throw error_already_set();
-            }
-            pybind11_fail("Internal error in module_::initialize_multiphase_module_def()");
-        }
-        return reinterpret_borrow<object>(m);
     }
 };
 
@@ -1551,6 +1627,7 @@ protected:
         tinfo->holder_size_in_ptrs = size_in_ptrs(rec.holder_size);
         tinfo->init_instance = rec.init_instance;
         tinfo->dealloc = rec.dealloc;
+        tinfo->get_trampoline_self_life_support = rec.get_trampoline_self_life_support;
         tinfo->simple_type = true;
         tinfo->simple_ancestors = true;
         tinfo->module_local = rec.module_local;
@@ -1982,7 +2059,21 @@ public:
                   "Unknown/invalid class_ template parameters provided");
 
     static_assert(!has_alias || std::is_polymorphic<type>::value,
-                  "Cannot use an alias class with a non-polymorphic type");
+                  "Cannot use an alias class (aka trampoline) with a non-polymorphic type");
+
+#ifndef PYBIND11_RUN_TESTING_WITH_SMART_HOLDER_AS_DEFAULT_BUT_NEVER_USE_IN_PRODUCTION_PLEASE
+    static_assert(!has_alias || !detail::is_smart_holder<holder_type>::value
+                      || std::is_base_of<trampoline_self_life_support, type_alias>::value,
+                  "Alias class (aka trampoline) must inherit from"
+                  " pybind11::trampoline_self_life_support if used in combination with"
+                  " pybind11::smart_holder");
+#endif
+    static_assert(!has_alias || detail::is_smart_holder<holder_type>::value
+                      || !std::is_base_of<trampoline_self_life_support, type_alias>::value,
+                  "pybind11::trampoline_self_life_support is a smart_holder feature, therefore"
+                  " an alias class (aka trampoline) should inherit from"
+                  " pybind11::trampoline_self_life_support only if used in combination with"
+                  " pybind11::smart_holder");
 
     PYBIND11_OBJECT(class_, generic_type, PyType_Check)
 
@@ -2030,6 +2121,16 @@ public:
             record.dealloc = dealloc_release_gil_before_calling_cpp_dtor;
         } else {
             record.dealloc = dealloc_without_manipulating_gil;
+        }
+
+        if (std::is_base_of<trampoline_self_life_support, type_alias>::value) {
+            // Store a cross-DSO-safe getter.
+            // This lambda is defined in the same DSO that instantiates
+            // class_<type, alias_type>, but it can be called safely from any other DSO.
+            record.get_trampoline_self_life_support = [](void *type_ptr) {
+                return dynamic_raw_ptr_cast_if_possible<trampoline_self_life_support>(
+                    static_cast<type *>(type_ptr));
+            };
         }
 
         generic_type::initialize(record);
@@ -2973,6 +3074,7 @@ template <typename Access,
           typename Sentinel,
           typename ValueType,
           typename... Extra>
+// NOLINTNEXTLINE(performance-unnecessary-value-param)
 iterator make_iterator_impl(Iterator first, Sentinel last, Extra &&...extra) {
     using state = detail::iterator_state<Access, Policy, Iterator, Sentinel, ValueType, Extra...>;
     // TODO: state captures only the types of Extra, not the values
@@ -3012,6 +3114,7 @@ template <return_value_policy Policy = return_value_policy::reference_internal,
           typename Sentinel,
           typename ValueType = typename detail::iterator_access<Iterator>::result_type,
           typename... Extra>
+// NOLINTNEXTLINE(performance-unnecessary-value-param)
 typing::Iterator<ValueType> make_iterator(Iterator first, Sentinel last, Extra &&...extra) {
     return detail::make_iterator_impl<detail::iterator_access<Iterator>,
                                       Policy,
@@ -3097,17 +3200,22 @@ typing::Iterator<ValueType> make_value_iterator(Type &value, Extra &&...extra) {
 
 template <typename InputType, typename OutputType>
 void implicitly_convertible() {
+    static int tss_sentinel_pointee = 1; // arbitrary value
     struct set_flag {
-        bool &flag;
-        explicit set_flag(bool &flag_) : flag(flag_) { flag_ = true; }
-        ~set_flag() { flag = false; }
+        thread_specific_storage<int> &flag;
+        explicit set_flag(thread_specific_storage<int> &flag_) : flag(flag_) {
+            flag = &tss_sentinel_pointee; // trick: the pointer itself is the sentinel
+        }
+        ~set_flag() { flag.reset(nullptr); }
+
+        // Prevent copying/moving to ensure RAII guard is used safely
+        set_flag(const set_flag &) = delete;
+        set_flag(set_flag &&) = delete;
+        set_flag &operator=(const set_flag &) = delete;
+        set_flag &operator=(set_flag &&) = delete;
     };
     auto implicit_caster = [](PyObject *obj, PyTypeObject *type) -> PyObject * {
-#ifdef Py_GIL_DISABLED
-        thread_local bool currently_used = false;
-#else
-        static bool currently_used = false;
-#endif
+        static thread_specific_storage<int> currently_used;
         if (currently_used) { // implicit conversions are non-reentrant
             return nullptr;
         }
