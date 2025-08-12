@@ -8,7 +8,7 @@ Fast Zigzag and Apex Representatives
     from __future__ import print_function   # if you are using Python 2
     import dionysus as d
 
-Dionysus can compute zigzag persistence via extended persistence and in the process recover apex representatives.
+Dionysus can `compute zigzag persistence via extended persistence <https://arxiv.org/abs/2204.11080>`_ and in the process recover `apex representatives <https://arxiv.org/abs/2502.17704>`_.
 The filtration setup is the same as for :ref:`zigzag persistence <zigzag-persistence>`. One has to specify simplices and the times at which they appear and disappear:
 
 .. doctest::
