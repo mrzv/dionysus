@@ -32,8 +32,13 @@ PYBIND11_NAMESPACE_BEGIN(PYBIND11_NAMESPACE)
 
 PYBIND11_NAMESPACE_BEGIN(detail)
 
+PYBIND11_WARNING_PUSH
+PYBIND11_WARNING_DISABLE_GCC("-Wredundant-decls")
+
 // forward declarations
 PyThreadState *get_thread_state_unchecked();
+
+PYBIND11_WARNING_POP
 
 PYBIND11_NAMESPACE_END(detail)
 
@@ -63,7 +68,7 @@ class gil_scoped_acquire {
 public:
     PYBIND11_NOINLINE gil_scoped_acquire() {
         auto &internals = detail::get_internals();
-        tstate = (PyThreadState *) PYBIND11_TLS_GET_VALUE(internals.tstate);
+        tstate = internals.tstate.get();
 
         if (!tstate) {
             /* Check if the GIL was acquired using the PyGILState_* API instead (e.g. if
@@ -82,7 +87,7 @@ public:
             }
 #    endif
             tstate->gilstate_counter = 0;
-            PYBIND11_TLS_REPLACE_VALUE(internals.tstate, tstate);
+            internals.tstate = tstate;
         } else {
             release = detail::get_thread_state_unchecked() != tstate;
         }
@@ -119,13 +124,13 @@ public:
             if (active) {
                 PyThreadState_DeleteCurrent();
             }
-            PYBIND11_TLS_DELETE_VALUE(detail::get_internals().tstate);
+            detail::get_internals().tstate.reset();
             release = false;
         }
     }
 
     /// This method will disable the PyThreadState_DeleteCurrent call and the
-    /// GIL won't be acquired. This method should be used if the interpreter
+    /// GIL won't be released. This method should be used if the interpreter
     /// could be shutting down when this is called, as thread deletion is not
     /// allowed during shutdown. Check _Py_IsFinalizing() on Python 3.7+, and
     /// protect subsequent code.
@@ -156,8 +161,7 @@ public:
         // NOLINTNEXTLINE(cppcoreguidelines-prefer-member-initializer)
         tstate = PyEval_SaveThread();
         if (disassoc) {
-            auto key = internals.tstate; // NOLINT(readability-qualified-auto)
-            PYBIND11_TLS_DELETE_VALUE(key);
+            internals.tstate.reset();
         }
     }
 
@@ -180,8 +184,7 @@ public:
             PyEval_RestoreThread(tstate);
         }
         if (disassoc) {
-            auto key = detail::get_internals().tstate; // NOLINT(readability-qualified-auto)
-            PYBIND11_TLS_REPLACE_VALUE(key, tstate);
+            detail::get_internals().tstate = tstate;
         }
     }
 

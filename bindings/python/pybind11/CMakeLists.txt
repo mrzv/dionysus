@@ -65,6 +65,13 @@ if(CMAKE_SOURCE_DIR STREQUAL PROJECT_SOURCE_DIR)
 
   message(STATUS "CMake ${CMAKE_VERSION}")
 
+  if(DEFINED SKBUILD AND DEFINED ENV{PYBIND11_GLOBAL_SDIST})
+    message(
+      FATAL_ERROR
+        "PYBIND11_GLOBAL_SDIST is not supported, use nox -s build_global or a pybind11-global SDist instead."
+    )
+  endif()
+
   if(CMAKE_CXX_STANDARD)
     set(CMAKE_CXX_EXTENSIONS OFF)
     set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -113,16 +120,65 @@ set(PYBIND11_FINDPYTHON
     ${_pybind11_findpython_default}
     CACHE STRING "Force new FindPython - NEW, OLD, COMPAT")
 
-# Allow PYTHON_EXECUTABLE if in FINDPYTHON mode and building pybind11's tests
-# (makes transition easier while we support both modes).
-if(PYBIND11_MASTER_PROJECT
-   AND PYBIND11_FINDPYTHON
-   AND DEFINED PYTHON_EXECUTABLE
-   AND NOT DEFINED Python_EXECUTABLE)
-  set(Python_EXECUTABLE "${PYTHON_EXECUTABLE}")
+if(PYBIND11_MASTER_PROJECT)
+
+  # Allow PYTHON_EXECUTABLE if in FINDPYTHON mode and building pybind11's tests
+  # (makes transition easier while we support both modes).
+  if(PYBIND11_FINDPYTHON
+     AND DEFINED PYTHON_EXECUTABLE
+     AND NOT DEFINED Python_EXECUTABLE)
+    set(Python_EXECUTABLE "${PYTHON_EXECUTABLE}")
+  endif()
+
+  # This is a shortcut that is primarily for the venv cmake preset,
+  # but can be used to quickly setup tests manually, too
+  set(PYBIND11_CREATE_WITH_UV
+      ""
+      CACHE STRING "Create a virtualenv if it doesn't exist")
+
+  if(NOT PYBIND11_CREATE_WITH_UV STREQUAL "")
+    set(Python_ROOT_DIR "${CMAKE_CURRENT_BINARY_DIR}/.venv")
+    if(EXISTS "${Python_ROOT_DIR}")
+      if(EXISTS "${CMAKE_BINARY_DIR}/CMakeCache.txt")
+        message(STATUS "Using existing venv at ${Python_ROOT_DIR}, remove or --fresh to recreate")
+      else()
+        # --fresh used to remove the cache
+        file(REMOVE_RECURSE "${CMAKE_CURRENT_BINARY_DIR}/.venv")
+      endif()
+    endif()
+    if(NOT EXISTS "${Python_ROOT_DIR}")
+      find_program(UV uv REQUIRED)
+      # CMake 3.19+ would be able to use COMMAND_ERROR_IS_FATAL
+      message(
+        STATUS "Creating venv with ${UV} venv -p ${PYBIND11_CREATE_WITH_UV} '${Python_ROOT_DIR}'")
+      execute_process(COMMAND ${UV} venv -p ${PYBIND11_CREATE_WITH_UV} "${Python_ROOT_DIR}"
+                      RESULT_VARIABLE _venv_result)
+      if(_venv_result AND NOT _venv_result EQUAL 0)
+        message(FATAL_ERROR "uv venv failed with '${_venv_result}'")
+      endif()
+      message(
+        STATUS
+          "Installing deps with ${UV} pip install -p '${Python_ROOT_DIR}' -r tests/requirements.txt"
+      )
+      execute_process(
+        COMMAND ${UV} pip install -p "${Python_ROOT_DIR}" -r
+                "${CMAKE_CURRENT_SOURCE_DIR}/tests/requirements.txt" RESULT_VARIABLE _pip_result)
+      if(_pip_result AND NOT _pip_result EQUAL 0)
+        message(FATAL_ERROR "uv pip install failed with '${_pip_result}'")
+      endif()
+    endif()
+  else()
+    if(NOT DEFINED Python3_EXECUTABLE
+       AND NOT DEFINED Python_EXECUTABLE
+       AND NOT DEFINED Python_ROOT_DIR
+       AND NOT DEFINED ENV{VIRTUALENV}
+       AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/.venv")
+      message(STATUS "Autodetecting Python in virtual environment")
+      set(Python_ROOT_DIR "${CMAKE_CURRENT_SOURCE_DIR}/.venv")
+    endif()
+  endif()
 endif()
 
-# NB: when adding a header don't forget to also add it to setup.py
 set(PYBIND11_HEADERS
     include/pybind11/detail/class.h
     include/pybind11/detail/common.h
@@ -149,6 +205,7 @@ set(PYBIND11_HEADERS
     include/pybind11/conduit/pybind11_conduit_v1.h
     include/pybind11/conduit/pybind11_platform_abi_id.h
     include/pybind11/conduit/wrap_include_python_h.h
+    include/pybind11/critical_section.h
     include/pybind11/options.h
     include/pybind11/eigen.h
     include/pybind11/eigen/common.h
@@ -166,6 +223,7 @@ set(PYBIND11_HEADERS
     include/pybind11/operators.h
     include/pybind11/pybind11.h
     include/pybind11/pytypes.h
+    include/pybind11/subinterpreter.h
     include/pybind11/stl.h
     include/pybind11/stl_bind.h
     include/pybind11/stl/filesystem.h
@@ -248,6 +306,9 @@ elseif(USE_PYTHON_INCLUDE_DIR AND DEFINED PYTHON_INCLUDE_DIR)
 endif()
 
 if(PYBIND11_INSTALL)
+  if(DEFINED SKBUILD_PROJECT_NAME AND SKBUILD_PROJECT_NAME STREQUAL "pybind11_global")
+    install(DIRECTORY ${pybind11_INCLUDE_DIR}/pybind11 DESTINATION "${SKBUILD_HEADERS_DIR}")
+  endif()
   install(DIRECTORY ${pybind11_INCLUDE_DIR}/pybind11 DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
   set(PYBIND11_CMAKECONFIG_INSTALL_DIR
       "${CMAKE_INSTALL_DATAROOTDIR}/cmake/${PROJECT_NAME}"
@@ -313,6 +374,17 @@ if(PYBIND11_INSTALL)
                  "${CMAKE_CURRENT_BINARY_DIR}/pybind11.pc" @ONLY)
   install(FILES "${CMAKE_CURRENT_BINARY_DIR}/pybind11.pc"
           DESTINATION "${CMAKE_INSTALL_DATAROOTDIR}/pkgconfig/")
+
+  # When building a wheel, include __init__.py's for modules
+  # (see https://github.com/pybind/pybind11/pull/5552)
+  if(DEFINED SKBUILD_PROJECT_NAME AND SKBUILD_PROJECT_NAME STREQUAL "pybind11")
+    file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/empty")
+    file(TOUCH "${CMAKE_CURRENT_BINARY_DIR}/empty/__init__.py")
+    install(FILES "${CMAKE_CURRENT_BINARY_DIR}/empty/__init__.py"
+            DESTINATION "${CMAKE_INSTALL_DATAROOTDIR}/")
+    install(FILES "${CMAKE_CURRENT_BINARY_DIR}/empty/__init__.py"
+            DESTINATION "${CMAKE_INSTALL_DATAROOTDIR}/pkgconfig/")
+  endif()
 
   # Uninstall target
   if(PYBIND11_MASTER_PROJECT)

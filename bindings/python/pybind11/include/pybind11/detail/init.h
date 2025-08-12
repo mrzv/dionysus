@@ -37,7 +37,7 @@ private:
 
 PYBIND11_NAMESPACE_BEGIN(initimpl)
 
-inline void no_nullptr(void *ptr) {
+inline void no_nullptr(const void *ptr) {
     if (!ptr) {
         throw type_error("pybind11::init(): factory function returned nullptr");
     }
@@ -61,7 +61,7 @@ bool is_alias(Cpp<Class> *ptr) {
 }
 // Failing fallback version of the above for a no-alias class (always returns false)
 template <typename /*Class*/>
-constexpr bool is_alias(void *) {
+constexpr bool is_alias(const void *) {
     return false;
 }
 
@@ -167,7 +167,12 @@ void construct(value_and_holder &v_h, Holder<Class> holder, bool need_alias) {
                          "is not an alias instance");
     }
 
-    v_h.value_ptr() = ptr;
+    // Cast away constness to store in void* storage.
+    // The value_and_holder storage is fundamentally untyped (void**), so we lose
+    // const-correctness here by design. The const qualifier will be restored
+    // when the pointer is later retrieved and cast back to the original type.
+    // This explicit const_cast makes the const-removal clearly visible.
+    v_h.value_ptr() = const_cast<void *>(static_cast<const void *>(ptr));
     v_h.type->init_instance(v_h.inst, &holder);
 }
 
@@ -241,18 +246,36 @@ void construct(value_and_holder &v_h,
     v_h.type->init_instance(v_h.inst, &smhldr);
 }
 
-template <typename Class, detail::enable_if_t<is_smart_holder<Holder<Class>>::value, int> = 0>
-void construct(value_and_holder &v_h, std::shared_ptr<Cpp<Class>> &&shd_ptr, bool need_alias) {
-    PYBIND11_WORKAROUND_INCORRECT_MSVC_C4100(need_alias);
+template <typename PtrType, typename Class>
+void construct_from_shared_ptr(value_and_holder &v_h,
+                               std::shared_ptr<PtrType> &&shd_ptr,
+                               bool need_alias) {
+    static_assert(std::is_same<PtrType, Cpp<Class>>::value
+                      || std::is_same<PtrType, const Cpp<Class>>::value,
+                  "Expected (const) Cpp<Class> as shared_ptr pointee");
     auto *ptr = shd_ptr.get();
     no_nullptr(ptr);
     if (Class::has_alias && need_alias && !is_alias<Class>(ptr)) {
         throw type_error("pybind11::init(): construction failed: returned std::shared_ptr pointee "
                          "is not an alias instance");
     }
-    auto smhldr = smart_holder::from_shared_ptr(shd_ptr);
-    v_h.value_ptr() = ptr;
+    // Cast to non-const if needed, consistent with internal design
+    auto smhldr
+        = smart_holder::from_shared_ptr(std::const_pointer_cast<Cpp<Class>>(std::move(shd_ptr)));
+    v_h.value_ptr() = const_cast<Cpp<Class> *>(ptr);
     v_h.type->init_instance(v_h.inst, &smhldr);
+}
+
+template <typename Class, detail::enable_if_t<is_smart_holder<Holder<Class>>::value, int> = 0>
+void construct(value_and_holder &v_h, std::shared_ptr<Cpp<Class>> &&shd_ptr, bool need_alias) {
+    construct_from_shared_ptr<Cpp<Class>, Class>(v_h, std::move(shd_ptr), need_alias);
+}
+
+template <typename Class, detail::enable_if_t<is_smart_holder<Holder<Class>>::value, int> = 0>
+void construct(value_and_holder &v_h,
+               std::shared_ptr<const Cpp<Class>> &&shd_ptr,
+               bool need_alias) {
+    construct_from_shared_ptr<const Cpp<Class>, Class>(v_h, std::move(shd_ptr), need_alias);
 }
 
 template <typename Class, detail::enable_if_t<is_smart_holder<Holder<Class>>::value, int> = 0>
@@ -273,7 +296,8 @@ struct constructor {
     static void execute(Class &cl, const Extra &...extra) {
         cl.def(
             "__init__",
-            [](value_and_holder &v_h, Args... args) {
+            [](value_and_holder &v_h,
+               Args... args) { // NOLINT(performance-unnecessary-value-param)
                 v_h.value_ptr() = construct_or_initialize<Cpp<Class>>(std::forward<Args>(args)...);
             },
             is_new_style_constructor(),
@@ -451,7 +475,16 @@ void setstate(value_and_holder &v_h, std::pair<T, O> &&result, bool need_alias) 
         // See PR #2972 for details.
         return;
     }
-    setattr((PyObject *) v_h.inst, "__dict__", d);
+    // Our tests never run into an unset dict, but being careful here for now (see #5658)
+    auto dict = getattr((PyObject *) v_h.inst, "__dict__", none());
+    if (dict.is_none()) {
+        setattr((PyObject *) v_h.inst, "__dict__", d);
+    } else {
+        // Keep the original object dict and just update it
+        if (PyDict_Update(dict.ptr(), d.ptr()) < 0) {
+            throw error_already_set();
+        }
+    }
 }
 
 /// Implementation for py::pickle(GetState, SetState)

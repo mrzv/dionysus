@@ -76,6 +76,11 @@ public:
             parent);
     }
 
+    template <typename SrcType>
+    static handle cast(SrcType *src, return_value_policy policy, handle parent) {
+        return cast(*src, policy, parent);
+    }
+
     bool load(handle src, bool convert) {
         handle native_enum
             = global_internals_native_enum_type_map_get_item(std::type_index(typeid(EnumType)));
@@ -404,7 +409,7 @@ public:
     template <typename T>
     using cast_op_type = void *&;
     explicit operator void *&() { return value; }
-    static constexpr auto name = const_name("types.CapsuleType");
+    static constexpr auto name = const_name(PYBIND11_CAPSULE_TYPE_TYPE_HINT);
 
 private:
     void *value = nullptr;
@@ -817,7 +822,9 @@ protected:
     cast_impl(T &&src, return_value_policy policy, handle parent, index_sequence<Is...>) {
         PYBIND11_WORKAROUND_INCORRECT_MSVC_C4100(src, policy, parent);
         PYBIND11_WORKAROUND_INCORRECT_GCC_UNUSED_BUT_SET_PARAMETER(policy, parent);
+
         std::array<object, size> entries{{reinterpret_steal<object>(
+            // NOLINTNEXTLINE(bugprone-use-after-move)
             make_caster<Ts>::cast(std::get<Is>(std::forward<T>(src)), policy, parent))...}};
         for (const auto &entry : entries) {
             if (!entry) {
@@ -978,7 +985,19 @@ public:
 
     explicit operator std::shared_ptr<type> &() {
         if (typeinfo->holder_enum_v == detail::holder_enum_t::smart_holder) {
-            shared_ptr_storage = sh_load_helper.load_as_shared_ptr(value);
+            shared_ptr_storage = sh_load_helper.load_as_shared_ptr(typeinfo, value);
+        }
+        return shared_ptr_storage;
+    }
+
+    std::weak_ptr<type> potentially_slicing_weak_ptr() {
+        if (typeinfo->holder_enum_v == detail::holder_enum_t::smart_holder) {
+            // Reusing shared_ptr code to minimize code complexity.
+            shared_ptr_storage
+                = sh_load_helper.load_as_shared_ptr(typeinfo,
+                                                    value,
+                                                    /*responsible_parent=*/nullptr,
+                                                    /*force_potentially_slicing_shared_ptr=*/true);
         }
         return shared_ptr_storage;
     }
@@ -1006,7 +1025,8 @@ public:
         copyable_holder_caster loader;
         loader.load(responsible_parent, /*convert=*/false);
         assert(loader.typeinfo->holder_enum_v == detail::holder_enum_t::smart_holder);
-        return loader.sh_load_helper.load_as_shared_ptr(loader.value, responsible_parent);
+        return loader.sh_load_helper.load_as_shared_ptr(
+            loader.typeinfo, loader.value, responsible_parent);
     }
 
 protected:
@@ -1076,6 +1096,54 @@ protected:
 /// Specialize for the common std::shared_ptr, so users don't need to
 template <typename T>
 class type_caster<std::shared_ptr<T>> : public copyable_holder_caster<T, std::shared_ptr<T>> {};
+
+PYBIND11_NAMESPACE_END(detail)
+
+/// Return a std::shared_ptr with the SAME CONTROL BLOCK as the std::shared_ptr owned by the
+/// class_ holder. For class_-wrapped types with trampolines, the returned std::shared_ptr
+/// does NOT keep any derived Python objects alive (see issue #1333).
+///
+/// For class_-wrapped types using std::shared_ptr as the holder, the following expressions
+/// produce equivalent results (see tests/test_potentially_slicing_weak_ptr.cpp,py):
+///
+///     - obj.cast<std::shared_ptr<T>>()
+///     - py::potentially_slicing_weak_ptr<T>(obj).lock()
+///
+/// For class_-wrapped types with trampolines and using py::smart_holder, obj.cast<>()
+/// produces a std::shared_ptr that keeps any derived Python objects alive for its own lifetime,
+/// but this is achieved by introducing a std::shared_ptr control block that is independent of
+/// the one owned by the py::smart_holder. This can lead to surprising std::weak_ptr behavior
+/// (see issue #5623). An easy solution is to use py::potentially_slicing_weak_ptr<>(obj),
+/// as exercised in tests/test_potentially_slicing_weak_ptr.cpp,py (look for
+/// "set_wp_potentially_slicing"). Note, however, that this reintroduces the inheritance
+/// slicing issue (see issue #1333). The ideal — but usually more involved — solution is to use
+/// a Python weakref to the derived Python object, instead of a C++ base-class std::weak_ptr.
+///
+/// It is not possible (at least no known approach exists at the time of this writing) to
+/// simultaneously achieve both desirable properties:
+///
+///     - the same std::shared_ptr control block as the class_ holder
+///     - automatic lifetime extension of any derived Python objects
+///
+/// The reason is that this would introduce a reference cycle that cannot be garbage collected:
+///
+///     - the derived Python object owns the class_ holder
+///     - the class_ holder owns the std::shared_ptr
+///     - the std::shared_ptr would own a reference to the derived Python object,
+///       completing the cycle
+template <typename T>
+std::weak_ptr<T> potentially_slicing_weak_ptr(handle obj) {
+    detail::make_caster<std::shared_ptr<T>> caster;
+    if (caster.load(obj, /*convert=*/true)) {
+        return caster.potentially_slicing_weak_ptr();
+    }
+    const char *obj_type_name = detail::obj_class_name(obj.ptr());
+    throw type_error("\"" + std::string(obj_type_name)
+                     + "\" object is not convertible to std::weak_ptr<T> (with T = " + type_id<T>()
+                     + ")");
+}
+
+PYBIND11_NAMESPACE_BEGIN(detail)
 
 // SMART_HOLDER_BAKEIN_FOLLOW_ON: Rewrite comment, with reference to unique_ptr specialization.
 /// Type caster for holder types like std::unique_ptr.
@@ -1179,7 +1247,7 @@ public:
 
     explicit operator std::unique_ptr<type, deleter>() {
         if (typeinfo->holder_enum_v == detail::holder_enum_t::smart_holder) {
-            return sh_load_helper.template load_as_unique_ptr<deleter>(value);
+            return sh_load_helper.template load_as_unique_ptr<deleter>(typeinfo, value);
         }
         pybind11_fail("Expected to be UNREACHABLE: " __FILE__ ":" PYBIND11_TOSTRING(__LINE__));
     }
@@ -1187,12 +1255,12 @@ public:
     explicit operator const std::unique_ptr<type, deleter> &() {
         if (typeinfo->holder_enum_v == detail::holder_enum_t::smart_holder) {
             // Get shared_ptr to ensure that the Python object is not disowned elsewhere.
-            shared_ptr_storage = sh_load_helper.load_as_shared_ptr(value);
+            shared_ptr_storage = sh_load_helper.load_as_shared_ptr(typeinfo, value);
             // Build a temporary unique_ptr that is meant to never expire.
             unique_ptr_storage = std::shared_ptr<std::unique_ptr<type, deleter>>(
                 new std::unique_ptr<type, deleter>{
                     sh_load_helper.template load_as_const_unique_ptr<deleter>(
-                        shared_ptr_storage.get())},
+                        typeinfo, shared_ptr_storage.get())},
                 [](std::unique_ptr<type, deleter> *ptr) {
                     if (!ptr) {
                         pybind11_fail("FATAL: `const std::unique_ptr<T, D> &` was disowned "
@@ -1300,7 +1368,7 @@ struct handle_type_name<dict> {
 };
 template <>
 struct handle_type_name<anyset> {
-    static constexpr auto name = const_name("Union[set, frozenset]");
+    static constexpr auto name = const_name("set | frozenset");
 };
 template <>
 struct handle_type_name<set> {
@@ -1328,7 +1396,7 @@ struct handle_type_name<bytes> {
 };
 template <>
 struct handle_type_name<buffer> {
-    static constexpr auto name = const_name("collections.abc.Buffer");
+    static constexpr auto name = const_name(PYBIND11_BUFFER_TYPE_HINT);
 };
 template <>
 struct handle_type_name<int_> {
@@ -1336,11 +1404,11 @@ struct handle_type_name<int_> {
 };
 template <>
 struct handle_type_name<iterable> {
-    static constexpr auto name = const_name("Iterable");
+    static constexpr auto name = const_name("collections.abc.Iterable");
 };
 template <>
 struct handle_type_name<iterator> {
-    static constexpr auto name = const_name("Iterator");
+    static constexpr auto name = const_name("collections.abc.Iterator");
 };
 template <>
 struct handle_type_name<float_> {
@@ -1348,7 +1416,7 @@ struct handle_type_name<float_> {
 };
 template <>
 struct handle_type_name<function> {
-    static constexpr auto name = const_name("Callable");
+    static constexpr auto name = const_name("collections.abc.Callable");
 };
 template <>
 struct handle_type_name<handle> {
@@ -1360,7 +1428,7 @@ struct handle_type_name<none> {
 };
 template <>
 struct handle_type_name<sequence> {
-    static constexpr auto name = const_name("Sequence");
+    static constexpr auto name = const_name("collections.abc.Sequence");
 };
 template <>
 struct handle_type_name<bytearray> {
@@ -1380,7 +1448,7 @@ struct handle_type_name<type> {
 };
 template <>
 struct handle_type_name<capsule> {
-    static constexpr auto name = const_name("types.CapsuleType");
+    static constexpr auto name = const_name(PYBIND11_CAPSULE_TYPE_TYPE_HINT);
 };
 template <>
 struct handle_type_name<ellipsis> {
@@ -1388,7 +1456,7 @@ struct handle_type_name<ellipsis> {
 };
 template <>
 struct handle_type_name<weakref> {
-    static constexpr auto name = const_name("weakref");
+    static constexpr auto name = const_name("weakref.ReferenceType");
 };
 template <>
 struct handle_type_name<args> {
