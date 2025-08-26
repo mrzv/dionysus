@@ -30,11 +30,11 @@ struct Time
     {
         if (t == other.t)
         {
-            if (dir && !other.dir)      // add comes before remove
-                return true;
-            else if (!dir && other.dir)
-                return false;
-            else if (dim == other.dim)
+            // if (dir && !other.dir)      // add comes before remove
+            //     return true;
+            // else if (!dir && other.dir)
+            //     return false;
+            if (dim == other.dim)
                 return i < other.i;
             else if (dir)
                 return dim < other.dim;
@@ -97,7 +97,7 @@ zigzag_homology_persistence(const PyFiltration&     f,
             dir = !dir;
         }
     }
-    std::sort(times.begin(), times.end());
+    std::stable_sort(times.begin(), times.end());
 
     std::unique_ptr<Progress> progress(new NoProgress);
     if (show_progress)
