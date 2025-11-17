@@ -4,3 +4,4 @@ build/
 dionysus.egg-info/
 doc/_build
 dist/
+*.bak

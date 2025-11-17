@@ -1,0 +1,35 @@
+[build-system]
+requires = ["scikit-build-core", "pybind11"]
+build-backend = "scikit_build_core.build"
+
+[project]
+name = "dionysus"
+dynamic = ["version"]
+
+authors = [ { name = "Dmitriy Morozov",  email = "dmitriy@mrzv.org" } ]
+description= "Library for computing persistent homology"
+readme = "README.rst"
+license = "BSD-3-Clause-LBNL"
+
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Education",
+    "Intended Audience :: Science/Research",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Utilities",
+    "Programming Language :: C++",
+    "Programming Language :: Python :: 3.12"
+]
+
+dependencies = [
+    "intervaltree>=3.1.0",
+    "numpy>=2.3.5",
+]
+requires-python = ">= 3.12"
+
+[project.urls]
+Homepage = "https://github.com/mrzv/dionysus"
+Documentation = "https://www.mrzv.org/software/dionysus2"
+Repository = "https://github.com/mrzv/dionysus.git"
+Issues = "https://github.com/mrzv/dionysus/issues"
