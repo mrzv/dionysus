@@ -1,11 +1,11 @@
 from __future__ import absolute_import
-import importlib
+from importlib.metadata import version
 
 from ._dionysus import *
 from . import plot     # make it available without an explicit import
 from .zigzag import *
 
-__version__ = importlib.metadata.version(__package__)
+__version__ = version(__package__)
 
 def closure(simplices, k):
     """Compute the `k`-skeleton of the closure of the list of `simplices`."""
