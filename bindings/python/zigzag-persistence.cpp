@@ -28,21 +28,21 @@ struct Time
 
     bool    operator<(const Time& other) const
     {
-        if (t == other.t)
+        if (t != other.t)
+            return t < other.t;
+
+        if (dir != other.dir)
+            return dir;
+
+        if (dim != other.dim)
         {
-            // if (dir && !other.dir)      // add comes before remove
-            //     return true;
-            // else if (!dir && other.dir)
-            //     return false;
-            if (dim == other.dim)
-                return i < other.i;
-            else if (dir)
+            if (dir)
                 return dim < other.dim;
-            else // if (!dir)
+            else
                 return other.dim < dim;
         }
-        else
-            return t < other.t;
+
+        return i < other.i;
     }
 
     float       t;
