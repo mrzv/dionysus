@@ -4,6 +4,14 @@ import dionysus as d
 from intervaltree import IntervalTree
 from sortedcontainers import SortedSet
 
+from ._dionysus import fast_zigzag as _fast_zigzag
+
+# This is sort of a hack; it would be better to cast whatever we get into a filtration directly in the C++ code
+def fast_zigzag(f, times):
+    if type(f) is not d.Filtration:
+        f = d.Filtration(f)
+    return _fast_zigzag(f,times)
+
 w = -1      # cone vertex
 
 class ApexRepresentative:
