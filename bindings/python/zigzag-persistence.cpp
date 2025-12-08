@@ -1,3 +1,4 @@
+#include <limits>
 #include <vector>
 #include <type_traits>
 
@@ -212,6 +213,57 @@ struct PyZZAliveCycleIterator
     std::vector<PyZigzagPersistence::Index>     indices;
 };
 
+PyLinkedMultiFiltration
+fast_zigzag(const PyFiltration&     f,
+            const Times&            times)
+{
+    std::cout << "fast_zigzag C++" << std::endl;
+
+    int w = -1;
+    float inf = std::numeric_limits<float>::infinity();
+    PyLinkedMultiFiltration combined;
+    combined.push_back(PySimplex({ w }, -inf), 0);
+
+    for (size_t i = 0; i < f.size(); ++i)
+    {
+        size_t j = 0;
+        for (; j < times[i].size(); ++j)
+        {
+            if (j % 2 == 0)
+                combined.push_back(PySimplex(f[i], times[i][j]), combined.size());
+            else
+                combined.push_back(PySimplex(f[i], times[i][j]).join(w), combined.size() - 1);        // link to the previous appearance
+        }
+
+        // if a simplex doesn't get removed, remove it at infinity
+        if (j % 2 != 0)
+            combined.push_back(PySimplex(f[i], inf).join(w), combined.size() - 1);        // link to the previous appearance
+    }
+
+    DataDimCmp base_cmp;
+    DataDimCmp cone_cmp(true);
+    combined.sort([w,base_cmp,cone_cmp](const PySimplex& x, const PySimplex& y)
+                  {
+                      bool x_cone = std::find(x.begin(), x.end(), w) != x.end();
+                      bool y_cone = std::find(y.begin(), y.end(), w) != y.end();
+
+                      if (x_cone && x.dimension() == 0)
+                          return true;
+                      if (y_cone && y.dimension() == 0)
+                          return false;
+
+                      if (!x_cone && y_cone) return true;
+                      if (x_cone && !y_cone) return false;
+
+                      if (!x_cone)
+                          return base_cmp(x,y);
+                      else
+                          return cone_cmp(x,y);
+                  });
+
+    return combined;
+}
+
 #include "chain.h"
 
 void init_zigzag_persistence(py::module& m)
@@ -264,4 +316,7 @@ void init_zigzag_persistence(py::module& m)
                                 py::keep_alive<0, 1>() /* Essential: keep object alive while iterator exists */,
                                 "iterate over the entries of the map")
     ;
+
+    m.def("fast_zigzag",    &fast_zigzag, "filtration"_a, "times"_a,
+          "Build the cone to compute extended persistence equivalent to the given zigzag.");
 }

@@ -47,38 +47,6 @@ class ApexRepresentative:
         for (t, data) in self.vertical:
             yield t, data
 
-
-def fast_zigzag(simplices, times):
-    """Build the cone to compute extended persistence equivalent to the given zigzag."""
-
-    inf = float('inf')
-    combined = d.LinkedMultiFiltration()
-    combined.append(d.Simplex([w]), 0)
-    for s,times in zip(simplices,times):
-        for i,t in enumerate(times):
-            if i % 2 == 0:
-                sx = d.Simplex(s,t)
-                combined.append(sx, len(combined))
-            else:
-                sx = d.Simplex(s,t).join(w)
-                combined.append(sx, len(combined)-1)     # link to the previous appearance
-        # if a simplex doesn't get removed, remove it at infinity
-        if i % 2 == 0:
-            sx = d.Simplex(s,inf).join(w)
-            combined.append(sx, len(combined)-1)     # link to the previous appearance
-
-    def cone_key(s):
-        cone = w in s
-        ww = cone and s.dimension() == 0
-        return (not ww, cone, s.data if not cone else -s.data, s)
-
-    combined.sort(key = cone_key)
-
-    # for i,s in enumerate(combined):
-    #     print(combined.index(s,i), combined.index(s), s)
-
-    return combined
-
 def init_zigzag_diagrams(r,f):
     """Given the cone `f` and its reduced matrix `r`, initialize zigzag diagrams."""
 
