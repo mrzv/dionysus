@@ -47,7 +47,7 @@ class ApexRepresentative:
         for (t, data) in self.vertical:
             yield t, data
 
-def init_zigzag_diagrams(r,f):
+def init_zigzag_diagrams(r,f, diagonal = False):
     """Given the cone `f` and its reduced matrix `r`, initialize zigzag diagrams."""
 
     dgms = [{ t : d.Diagram() for t in ['co','oc','oo','cc']} \
@@ -66,6 +66,8 @@ def init_zigzag_diagrams(r,f):
 
         i_data = f[i].data
         j_data = f[j].data
+
+        if not diagonal and i_data == j_data: continue
 
         if not i_cone and not j_cone:
             # ordinary (closed-open)
