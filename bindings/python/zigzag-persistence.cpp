@@ -217,8 +217,6 @@ PyLinkedMultiFiltration
 fast_zigzag(const PyFiltration&     f,
             const Times&            times)
 {
-    std::cout << "fast_zigzag C++" << std::endl;
-
     int w = -1;
     float inf = std::numeric_limits<float>::infinity();
     PyLinkedMultiFiltration combined;
