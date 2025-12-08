@@ -4,7 +4,7 @@ build-backend = "scikit_build_core.build"
 
 [project]
 name = "dionysus"
-version = "2.1.3"
+version = "2.1.4"
 
 authors = [ { name = "Dmitriy Morozov",  email = "dmitriy@mrzv.org" } ]
 description= "Library for computing persistent homology"
