@@ -33,3 +33,11 @@ Homepage = "https://github.com/mrzv/dionysus"
 Documentation = "https://www.mrzv.org/software/dionysus2"
 Repository = "https://github.com/mrzv/dionysus.git"
 Issues = "https://github.com/mrzv/dionysus/issues"
+
+[tool.uv]
+cache-keys = [{ file = "pyproject.toml" },
+              { file = "bindings/**" },
+              { file = "include/**" },
+              { file = "src/**" },
+              { file = "ext/**" },
+              { file = "CMakeLists.txt" }]
