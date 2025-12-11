@@ -242,8 +242,8 @@ fast_zigzag(const PyFiltration&     f,
     DataDimCmp cone_cmp(true);
     combined.sort([w,base_cmp,cone_cmp](const PySimplex& x, const PySimplex& y)
                   {
-                      bool x_cone = std::find(x.begin(), x.end(), w) != x.end();
-                      bool y_cone = std::find(y.begin(), y.end(), w) != y.end();
+                      bool x_cone = x.contains(w);
+                      bool y_cone = y.contains(w);
 
                       if (x_cone && x.dimension() == 0)
                           return true;
@@ -260,6 +260,63 @@ fast_zigzag(const PyFiltration&     f,
                   });
 
     return combined;
+}
+
+std::vector<std::map<std::string, PyDiagram>>
+init_zigzag_diagrams(const PyReducedMatrix& r, const PyLinkedMultiFiltration& f, bool diagonal)
+{
+    using Index = typename PyReducedMatrix::Index;
+
+    int w = -1;
+
+    std::vector<std::map<std::string, PyDiagram>> result;
+    auto result_append = [&result](int dim, std::string type, PySimplex::Data birth, PySimplex::Data death, Index i)
+    {
+        while (dim >= result.size())
+            result.emplace_back();
+
+        result[dim][type].emplace_back(birth,death,i);
+    };
+
+    for (Index i = 1; i < r.size(); ++i)
+    {
+        Index j = r.pair(i);
+        if (j < i) continue;        // skip negative
+
+        assert(j != r.unpaired());
+
+        auto i_data = f[i].data();
+        auto j_data = f[j].data();
+
+        if (!diagonal && i_data == j_data) continue;
+
+        bool i_cone = f[i].contains(w);
+        bool j_cone = f[j].contains(w);
+
+        if (!i_cone && !j_cone)
+        {
+            // ordinary (closed-open)
+            result_append(f[i].dimension(), "co", i_data, j_data, i);
+        } else if (i_cone && j_cone)
+        {
+            // relative (open-closed)
+            result_append(f[i].dimension() - 1, "oc", j_data, i_data, i);
+        } else
+        {
+            assert(!i_cone && j_cone);
+            if (i_data > j_data)        // TODO: can we check this non-numerically
+            {
+                // extended (open-open)
+                result_append(f[i].dimension() - 1, "oo", j_data, i_data, i);
+            } else
+            {
+                // extended (closed-closed)
+                result_append(f[i].dimension(), "cc", i_data, j_data, i);
+            }
+        }
+    }
+
+    return result;
 }
 
 #include "chain.h"
@@ -317,4 +374,6 @@ void init_zigzag_persistence(py::module& m)
 
     m.def("fast_zigzag",    &fast_zigzag, "filtration"_a, "times"_a,
           "Build the cone to compute extended persistence equivalent to the given zigzag.");
+    m.def("init_zigzag_diagrams",    &init_zigzag_diagrams, "r"_a, "f"_a, "diagonal"_a = false,
+          "Given the cone `f` and its reduced matrix `r`, initialize zigzag diagrams.");
 }

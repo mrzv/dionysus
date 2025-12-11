@@ -113,6 +113,7 @@ class Simplex
                         range() const                               { return std::make_pair(begin(), end()); }
 
         Simplex         join(const Vertex& v) const                 { Vertices vertices(new Vertex[dim_+2]); std::copy(begin(), end(), vertices.get()); vertices[dim_+1] = v; return Simplex(dim_ + 1, std::move(vertices), Data(data_)); }
+        bool            contains(const Vertex& v) const             { return std::find(begin(), end(), v) != end(); }
 
         bool            operator==(const Simplex& other) const      { return dim_ == other.dim_ && std::equal(begin(), end(), other.begin()); }
         bool            operator!=(const Simplex& other) const      { return !operator==(other); }

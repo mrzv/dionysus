@@ -8,6 +8,7 @@ from ._dionysus import fast_zigzag as _fast_zigzag
 
 # This is sort of a hack; it would be better to cast whatever we get into a filtration directly in the C++ code
 def fast_zigzag(f, times):
+    """Build the cone to compute extended persistence equivalent to the given zigzag."""
     if type(f) is not d.Filtration:
         f = d.Filtration(f)
     return _fast_zigzag(f,times)
@@ -54,45 +55,6 @@ class ApexRepresentative:
         # report vertical cells
         for (t, data) in self.vertical:
             yield t, data
-
-def init_zigzag_diagrams(r,f, diagonal = False):
-    """Given the cone `f` and its reduced matrix `r`, initialize zigzag diagrams."""
-
-    dgms = [{ t : d.Diagram() for t in ['co','oc','oo','cc']} \
-                 for _ in range(max(s.dimension() for s in f if w not in s) + 1)]
-
-    assert w in f[0] and f[0].dimension() == 0
-    for i in range(1,len(r)):
-        j = r.pair(i)
-        if j < i: continue      # skip negative
-
-        # f has to be a cone, so everything is paired, except for w, which we skip
-        assert j != r.unpaired
-
-        j_cone = w in f[j]
-        i_cone = w in f[i]
-
-        i_data = f[i].data
-        j_data = f[j].data
-
-        if not diagonal and i_data == j_data: continue
-
-        if not i_cone and not j_cone:
-            # ordinary (closed-open)
-            dgms[f[i].dimension()]['co'].append(i_data, j_data, i)
-        elif i_cone and j_cone:
-            # relative (open-closed)
-            dgms[f[i].dimension() - 1]['oc'].append(j_data, i_data, i)
-        else:
-            assert not i_cone and j_cone
-            if i_data > j_data:     # TODO: can we check this non-numerically?
-                # extended (open-open)
-                dgms[f[i].dimension() - 1]['oo'].append(j_data, i_data, i)
-            else:
-                # extended (closed-closed)
-                dgms[f[i].dimension()]['cc'].append(i_data, j_data, i)
-
-    return dgms
 
 def apex(pt,r,v,f):
     """Given a point `pt` in a zigzag diagram, matrices `r` and `v`, and the cone filtration `f`, return the apex representative."""
