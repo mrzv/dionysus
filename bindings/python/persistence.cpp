@@ -10,8 +10,6 @@ namespace ba = boost::adaptors;
 #include <dionysus/standard-reduction.h>
 #include <dionysus/clearing-reduction.h>
 
-#include <dionysus/trails-chains.h>
-
 #include "field.h"
 #include "filtration.h"
 #include "persistence.h"
@@ -249,9 +247,9 @@ void init_persistence(py::module& m)
     ;
 
     export_reduced_matrix<PyReducedMatrix>(m, "ReducedMatrix");
-    export_reduced_matrix<dionysus::OrdinaryPersistenceNoNegative<PyZpField>>(m, "ReducedMatrixNoNegative");
-    export_reduced_matrix<dionysus::OrdinaryPersistenceWithV<PyZpField>>(m, "ReducedMatrixWithV");
-    export_reduced_matrix<dionysus::OrdinaryPersistenceNoNegativeWithV<PyZpField>>(m, "ReducedMatrixNoNegativeWithV");
+    export_reduced_matrix<PyReducedMatrixNoNegative>(m, "ReducedMatrixNoNegative");
+    export_reduced_matrix<PyReducedMatrixWithV>(m, "ReducedMatrixWithV");
+    export_reduced_matrix<PyReducedMatrixNoNegativeWithV>(m, "ReducedMatrixNoNegativeWithV");
     init_chain<typename PyReducedMatrix::Chain>(m);
 
     py::class_<PyMatrixFiltration>(m, "MatrixFiltration", "adapter to turn ReducedMatrix into something that looks and acts like a filtration")

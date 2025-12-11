@@ -262,8 +262,9 @@ fast_zigzag(const PyFiltration&     f,
     return combined;
 }
 
+template<class PyReducedMatrix, class Filtration>
 std::vector<std::map<std::string, PyDiagram>>
-init_zigzag_diagrams(const PyReducedMatrix& r, const PyLinkedMultiFiltration& f, bool diagonal)
+init_zigzag_diagrams(const PyReducedMatrix& r, const Filtration& f, bool diagonal)
 {
     using Index = typename PyReducedMatrix::Index;
 
@@ -374,6 +375,16 @@ void init_zigzag_persistence(py::module& m)
 
     m.def("fast_zigzag",    &fast_zigzag, "filtration"_a, "times"_a,
           "Build the cone to compute extended persistence equivalent to the given zigzag.");
-    m.def("init_zigzag_diagrams",    &init_zigzag_diagrams, "r"_a, "f"_a, "diagonal"_a = false,
+    m.def("init_zigzag_diagrams",    &init_zigzag_diagrams<PyReducedMatrix,PyLinkedMultiFiltration>,
+          "r"_a, "f"_a, "diagonal"_a = false,
+          "Given the cone `f` and its reduced matrix `r`, initialize zigzag diagrams.");
+    m.def("init_zigzag_diagrams",    &init_zigzag_diagrams<PyReducedMatrixWithV,PyLinkedMultiFiltration>,
+          "r"_a, "f"_a, "diagonal"_a = false,
+          "Given the cone `f` and its reduced matrix `r`, initialize zigzag diagrams.");
+    m.def("init_zigzag_diagrams",    &init_zigzag_diagrams<PyReducedMatrixNoNegative,PyLinkedMultiFiltration>,
+          "r"_a, "f"_a, "diagonal"_a = false,
+          "Given the cone `f` and its reduced matrix `r`, initialize zigzag diagrams.");
+    m.def("init_zigzag_diagrams",    &init_zigzag_diagrams<PyReducedMatrixNoNegativeWithV,PyLinkedMultiFiltration>,
+          "r"_a, "f"_a, "diagonal"_a = false,
           "Given the cone `f` and its reduced matrix `r`, initialize zigzag diagrams.");
 }
