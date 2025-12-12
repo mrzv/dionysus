@@ -28,7 +28,7 @@ Then the persistence diagrams can be recovered using :func:`~dionysus.init_zigza
 
 .. doctest::
 
-    >>> dgms = d.init_zigzag_diagrams(r,cone)
+    >>> dgms = d.init_zigzag_diagrams(r,cone,diagonal=True)
 
 The diagrams are split by dimension, where each dimension stores a dictionary, with up to four entries, one for each extended persistence diagram type (ordinary, relative, and two types of extended), each of which corresponds to a different type of interval in zigzag persistence (``oo`` = open-open, ``co`` = closed-open, ``oc`` = open-closed, ``cc`` = closed-closed).
 The points in these diagrams can be used to recover their corresponding apex representatives:
@@ -44,21 +44,17 @@ The points in these diagrams can be used to recover their corresponding apex rep
     ...             print(pt)
     ...             apex_rep = d.apex(pt,r,v,cone)
     Dimension: 0
+    Type: cc
+    (0.1,0.2)
+    (0.3,inf)
+    (0.4,0.6)
     Type: co
     (0.5,0.8)
     (0.7,0.8)
     Type: oc
     (1,1)
     (1,1)
-    Type: oo
-    Type: cc
-    (0.1,0.2)
-    (0.3,inf)
-    (0.4,0.6)
     Dimension: 1
-    Type: co
-    Type: oc
-    Type: oo
     Type: cc
     (0.9,0.95)
 
