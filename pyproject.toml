@@ -48,3 +48,7 @@ doc = [
     "scipy>=1.16.3",
     "sphinx>=9.0.4",
 ]
+test = [
+    "matplotlib>=3.10.8",
+    "pytest>=9.0.2",
+]
