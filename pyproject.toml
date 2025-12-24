@@ -4,7 +4,7 @@ build-backend = "scikit_build_core.build"
 
 [project]
 name = "dionysus"
-version = "2.1.7"
+version = "2.1.8"
 
 authors = [ { name = "Dmitriy Morozov",  email = "dmitriy@mrzv.org" } ]
 description= "Library for computing persistent homology"
@@ -24,9 +24,9 @@ classifiers = [
 
 dependencies = [
     "intervaltree>=3.1.0",
-    "numpy>=2.3.5",
+    "numpy>=2",
 ]
-requires-python = ">= 3.12"
+requires-python = ">= 3.9"
 
 [project.urls]
 Homepage = "https://github.com/mrzv/dionysus"
@@ -45,10 +45,10 @@ cache-keys = [{ file = "pyproject.toml" },
 [dependency-groups]
 doc = [
     "nb2plots>=0.7.2",
-    "scipy>=1.16.3",
-    "sphinx>=9.0.4",
+    "scipy>=1.13.1",
+    "sphinx>=7.4.7",
 ]
 test = [
-    "matplotlib>=3.10.8",
-    "pytest>=9.0.2",
+    "matplotlib>=3.9.4",
+    "pytest>=8.4.2",
 ]
