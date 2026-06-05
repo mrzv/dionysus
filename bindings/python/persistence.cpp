@@ -74,6 +74,26 @@ compute_homology_persistence(const Filtration& filtration, const Relative& relat
         auto v = std::move(reduce.persistence().visitor<1>().v_);
         auto r = std::move(reduce.persistence());
         return py::cast(std::make_tuple(r,v));
+    } else if (method == "matrix_u")
+    {
+        using Persistence = dionysus::OrdinaryPersistenceWithU<PyZpField>;
+        using Reduction   = dionysus::StandardReduction<Persistence>;
+        Persistence persistence(field);
+        Reduction   reduce(persistence);
+        reduce(filtration, relative, &Reduction::no_report_pair, progress);
+        auto u = std::move(reduce.persistence().visitor<0>().u_);
+        auto r = std::move(reduce.persistence());
+        return py::cast(std::make_tuple(r,u));
+    } else if (method == "matrix_u_no_negative")
+    {
+        using Persistence = dionysus::OrdinaryPersistenceNoNegativeWithU<PyZpField>;
+        using Reduction   = dionysus::StandardReduction<Persistence>;
+        Persistence persistence(field);
+        Reduction   reduce(persistence);
+        reduce(filtration, relative, &Reduction::no_report_pair, progress);
+        auto u = std::move(reduce.persistence().visitor<1>().u_);
+        auto r = std::move(reduce.persistence());
+        return py::cast(std::make_tuple(r,u));
     } else
         throw std::runtime_error("Unknown method: " + method);
 }
@@ -224,19 +244,19 @@ void init_persistence(py::module& m)
     using namespace pybind11::literals;
     m.def("homology_persistence",   &homology_persistence<PyFiltration>,
           "filtration"_a, "prime"_a = 2, "method"_a = "clearing", "progress"_a = false,
-          "compute homology persistence of the filtration (pair simplices); method is one of `clearing`, `row`, `column`, or `column_no_negative`");
+          "compute homology persistence of the filtration (pair simplices); method is one of `clearing`, `row`, `column`, `column_no_negative`, `matrix_v`, `matrix_v_no_negative`, `matrix_u`, or `matrix_u_no_negative`");
     m.def("homology_persistence",   &homology_persistence<PyMatrixFiltration>,
           "filtration"_a, "prime"_a = 2, "method"_a = "clearing", "progress"_a = false,
-          "compute homology persistence of the filtration (pair simplices); method is one of `clearing`, `row`, `column`, or `column_no_negative`");
+          "compute homology persistence of the filtration (pair simplices); method is one of `clearing`, `row`, `column`, `column_no_negative`, `matrix_v`, `matrix_v_no_negative`, `matrix_u`, or `matrix_u_no_negative`");
     m.def("homology_persistence",   &homology_persistence<PyMultiFiltration>,
           "filtration"_a, "prime"_a = 2, "method"_a = "clearing", "progress"_a = false,
-          "compute homology persistence of the filtration (pair simplices); method is one of `clearing`, `row`, `column`, or `column_no_negative`");
+          "compute homology persistence of the filtration (pair simplices); method is one of `clearing`, `row`, `column`, `column_no_negative`, `matrix_v`, `matrix_v_no_negative`, `matrix_u`, or `matrix_u_no_negative`");
     m.def("homology_persistence",   &homology_persistence<PyLinkedMultiFiltration>,
           "filtration"_a, "prime"_a = 2, "method"_a = "clearing", "progress"_a = false,
-          "compute homology persistence of the filtration (pair simplices); method is one of `clearing`, `row`, `column`, or `column_no_negative`");
+          "compute homology persistence of the filtration (pair simplices); method is one of `clearing`, `row`, `column`, `column_no_negative`, `matrix_v`, `matrix_v_no_negative`, `matrix_u`, or `matrix_u_no_negative`");
     m.def("homology_persistence",   &relative_homology_persistence,
           "filtration"_a, "relative"_a, "prime"_a = 2, "method"_a = "clearing", "progress"_a = false,
-          "compute homology persistence of the filtration, relative to a subcomplex; method is one of `clearing`, `row`, `column`, or `column_no_negative`");
+          "compute homology persistence of the filtration, relative to a subcomplex; method is one of `clearing`, `row`, `column`, `column_no_negative`, `matrix_v`, `matrix_v_no_negative`, `matrix_u`, or `matrix_u_no_negative`");
 
     py::class_<PyMatrixFiltration::Cell>(m, "MatrixFiltrationCell", "Cell-like adapter for a matrix column")
         .def("__repr__",    [](const PyMatrixFiltration::Cell& mfc)
@@ -250,6 +270,8 @@ void init_persistence(py::module& m)
     export_reduced_matrix<PyReducedMatrixNoNegative>(m, "ReducedMatrixNoNegative");
     export_reduced_matrix<PyReducedMatrixWithV>(m, "ReducedMatrixWithV");
     export_reduced_matrix<PyReducedMatrixNoNegativeWithV>(m, "ReducedMatrixNoNegativeWithV");
+    export_reduced_matrix<PyReducedMatrixWithU>(m, "ReducedMatrixWithU");
+    export_reduced_matrix<PyReducedMatrixNoNegativeWithU>(m, "ReducedMatrixNoNegativeWithU");
     init_chain<typename PyReducedMatrix::Chain>(m);
 
     py::class_<PyMatrixFiltration>(m, "MatrixFiltration", "adapter to turn ReducedMatrix into something that looks and acts like a filtration")
