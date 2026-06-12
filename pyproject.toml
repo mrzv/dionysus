@@ -4,7 +4,7 @@ build-backend = "scikit_build_core.build"
 
 [project]
 name = "dionysus"
-version = "2.1.8"
+version = "2.2.0"
 
 authors = [ { name = "Dmitriy Morozov",  email = "dmitriy@mrzv.org" } ]
 description= "Library for computing persistent homology"
@@ -33,6 +33,9 @@ Homepage = "https://github.com/mrzv/dionysus"
 Documentation = "https://www.mrzv.org/software/dionysus2"
 Repository = "https://github.com/mrzv/dionysus.git"
 Issues = "https://github.com/mrzv/dionysus/issues"
+
+[tool.scikit-build.sdist]
+exclude = [".mypy_cache", "**/.mypy_cache"]
 
 [tool.uv]
 cache-keys = [{ file = "pyproject.toml" },

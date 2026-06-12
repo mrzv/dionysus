@@ -8,6 +8,7 @@ void init_freudenthal(py::module&);
 
 void init_field(py::module&);
 void init_persistence(py::module&);
+void init_vineyard(py::module&);
 void init_omnifield_persistence(py::module&);
 void init_cohomology_persistence(py::module&);
 void init_zigzag_persistence(py::module&);
@@ -28,6 +29,7 @@ PYBIND11_MODULE(_dionysus, m)
 
     init_field(m);
     init_persistence(m);
+    init_vineyard(m);
     init_cohomology_persistence(m);
     init_omnifield_persistence(m);
     init_zigzag_persistence(m);

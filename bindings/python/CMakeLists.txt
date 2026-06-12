@@ -14,6 +14,7 @@ pybind11_add_module         (_dionysus dionysus.cpp
                                        rips.cpp
                                        freudenthal.cpp
                                        persistence.cpp
+                                       vineyard.cpp
                                        boundary.cpp
                                        diagram.cpp
                                        omni-field-persistence.cpp

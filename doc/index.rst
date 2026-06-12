@@ -29,8 +29,9 @@ The second version is re-written from scratch, which helps it accomplish a few g
   * A few :ref:`plotting` routines, based on `Matplotlib <https://matplotlib.org/>`_.
   * Better integration with `NumPy <http://www.numpy.org/>`_.
 
-Features that haven't (yet) made it over from `Dionysus 1 <http://mrzv.org/software/dionysus>`_ include vineyards.
-Alpha shape filtrations are available via `DioDe <https://github.com/mrzv/diode>`_.
+Dionysus 2 also includes vineyards for updating persistence under adjacent
+filtration transpositions and linear homotopies. Alpha shape filtrations are
+available via `DioDe <https://github.com/mrzv/diode>`_.
 
 **Dependencies:**
   * `Boost <http://www.boost.org/>`_, although Dionysus 2 doesn't link any of its libraries, so it's considerably easier to build the project.

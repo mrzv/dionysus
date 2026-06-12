@@ -11,6 +11,8 @@ using PyReducedMatrix = dionysus::ReducedMatrix<PyZpField>;
 using PyReducedMatrixNoNegative = dionysus::OrdinaryPersistenceNoNegative<PyZpField>;
 using PyReducedMatrixWithV = dionysus::OrdinaryPersistenceWithV<PyZpField>;
 using PyReducedMatrixNoNegativeWithV = dionysus::OrdinaryPersistenceNoNegativeWithV<PyZpField>;
+using PyReducedMatrixWithU = dionysus::OrdinaryPersistenceWithU<PyZpField>;
+using PyReducedMatrixNoNegativeWithU = dionysus::OrdinaryPersistenceNoNegativeWithU<PyZpField>;
 
 using PyMatrixFiltration = dionysus::MatrixFiltration<PyReducedMatrix,PySimplex::Data>;
 using Dimensions = PyMatrixFiltration::Dimensions;
