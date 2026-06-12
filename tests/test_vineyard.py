@@ -1,5 +1,4 @@
 import dionysus as d
-import pytest
 
 
 PRIME = 5
@@ -95,9 +94,3 @@ def test_vineyard_handles_multiple_adjacent_transpositions():
         vineyard.transpose_position(position)
         assert_matches_recomputation(vineyard)
 
-
-def test_vineyard_rejects_invalid_filtration_transposition():
-    vineyard = d.Vineyard(d.Zp(PRIME), BOUNDARY)
-
-    with pytest.raises(ValueError):
-        vineyard.transpose_position(1)

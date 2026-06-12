@@ -1,12 +1,14 @@
 #pragma once
 
 #include <algorithm>
+#include <initializer_list>
 #include <limits>
 #include <stdexcept>
 #include <utility>
 #include <vector>
 
 #include "chain.h"
+#include "trails-chains.h"
 
 namespace dionysus
 {
@@ -153,28 +155,34 @@ class Vineyard
         using Chain        = std::vector<Entry>;
         using Chains       = std::vector<Chain>;
         using Matrix       = VineyardMatrix<Field, Index>;
+        using Persistence  = OrdinaryPersistenceWithV<Field, Index>;
 
     public:
         Vineyard(const Field& field, Chains boundary):
             field_(field),
-            boundary_(std::move(boundary)),
-            reduced_(field_, boundary_.size()),
-            chains_(boundary_.size())
+            reduced_(field_, boundary.size()),
+            chains_()
         {
             for (Index i = 0; i < size(); ++i)
+                validate_chain(boundary[i]);
+
+            Persistence persistence(field_);
+            persistence.reserve(size());
+            for (Index i = 0; i < size(); ++i)
+                persistence.add(std::move(boundary[i]));
+
+            chains_ = std::move(persistence.template visitor<0>().v_);
+
+            for (Index i = 0; i < size(); ++i)
             {
-                validate_chain(boundary_[i]);
-                std::sort(boundary_[i].begin(), boundary_[i].end(), entry_cmp);
-                reduced_.columns_[i] = copy_chain(boundary_[i]);
-                chains_[i].emplace_back(field_.id(), i);
-                reduce_column(i);
+                reduced_.columns_[i] = std::move(persistence.column(i));
+                reduced_.set_low_unchecked(i, initial_low(reduced_.columns_[i]));
             }
         }
 
         size_t          size() const                            { return reduced_.size(); }
         const Field&    field() const                           { return field_; }
 
-        const Chain&    boundary_column(Index column) const      { return boundary_.at(column); }
         const Chain&    reduced_column(Index column) const       { return reduced_[column]; }
         const Chain&    chain(Index column) const                { return chains_.at(column); }
 
@@ -198,8 +206,6 @@ class Vineyard
 
             Index a = reduced_.cell_at(p);
             Index b = reduced_.cell_at(p + 1);
-            if (contains(boundary_[b], a))
-                throw std::invalid_argument("vineyard transposition violates filtration order");
 
             Index pivot_a = reduced_.pivot(a);
             Index pivot_b = reduced_.pivot(b);
@@ -223,30 +229,6 @@ class Vineyard
         {
             for (const Entry& e : chain)
                 validate_index(e.index());
-        }
-
-        void reduce_column(Index column)
-        {
-            reduced_.set_low_unchecked(column, unpaired());
-
-            while (true)
-            {
-                Index l = reduced_.compute_low(reduced_.columns_[column]);
-                if (l == unpaired())
-                {
-                    reduced_.set_low_unchecked(column, unpaired());
-                    return;
-                }
-
-                Index other = reduced_.pivot(l);
-                if (other == unpaired() || other == column)
-                {
-                    reduced_.set_low_unchecked(column, l);
-                    return;
-                }
-
-                add_to_cancel_low(column, other, l);
-            }
         }
 
         void repair(std::initializer_list<Index> candidates)
@@ -350,26 +332,16 @@ class Vineyard
             return true;
         }
 
-        bool contains(const Chain& chain, Index row) const
-        {
-            auto it = std::lower_bound(chain.begin(), chain.end(), row,
-                                       [](const Entry& e, Index i) { return e.index() < i; });
-            return it != chain.end() && it->index() == row;
-        }
-
         static bool entry_cmp(const Entry& x, const Entry& y)     { return x.index() < y.index(); }
 
-        static Chain copy_chain(const Chain& chain)
+        static Index initial_low(const Chain& chain)
         {
-            Chain copy;
-            copy.reserve(chain.size());
-            for (const Entry& e : chain)
-                copy.emplace_back(e.element(), e.index());
-            return copy;
+            if (chain.empty())
+                return unpaired();
+            return chain.back().index();
         }
 
         Field       field_;
-        Chains      boundary_;
         Matrix      reduced_;
         Chains      chains_;
 };

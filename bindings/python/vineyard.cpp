@@ -94,11 +94,6 @@ void init_vineyard(py::module& m)
         .def("pair",         &PyVineyard::pair,      "persistence pair of the given cell id")
         .def("transpose_position", &PyVineyard::transpose_position, "position"_a,
                                                             "repair the vineyard state after transposing adjacent filtration positions")
-        .def("boundary_column", [make_column](const PyVineyard& v, Index column)
-                                {
-                                    return make_column(v.boundary_column(column));
-                                }, "column"_a,
-                                "return an original boundary column as (coefficient, stable_row_id) entries")
         .def("reduced_column", [make_column](const PyVineyard& v, Index column)
                                 {
                                     return make_column(v.reduced_column(column));
