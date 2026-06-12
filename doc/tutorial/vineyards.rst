@@ -56,7 +56,7 @@ cached persistence pairing:
 
 .. doctest::
 
-    >>> v.transpose_position(0)
+    >>> v.transpose(0)
     (0, 1)
     >>> [v.cell_at(i) for i in range(len(v))]
     [1, 0, 2]

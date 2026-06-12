@@ -76,7 +76,7 @@ class VineyardMatrix
             return it != c.end() && it->index() == row;
         }
 
-        std::pair<Index, Index> transpose_position(Index p)
+        std::pair<Index, Index> transpose(Index p)
         {
             if (p + 1 >= size())
                 throw std::out_of_range("vineyard transposition position out of range");
@@ -226,7 +226,7 @@ class Vineyard
 
         Index           pair(Index i) const                      { return pairs_.at(i); }
 
-        std::pair<Index, Index> transpose_position(Index p)
+        std::pair<Index, Index> transpose(Index p)
         {
             if (p + 1 >= size())
                 throw std::out_of_range("vineyard transposition position out of range");
@@ -242,7 +242,7 @@ class Vineyard
             bool r_pivot_b_contains_a = pivot_b != unpaired() && contains(reduced_.columns_[pivot_b], a);
 
             bool cancelled = clear_transposition_entry(b, a, Decomposition());
-            auto swapped = reduced_.transpose_position(p);
+            auto swapped = reduced_.transpose(p);
 
             if (a_positive && b_positive)
             {

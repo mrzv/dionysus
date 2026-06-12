@@ -189,7 +189,7 @@ def transpose_and_assert_pair_locality(vineyard, position):
     local = {a, b, before[a], before[b]}
     local.discard(vineyard.unpaired)
 
-    vineyard.transpose_position(position)
+    vineyard.transpose(position)
 
     after = pairs(vineyard)
     for cell in range(len(vineyard)):
@@ -206,7 +206,7 @@ def test_vineyard_initializes_from_matrix_v_reduction():
 def test_vineyard_transpose_repairs_duplicate_low():
     vineyard = d.VineyardV(BOUNDARY, field=d.Zp(PRIME))
 
-    assert vineyard.transpose_position(0) == (0, 1)
+    assert vineyard.transpose(0) == (0, 1)
 
     assert order(vineyard) == [1, 0, 2, 3]
     assert_matches_recomputation(vineyard)
@@ -216,7 +216,7 @@ def test_vineyard_handles_multiple_adjacent_transpositions():
     vineyard = d.VineyardV(BOUNDARY, field=d.Zp(PRIME))
 
     for position in [0, 0, 2, 2]:
-        vineyard.transpose_position(position)
+        vineyard.transpose(position)
         assert_matches_recomputation(vineyard)
 
 
@@ -240,7 +240,7 @@ def test_vineyard_u_handles_multiple_adjacent_transpositions():
     vineyard = d.VineyardU(BOUNDARY, field=d.Zp(PRIME))
 
     for position in [0, 0, 2, 2]:
-        vineyard.transpose_position(position)
+        vineyard.transpose(position)
         assert_u_matches_recomputation(vineyard)
         assert_reconstructs_boundary(vineyard, BOUNDARY)
 

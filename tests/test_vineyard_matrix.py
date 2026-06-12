@@ -31,7 +31,7 @@ def test_set_column_rejects_out_of_range_entries():
 def test_transpose_updates_order_without_reordering_columns():
     vm = vineyard_matrix()
 
-    swapped = vm.transpose_position(1)
+    swapped = vm.transpose(1)
 
     assert swapped == (1, 2)
     assert vm.cell_at(1) == 2
@@ -48,7 +48,7 @@ def test_transpose_does_not_eagerly_refresh_lows():
     assert vm.pivot(2) == 3
     assert vm.pivot(1) == vm.unpaired
 
-    vm.transpose_position(1)
+    vm.transpose(1)
 
     assert vm.low(3) == 2
     assert vm.pivot(2) == 3
@@ -58,7 +58,7 @@ def test_transpose_does_not_eagerly_refresh_lows():
 def test_refresh_low_updates_pivot_cache_for_one_column():
     vm = vineyard_matrix()
 
-    vm.transpose_position(1)
+    vm.transpose(1)
     vm.refresh_low(3)
 
     assert vm.low(3) == 1
@@ -81,7 +81,7 @@ def test_duplicate_lows_are_not_represented_in_global_pivot_map():
     vm.set_column(2, [(1, 1)])
     vm.set_column(3, [(1, 1), (1, 2)])
 
-    vm.transpose_position(1)
+    vm.transpose(1)
     vm.refresh_low(3)
 
     assert vm.low(2) == 1

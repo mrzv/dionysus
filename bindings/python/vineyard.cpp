@@ -480,7 +480,7 @@ void record_transposition(VineyardLinearHomotopyResult& result,
         local_before.push_back(second_pair_before);
     std::vector<Feature> before_features = local_features(vineyard, local_before);
 
-    auto swapped = vineyard.transpose_position(position);
+    auto swapped = vineyard.transpose(position);
     Index first_pair_after = vineyard.pair(first);
     Index second_pair_after = vineyard.pair(second);
 
@@ -765,8 +765,8 @@ void init_vineyard(py::module& m)
                                                            "set the cached low for one column")
         .def("contains",     &PyVineyardMatrix::contains,  "column"_a, "row"_a,
                                                            "test whether a stable-id-sorted column contains a row id")
-        .def("transpose_position", &PyVineyardMatrix::transpose_position, "position"_a,
-                                                            "transpose adjacent filtration positions and return the swapped stable cell ids")
+        .def("transpose", &PyVineyardMatrix::transpose, "position"_a,
+                                                             "transpose adjacent filtration positions and return the swapped stable cell ids")
         .def("set_column",   [make_chain](PyVineyardMatrix& vm, Index column, Column entries)
                                {
                                    vm.set_column(column, make_chain(std::move(entries)));
@@ -808,8 +808,8 @@ void init_vineyard(py::module& m)
         .def("low",          &PyVineyardV::low,       "cached low cell id of a reduced column")
         .def("pivot",        &PyVineyardV::pivot,     "column id with the given low cell id")
         .def("pair",         &PyVineyardV::pair,      "persistence pair of the given cell id")
-        .def("transpose_position", &PyVineyardV::transpose_position, "position"_a,
-                                                             "repair the vineyard state after transposing adjacent filtration positions")
+        .def("transpose", &PyVineyardV::transpose, "position"_a,
+                                                              "repair the vineyard state after transposing adjacent filtration positions")
         .def("reduced_column", [make_column](const PyVineyardV& v, Index column)
                                  {
                                      return make_column(v.reduced_column(column));
@@ -846,8 +846,8 @@ void init_vineyard(py::module& m)
         .def("low",          &PyVineyardU::low,       "cached low cell id of a reduced column")
         .def("pivot",        &PyVineyardU::pivot,     "column id with the given low cell id")
         .def("pair",         &PyVineyardU::pair,      "persistence pair of the given cell id")
-        .def("transpose_position", &PyVineyardU::transpose_position, "position"_a,
-                                                             "repair the vineyard state after transposing adjacent filtration positions")
+        .def("transpose", &PyVineyardU::transpose, "position"_a,
+                                                              "repair the vineyard state after transposing adjacent filtration positions")
         .def("reduced_column", [make_column](const PyVineyardU& v, Index column)
                                  {
                                      return make_column(v.reduced_column(column));
