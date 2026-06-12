@@ -96,10 +96,35 @@ def test_linear_homotopy_records_single_crossing_and_vines():
     assert result.final_order == [1, 0]
 
     segments = [segment for vine in result.vines for segment in vine.segments]
+    assert len(result.vines) == 2
+    assert [len(vine.segments) for vine in result.vines] == [2, 2]
     assert len(segments) == 4
     assert {segment.event1 for segment in segments if segment.t1 == pytest.approx(0.5)} == {0}
     assert {segment.event0 for segment in segments if segment.t0 == pytest.approx(0.5)} == {0}
     assert all(math.isinf(segment.death0) and math.isinf(segment.death1) for segment in segments)
+
+
+def test_linear_homotopy_continues_vines_through_pairing_switch():
+    filtration = d.Filtration([[0], [1], [0, 1]])
+
+    result = d.vineyard_linear_homotopy(
+        filtration, [0.0, 1.0, 2.0], [1.0, 0.0, 2.0], field=d.Zp(PRIME)
+    )
+
+    assert len(result.events) == 1
+    assert len(result.vines) == 2
+    assert [len(vine.segments) for vine in result.vines] == [2, 2]
+
+    essential, finite = result.vines
+    assert essential.segments[0].birth_cell == 0
+    assert essential.segments[0].death_cell == result.vineyard.unpaired
+    assert essential.segments[1].birth_cell == 1
+    assert essential.segments[1].death_cell == result.vineyard.unpaired
+
+    assert finite.segments[0].birth_cell == 1
+    assert finite.segments[0].death_cell == 2
+    assert finite.segments[1].birth_cell == 0
+    assert finite.segments[1].death_cell == 2
 
 
 def test_linear_homotopy_processes_simultaneous_degenerate_block():

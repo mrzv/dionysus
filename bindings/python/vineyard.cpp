@@ -108,6 +108,13 @@ struct ActiveVine
     Index   death;
 };
 
+struct ClosedVine
+{
+    size_t  vine_index;
+    double  birth;
+    double  death;
+};
+
 using ActiveVines = std::map<Feature, ActiveVine>;
 
 double value_at(const std::vector<double>& values0, const std::vector<double>& values1, Index cell, double t)
@@ -357,6 +364,33 @@ ActiveVine close_feature(VineyardLinearHomotopyResult& result,
     return active;
 }
 
+double death_value_at(const std::vector<double>& values0,
+                      const std::vector<double>& values1,
+                      const Feature& feature,
+                      double t)
+{
+    Index death = std::get<1>(feature);
+    if (death == PyVineyardMatrix::unpaired())
+        return std::numeric_limits<double>::infinity();
+    return value_at(values0, values1, death, t);
+}
+
+bool same_persistence_point(const ClosedVine& closed,
+                            const Feature& feature,
+                            const std::vector<double>& values0,
+                            const std::vector<double>& values1,
+                            double t)
+{
+    double birth = value_at(values0, values1, std::get<0>(feature), t);
+    double death = death_value_at(values0, values1, feature, t);
+
+    bool same_death = std::isinf(closed.death) && std::isinf(death);
+    if (!same_death)
+        same_death = std::abs(closed.death - death) <= epsilon;
+
+    return std::abs(closed.birth - birth) <= epsilon && same_death;
+}
+
 void close_and_reopen_features(VineyardLinearHomotopyResult& result,
                                ActiveVines& active_vines,
                                const std::vector<Feature>& before,
@@ -366,19 +400,35 @@ void close_and_reopen_features(VineyardLinearHomotopyResult& result,
                                double t,
                                int event)
 {
-    std::map<Feature, size_t> closed;
+    std::vector<ClosedVine> closed;
+    closed.reserve(before.size());
     for (const auto& feature : before)
     {
         ActiveVine active = close_feature(result, active_vines, feature, values0, values1, t, event);
-        closed[feature] = active.vine_index;
+        closed.push_back(ClosedVine {
+            active.vine_index,
+            value_at(values0, values1, std::get<0>(feature), t),
+            death_value_at(values0, values1, feature, t)
+        });
     }
+
+    std::vector<bool> used(closed.size(), false);
     for (const auto& feature : after)
     {
-        auto it = closed.find(feature);
+        auto it = std::find_if(closed.begin(), closed.end(),
+                               [&](const ClosedVine& c)
+                               {
+                                   size_t index = static_cast<size_t>(&c - closed.data());
+                                   return !used[index] && same_persistence_point(c, feature, values0, values1, t);
+                               });
         if (it == closed.end())
             open_feature(result, active_vines, feature, t, event);
         else
-            reopen_feature(active_vines, feature, it->second, t, event);
+        {
+            size_t index = static_cast<size_t>(&*it - closed.data());
+            used[index] = true;
+            reopen_feature(active_vines, feature, it->vine_index, t, event);
+        }
     }
 }
 
