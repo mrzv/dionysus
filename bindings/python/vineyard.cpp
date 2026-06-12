@@ -140,6 +140,33 @@ bool filtration_less(const PyFiltration& filtration,
     return filtration[x] < filtration[y];
 }
 
+void sort_chain(Chain& column)
+{
+    std::sort(column.begin(), column.end(), [](const PyVineyardMatrix::Entry& x, const PyVineyardMatrix::Entry& y)
+              { return x.index() < y.index(); });
+}
+
+Chains boundary_from_filtration(const PyFiltration& filtration, const PyZpField& field)
+{
+    Chains boundary(filtration.size());
+
+    for (Index i = 0; i < filtration.size(); ++i)
+    {
+        Chain column;
+        for (auto it = filtration[i].boundary_begin(field); it != filtration[i].boundary_end(field); ++it)
+        {
+            Index face = filtration.index(it->index(), filtration.size());
+            if (face >= i)
+                throw py::value_error("filtration boundary face does not precede simplex");
+            column.emplace_back(it->element(), face);
+        }
+        sort_chain(column);
+        boundary[i] = std::move(column);
+    }
+
+    return boundary;
+}
+
 void validate_endpoint_filtration(const PyFiltration& filtration, const std::vector<double>& values)
 {
     for (Index i = 0; i < filtration.size(); ++i)
@@ -194,8 +221,7 @@ LinearHomotopyData prepare_linear_homotopy_data(const PyFiltration& filtration,
             Index face_input = filtration.index(it->index(), filtration.size());
             column.emplace_back(it->element(), data.input_to_stable[face_input]);
         }
-        std::sort(column.begin(), column.end(), [](const PyVineyardMatrix::Entry& x, const PyVineyardMatrix::Entry& y)
-                  { return x.index() < y.index(); });
+        sort_chain(column);
         data.boundary[stable] = std::move(column);
     }
 
@@ -717,10 +743,14 @@ void init_vineyard(py::module& m)
     ;
 
     py::class_<PyVineyardV>(m, "VineyardV", "matrix_v-based vineyard state for adjacent transpositions")
-        .def(py::init([make_chains](PyZpField field, Columns columns)
+        .def(py::init([make_chains](Columns columns, PyZpField field)
+                        {
+                            return new PyVineyardV(field, make_chains(std::move(columns)));
+                        }), "columns"_a = Columns(), "field"_a = PyZpField(2))
+        .def(py::init([](const PyFiltration& filtration, PyZpField field)
                        {
-                           return new PyVineyardV(field, make_chains(std::move(columns)));
-                       }), "field"_a = PyZpField(2), "columns"_a = Columns())
+                           return new PyVineyardV(field, boundary_from_filtration(filtration, field));
+                       }), "filtration"_a, "field"_a = PyZpField(2))
         .def("__len__",      &PyVineyardV::size,      "number of cells")
         .def("field",        &PyVineyardV::field,     "field used for coefficients")
         .def("cell_at",      &PyVineyardV::cell_at,   "cell id at a current filtration position")
@@ -751,10 +781,14 @@ void init_vineyard(py::module& m)
     ;
 
     py::class_<PyVineyardU>(m, "VineyardU", "matrix_u-based vineyard state for adjacent transpositions")
-        .def(py::init([make_chains](PyZpField field, Columns columns)
+        .def(py::init([make_chains](Columns columns, PyZpField field)
+                        {
+                            return new PyVineyardU(field, make_chains(std::move(columns)));
+                        }), "columns"_a = Columns(), "field"_a = PyZpField(2))
+        .def(py::init([](const PyFiltration& filtration, PyZpField field)
                        {
-                           return new PyVineyardU(field, make_chains(std::move(columns)));
-                       }), "field"_a = PyZpField(2), "columns"_a = Columns())
+                           return new PyVineyardU(field, boundary_from_filtration(filtration, field));
+                       }), "filtration"_a, "field"_a = PyZpField(2))
         .def("__len__",      &PyVineyardU::size,      "number of cells")
         .def("field",        &PyVineyardU::field,     "field used for coefficients")
         .def("cell_at",      &PyVineyardU::cell_at,   "cell id at a current filtration position")
@@ -784,14 +818,24 @@ void init_vineyard(py::module& m)
                                })
     ;
 
-    m.def("Vineyard", [make_chains](PyZpField field, Columns columns, std::string method) -> py::object
+    m.def("Vineyard", [make_chains](Columns columns, PyZpField field, std::string method) -> py::object
           {
               if (method == "matrix_v")
                   return py::cast(new PyVineyardV(field, make_chains(std::move(columns))), py::return_value_policy::take_ownership);
               if (method == "matrix_u")
                   return py::cast(new PyVineyardU(field, make_chains(std::move(columns))), py::return_value_policy::take_ownership);
               throw py::value_error("unknown vineyard method: " + method);
-          }, "field"_a = PyZpField(2), "columns"_a = Columns(), "method"_a = "matrix_v",
+          }, "columns"_a = Columns(), "field"_a = PyZpField(2), "method"_a = "matrix_v",
+          "construct a vineyard state using method='matrix_v' or method='matrix_u'");
+
+    m.def("Vineyard", [](const PyFiltration& filtration, PyZpField field, std::string method) -> py::object
+          {
+              if (method == "matrix_v")
+                  return py::cast(new PyVineyardV(field, boundary_from_filtration(filtration, field)), py::return_value_policy::take_ownership);
+              if (method == "matrix_u")
+                  return py::cast(new PyVineyardU(field, boundary_from_filtration(filtration, field)), py::return_value_policy::take_ownership);
+              throw py::value_error("unknown vineyard method: " + method);
+          }, "filtration"_a, "field"_a = PyZpField(2), "method"_a = "matrix_v",
           "construct a vineyard state using method='matrix_v' or method='matrix_u'");
 
     m.def("vineyard_linear_homotopy", [](const PyFiltration& filtration,

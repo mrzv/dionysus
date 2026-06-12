@@ -13,16 +13,16 @@ filtration order changes. Dionysus exposes two related interfaces:
 Adjacent transpositions
 ~~~~~~~~~~~~~~~~~~~~~~~
 
-The low-level vineyard state is initialized from boundary columns in stable cell
-ids. The stable ids are the positions in the initial filtration order. For a
-simple edge, the two vertices have ids ``0`` and ``1``, and the edge has id
-``2``:
+The low-level vineyard state is initialized from either a filtration or boundary
+columns in stable cell ids. For explicit columns, the stable ids are the column
+positions. For a simple edge, the two vertices have ids ``0`` and ``1``, and the
+edge has id ``2``:
 
 .. doctest::
 
     >>> import dionysus as d
     >>> columns = [[], [], [(1, 0), (1, 1)]]
-    >>> v = d.Vineyard(d.Zp(2), columns)
+    >>> v = d.Vineyard(columns, field=d.Zp(2))
     >>> isinstance(v, d.VineyardV)
     True
     >>> [v.pair(i) == v.unpaired for i in range(len(v))]
@@ -35,9 +35,21 @@ The default ``Vineyard`` factory uses the ``matrix_v`` method. Pass
 
 .. doctest::
 
-    >>> u = d.Vineyard(d.Zp(2), columns, method='matrix_u')
+    >>> u = d.Vineyard(columns, field=d.Zp(2), method='matrix_u')
     >>> isinstance(u, d.VineyardU)
     True
+
+When initialized from a :class:`~dionysus._dionysus.Filtration`, the stable ids
+are the current filtration indices. Dionysus does not sort the filtration for
+you; call :meth:`~dionysus._dionysus.Filtration.sort` first if you want the
+usual data/dimension/lexicographic order.
+
+.. doctest::
+
+    >>> f = d.Filtration([[0], [1], [0, 1]])
+    >>> vf = d.Vineyard(f, field=d.Zp(2))
+    >>> [vf.cell_at(i) for i in range(len(vf))]
+    [0, 1, 2]
 
 Both vineyard states support adjacent swaps by current filtration position. The
 state updates the reduced matrix, the ``V`` chains or ``U`` trails, and the

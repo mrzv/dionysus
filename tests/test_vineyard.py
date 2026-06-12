@@ -33,6 +33,17 @@ def order(vineyard):
     return [vineyard.cell_at(i) for i in range(len(vineyard))]
 
 
+def columns_from_filtration(filtration):
+    columns = []
+    for simplex in filtration:
+        column = []
+        for boundary_index, face in enumerate(simplex.boundary()):
+            coefficient = 1 if boundary_index % 2 == 0 else PRIME - 1
+            column.append((coefficient, filtration.index(face)))
+        columns.append(sorted(column, key=lambda entry: entry[1]))
+    return columns
+
+
 def matrix_filtration(columns, current_order):
     position = {cell: p for p, cell in enumerate(current_order)}
     matrix = d.ReducedMatrix(d.Zp(PRIME), len(columns))
@@ -187,13 +198,13 @@ def transpose_and_assert_pair_locality(vineyard, position):
 
 
 def test_vineyard_initializes_from_matrix_v_reduction():
-    vineyard = d.VineyardV(d.Zp(PRIME), BOUNDARY)
+    vineyard = d.VineyardV(BOUNDARY, field=d.Zp(PRIME))
 
     assert_matches_recomputation(vineyard)
 
 
 def test_vineyard_transpose_repairs_duplicate_low():
-    vineyard = d.VineyardV(d.Zp(PRIME), BOUNDARY)
+    vineyard = d.VineyardV(BOUNDARY, field=d.Zp(PRIME))
 
     assert vineyard.transpose_position(0) == (0, 1)
 
@@ -202,7 +213,7 @@ def test_vineyard_transpose_repairs_duplicate_low():
 
 
 def test_vineyard_handles_multiple_adjacent_transpositions():
-    vineyard = d.VineyardV(d.Zp(PRIME), BOUNDARY)
+    vineyard = d.VineyardV(BOUNDARY, field=d.Zp(PRIME))
 
     for position in [0, 0, 2, 2]:
         vineyard.transpose_position(position)
@@ -210,7 +221,7 @@ def test_vineyard_handles_multiple_adjacent_transpositions():
 
 
 def test_vineyard_handles_triangle_vertex_and_edge_transpositions():
-    vineyard = d.VineyardV(d.Zp(PRIME), TRIANGLE_BOUNDARY)
+    vineyard = d.VineyardV(TRIANGLE_BOUNDARY, field=d.Zp(PRIME))
 
     assert_pairs_match_recomputation(vineyard, TRIANGLE_BOUNDARY)
     for position in [0, 1, 0, 3, 4, 3]:
@@ -219,14 +230,14 @@ def test_vineyard_handles_triangle_vertex_and_edge_transpositions():
 
 
 def test_vineyard_u_initializes_from_matrix_u_reduction():
-    vineyard = d.VineyardU(d.Zp(PRIME), BOUNDARY)
+    vineyard = d.VineyardU(BOUNDARY, field=d.Zp(PRIME))
 
     assert_u_matches_recomputation(vineyard)
     assert_reconstructs_boundary(vineyard, BOUNDARY)
 
 
 def test_vineyard_u_handles_multiple_adjacent_transpositions():
-    vineyard = d.VineyardU(d.Zp(PRIME), BOUNDARY)
+    vineyard = d.VineyardU(BOUNDARY, field=d.Zp(PRIME))
 
     for position in [0, 0, 2, 2]:
         vineyard.transpose_position(position)
@@ -235,7 +246,7 @@ def test_vineyard_u_handles_multiple_adjacent_transpositions():
 
 
 def test_vineyard_u_handles_triangle_vertex_and_edge_transpositions():
-    vineyard = d.VineyardU(d.Zp(PRIME), TRIANGLE_BOUNDARY)
+    vineyard = d.VineyardU(TRIANGLE_BOUNDARY, field=d.Zp(PRIME))
 
     assert_pairs_match_recomputation(vineyard, TRIANGLE_BOUNDARY)
     assert_reconstructs_boundary(vineyard, TRIANGLE_BOUNDARY)
@@ -246,14 +257,14 @@ def test_vineyard_u_handles_triangle_vertex_and_edge_transpositions():
 
 
 def test_vineyard_factory_defaults_to_matrix_v():
-    vineyard = d.Vineyard(d.Zp(PRIME), BOUNDARY)
+    vineyard = d.Vineyard(BOUNDARY, field=d.Zp(PRIME))
 
     assert isinstance(vineyard, d.VineyardV)
     assert_matches_recomputation(vineyard)
 
 
 def test_vineyard_factory_supports_matrix_u():
-    vineyard = d.Vineyard(d.Zp(PRIME), BOUNDARY, method="matrix_u")
+    vineyard = d.Vineyard(BOUNDARY, field=d.Zp(PRIME), method="matrix_u")
 
     assert isinstance(vineyard, d.VineyardU)
     assert_u_matches_recomputation(vineyard)
@@ -262,4 +273,34 @@ def test_vineyard_factory_supports_matrix_u():
 
 def test_vineyard_factory_rejects_unknown_method():
     with pytest.raises(ValueError, match="unknown vineyard method"):
-        d.Vineyard(d.Zp(PRIME), BOUNDARY, method="unknown")
+        d.Vineyard(BOUNDARY, field=d.Zp(PRIME), method="unknown")
+
+
+def test_vineyard_v_initializes_from_filtration():
+    filtration = d.Filtration([[0], [1], [2], [0, 1], [1, 2], [0, 2]])
+    columns = columns_from_filtration(filtration)
+
+    from_filtration = d.VineyardV(filtration, field=d.Zp(PRIME))
+    from_columns = d.VineyardV(columns, field=d.Zp(PRIME))
+
+    assert vineyard_state(from_filtration) == vineyard_state(from_columns)
+    assert order(from_filtration) == list(range(len(filtration)))
+
+
+def test_vineyard_u_factory_initializes_from_filtration():
+    filtration = d.Filtration([[0], [1], [2], [0, 1], [1, 2], [0, 2]])
+    columns = columns_from_filtration(filtration)
+
+    from_filtration = d.Vineyard(filtration, field=d.Zp(PRIME), method="matrix_u")
+    from_columns = d.Vineyard(columns, field=d.Zp(PRIME), method="matrix_u")
+
+    assert isinstance(from_filtration, d.VineyardU)
+    assert vineyard_u_state(from_filtration) == vineyard_u_state(from_columns)
+    assert order(from_filtration) == list(range(len(filtration)))
+
+
+def test_vineyard_filtration_constructor_rejects_invalid_order():
+    filtration = d.Filtration([[0, 1], [0], [1]])
+
+    with pytest.raises(ValueError, match="boundary face does not precede"):
+        d.Vineyard(filtration, field=d.Zp(PRIME))
