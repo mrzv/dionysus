@@ -28,12 +28,14 @@ constexpr double epsilon = 1e-10;
 
 struct VineyardHomotopyEvent
 {
-    double              time;
-    Index               position;
-    Index               first;
-    Index               second;
-    std::vector<Index>  order;
-    std::vector<Index>  pairs;
+    double  time;
+    Index   position;
+    Index   first;
+    Index   second;
+    Index   first_pair_before;
+    Index   second_pair_before;
+    Index   first_pair_after;
+    Index   second_pair_after;
 };
 
 struct VineyardSegment
@@ -86,6 +88,18 @@ struct CrossingCandidate
 };
 
 using EventQueue = std::priority_queue<CrossingCandidate>;
+using Feature = std::tuple<Index, Index>;
+
+struct ActiveVine
+{
+    size_t  vine_index;
+    double  t0;
+    int     event0;
+    Index   birth;
+    Index   death;
+};
+
+using ActiveVines = std::map<Feature, ActiveVine>;
 
 double value_at(const std::vector<double>& values0, const std::vector<double>& values1, Index cell, double t)
 {
@@ -105,16 +119,6 @@ std::vector<Index> current_order(const Vineyard& vineyard)
     for (Index p = 0; p < vineyard.size(); ++p)
         order.push_back(vineyard.cell_at(p));
     return order;
-}
-
-template<class Vineyard>
-std::vector<Index> current_pairs(const Vineyard& vineyard)
-{
-    std::vector<Index> pairs;
-    pairs.reserve(vineyard.size());
-    for (Index i = 0; i < vineyard.size(); ++i)
-        pairs.push_back(vineyard.pair(i));
-    return pairs;
 }
 
 bool filtration_less(const PyFiltration& filtration,
@@ -190,69 +194,169 @@ HomotopyData prepare_homotopy_data(const PyFiltration& filtration,
 }
 
 template<class Vineyard>
-std::vector<std::tuple<Index, Index>> features(const Vineyard& vineyard)
+bool feature_for_cell(const Vineyard& vineyard, Index cell, Feature& feature)
 {
-    std::vector<std::tuple<Index, Index>> result;
+    if (cell == Vineyard::unpaired())
+        return false;
+
+    Index pair = vineyard.pair(cell);
+    if (pair == Vineyard::unpaired())
+    {
+        if (vineyard.low(cell) == Vineyard::unpaired())
+        {
+            feature = std::make_tuple(cell, Vineyard::unpaired());
+            return true;
+        }
+        return false;
+    }
+
+    if (vineyard.position(cell) < vineyard.position(pair))
+        feature = std::make_tuple(cell, pair);
+    else
+        feature = std::make_tuple(pair, cell);
+    return true;
+}
+
+template<class Vineyard>
+std::vector<Feature> features(const Vineyard& vineyard)
+{
+    std::vector<Feature> result;
     for (Index cell = 0; cell < vineyard.size(); ++cell)
     {
-        Index pair = vineyard.pair(cell);
-        if (pair == Vineyard::unpaired())
-        {
-            if (vineyard.low(cell) == Vineyard::unpaired())
-                result.emplace_back(cell, Vineyard::unpaired());
-            continue;
-        }
-        if (vineyard.position(cell) < vineyard.position(pair))
-            result.emplace_back(cell, pair);
+        Feature feature;
+        if (feature_for_cell(vineyard, cell, feature))
+            result.push_back(feature);
     }
+    std::sort(result.begin(), result.end());
+    result.erase(std::unique(result.begin(), result.end()), result.end());
     return result;
 }
 
 template<class Vineyard>
-void append_interval(VineyardHomotopyResult& result,
-                     std::map<std::tuple<Index, Index>, size_t>& active_vines,
-                     const Vineyard& vineyard,
-                     const std::vector<double>& values0,
-                     const std::vector<double>& values1,
-                     double t0,
-                     double t1,
-                     int event0,
-                     int event1)
+std::vector<Feature> local_features(const Vineyard& vineyard, const std::vector<Index>& cells)
 {
-    if (t1 <= t0 + epsilon)
+    std::vector<Feature> result;
+    for (Index cell : cells)
+    {
+        Feature feature;
+        if (feature_for_cell(vineyard, cell, feature))
+            result.push_back(feature);
+    }
+    std::sort(result.begin(), result.end());
+    result.erase(std::unique(result.begin(), result.end()), result.end());
+    return result;
+}
+
+void add_segment(VineyardHomotopyResult& result,
+                 const ActiveVine& active,
+                 const std::vector<double>& values0,
+                 const std::vector<double>& values1,
+                 double t1,
+                 int event1)
+{
+    if (t1 <= active.t0 + epsilon)
         return;
 
-    std::map<std::tuple<Index, Index>, size_t> next_active;
-    for (const auto& feature : features(vineyard))
-    {
-        Index birth = std::get<0>(feature);
-        Index death = std::get<1>(feature);
-        auto key = std::make_tuple(birth, death);
-        auto it = active_vines.find(key);
-        size_t vine_index;
-        if (it == active_vines.end())
-        {
-            vine_index = result.vines.size();
-            result.vines.push_back(VineyardVine());
-        } else
-            vine_index = it->second;
+    double inf = std::numeric_limits<double>::infinity();
+    result.vines[active.vine_index].segments.push_back(VineyardSegment {
+        active.t0,
+        t1,
+        value_at(values0, values1, active.birth, active.t0),
+        value_at(values0, values1, active.birth, t1),
+        active.death == PyVineyardMatrix::unpaired() ? inf : value_at(values0, values1, active.death, active.t0),
+        active.death == PyVineyardMatrix::unpaired() ? inf : value_at(values0, values1, active.death, t1),
+        active.birth,
+        active.death,
+        active.event0,
+        event1
+    });
+}
 
-        double inf = std::numeric_limits<double>::infinity();
-        result.vines[vine_index].segments.push_back(VineyardSegment {
-            t0,
-            t1,
-            value_at(values0, values1, birth, t0),
-            value_at(values0, values1, birth, t1),
-            death == Vineyard::unpaired() ? inf : value_at(values0, values1, death, t0),
-            death == Vineyard::unpaired() ? inf : value_at(values0, values1, death, t1),
-            birth,
-            death,
-            event0,
-            event1
-        });
-        next_active[key] = vine_index;
+void open_feature(VineyardHomotopyResult& result,
+                  ActiveVines& active_vines,
+                  const Feature& feature,
+                  double t0,
+                  int event0)
+{
+    size_t vine_index = result.vines.size();
+    result.vines.push_back(VineyardVine());
+    active_vines[feature] = ActiveVine {
+        vine_index,
+        t0,
+        event0,
+        std::get<0>(feature),
+        std::get<1>(feature)
+    };
+}
+
+void reopen_feature(ActiveVines& active_vines,
+                    const Feature& feature,
+                    size_t vine_index,
+                    double t0,
+                    int event0)
+{
+    active_vines[feature] = ActiveVine {
+        vine_index,
+        t0,
+        event0,
+        std::get<0>(feature),
+        std::get<1>(feature)
+    };
+}
+
+ActiveVine close_feature(VineyardHomotopyResult& result,
+                         ActiveVines& active_vines,
+                         const Feature& feature,
+                         const std::vector<double>& values0,
+                         const std::vector<double>& values1,
+                         double t1,
+                         int event1)
+{
+    auto it = active_vines.find(feature);
+    if (it == active_vines.end())
+        throw std::logic_error("vineyard homotopy active vine is missing");
+
+    ActiveVine active = it->second;
+    add_segment(result, active, values0, values1, t1, event1);
+    active_vines.erase(it);
+    return active;
+}
+
+void close_and_reopen_features(VineyardHomotopyResult& result,
+                               ActiveVines& active_vines,
+                               const std::vector<Feature>& before,
+                               const std::vector<Feature>& after,
+                               const std::vector<double>& values0,
+                               const std::vector<double>& values1,
+                               double t,
+                               int event)
+{
+    std::map<Feature, size_t> closed;
+    for (const auto& feature : before)
+    {
+        ActiveVine active = close_feature(result, active_vines, feature, values0, values1, t, event);
+        closed[feature] = active.vine_index;
     }
-    active_vines = std::move(next_active);
+    for (const auto& feature : after)
+    {
+        auto it = closed.find(feature);
+        if (it == closed.end())
+            open_feature(result, active_vines, feature, t, event);
+        else
+            reopen_feature(active_vines, feature, it->second, t, event);
+    }
+}
+
+void close_all_features(VineyardHomotopyResult& result,
+                        ActiveVines& active_vines,
+                        const std::vector<double>& values0,
+                        const std::vector<double>& values1,
+                        double t,
+                        int event)
+{
+    for (const auto& active : active_vines)
+        add_segment(result, active.second, values0, values1, t, event);
+    active_vines.clear();
 }
 
 bool boundary_contains(const Chain& column, Index row)
@@ -271,21 +375,54 @@ void validate_transposition(const Chains& boundary, Index first, Index second)
 
 template<class Vineyard>
 void record_transposition(VineyardHomotopyResult& result,
+                          ActiveVines& active_vines,
                           Vineyard& vineyard,
+                          const HomotopyData& data,
                           double t,
                           Index position,
                           std::vector<Index>& order)
 {
+    Index first = order[position];
+    Index second = order[position + 1];
+    Index first_pair_before = vineyard.pair(first);
+    Index second_pair_before = vineyard.pair(second);
+
+    std::vector<Index> local_before;
+    local_before.push_back(first);
+    local_before.push_back(second);
+    if (first_pair_before != Vineyard::unpaired())
+        local_before.push_back(first_pair_before);
+    if (second_pair_before != Vineyard::unpaired())
+        local_before.push_back(second_pair_before);
+    std::vector<Feature> before_features = local_features(vineyard, local_before);
+
     auto swapped = vineyard.transpose_position(position);
     std::swap(order[position], order[position + 1]);
+    Index first_pair_after = vineyard.pair(first);
+    Index second_pair_after = vineyard.pair(second);
+
+    std::vector<Index> local_after;
+    local_after.push_back(first);
+    local_after.push_back(second);
+    if (first_pair_after != Vineyard::unpaired())
+        local_after.push_back(first_pair_after);
+    if (second_pair_after != Vineyard::unpaired())
+        local_after.push_back(second_pair_after);
+    std::vector<Feature> after_features = local_features(vineyard, local_after);
+
+    int event = static_cast<int>(result.events.size());
     result.events.push_back(VineyardHomotopyEvent {
         t,
         position,
         swapped.first,
         swapped.second,
-        order,
-        current_pairs(vineyard)
+        first_pair_before,
+        second_pair_before,
+        first_pair_after,
+        second_pair_after
     });
+    close_and_reopen_features(result, active_vines, before_features, after_features,
+                              data.values0, data.values1, t, event);
 }
 
 template<class Vineyard>
@@ -312,6 +449,7 @@ void push_candidate_neighborhood(EventQueue& queue,
 
 template<class Vineyard>
 bool process_degeneracies(VineyardHomotopyResult& result,
+                          ActiveVines& active_vines,
                           Vineyard& vineyard,
                           const HomotopyData& data,
                           double t,
@@ -355,7 +493,7 @@ bool process_degeneracies(VineyardHomotopyResult& result,
                     Index first = order[position];
                     Index second = order[position + 1];
                     validate_transposition(data.boundary, first, second);
-                    record_transposition(result, vineyard, t, position, order);
+                    record_transposition(result, active_vines, vineyard, data, t, position, order);
                     if (queue)
                         push_candidate_neighborhood(*queue, vineyard, data.values0, data.values1, t, position);
                     changed = true;
@@ -448,13 +586,13 @@ VineyardHomotopyResult run_homotopy(const PyFiltration& filtration,
     auto* vineyard = new Vineyard(field, data.boundary);
 
     VineyardHomotopyResult result;
-    std::map<std::tuple<Index, Index>, size_t> active_vines;
-    double current_t = 0.0;
-    int last_event = -1;
+    ActiveVines active_vines;
+    for (const auto& feature : features(*vineyard))
+        open_feature(result, active_vines, feature, 0.0, -1);
 
-    bool changed_at_current = process_degeneracies(result, *vineyard, data, current_t);
-    if (changed_at_current)
-        last_event = static_cast<int>(result.events.size()) - 1;
+    double current_t = 0.0;
+
+    process_degeneracies(result, active_vines, *vineyard, data, current_t);
     EventQueue event_queue = build_event_queue(*vineyard, data.values0, data.values1, current_t);
 
     while (current_t < 1.0 - epsilon)
@@ -462,18 +600,13 @@ VineyardHomotopyResult run_homotopy(const PyFiltration& filtration,
         double next_t = pop_next_event_time(event_queue, *vineyard, current_t);
         if (!std::isfinite(next_t) || next_t > 1.0 - epsilon)
         {
-            append_interval(result, active_vines, *vineyard, data.values0, data.values1, current_t, 1.0, last_event, -1);
+            close_all_features(result, active_vines, data.values0, data.values1, 1.0, -1);
             current_t = 1.0;
             break;
         }
 
-        int first_event_at_time = static_cast<int>(result.events.size());
-        append_interval(result, active_vines, *vineyard, data.values0, data.values1,
-                        current_t, next_t, last_event, first_event_at_time);
         current_t = next_t;
-        bool changed = process_degeneracies(result, *vineyard, data, current_t, &event_queue);
-        if (changed)
-            last_event = static_cast<int>(result.events.size()) - 1;
+        process_degeneracies(result, active_vines, *vineyard, data, current_t, &event_queue);
     }
 
     result.final_order = current_order(*vineyard);
@@ -518,12 +651,14 @@ void init_vineyard(py::module& m)
     };
 
     py::class_<VineyardHomotopyEvent>(m, "VineyardHomotopyEvent", "one adjacent transposition in a vineyard homotopy")
-        .def_readonly("time",     &VineyardHomotopyEvent::time)
-        .def_readonly("position", &VineyardHomotopyEvent::position)
-        .def_readonly("first",    &VineyardHomotopyEvent::first)
-        .def_readonly("second",   &VineyardHomotopyEvent::second)
-        .def_readonly("order",    &VineyardHomotopyEvent::order)
-        .def_readonly("pairs",    &VineyardHomotopyEvent::pairs)
+        .def_readonly("time",               &VineyardHomotopyEvent::time)
+        .def_readonly("position",           &VineyardHomotopyEvent::position)
+        .def_readonly("first",              &VineyardHomotopyEvent::first)
+        .def_readonly("second",             &VineyardHomotopyEvent::second)
+        .def_readonly("first_pair_before",  &VineyardHomotopyEvent::first_pair_before)
+        .def_readonly("second_pair_before", &VineyardHomotopyEvent::second_pair_before)
+        .def_readonly("first_pair_after",   &VineyardHomotopyEvent::first_pair_after)
+        .def_readonly("second_pair_after",  &VineyardHomotopyEvent::second_pair_after)
     ;
 
     py::class_<VineyardSegment>(m, "VineyardSegment", "one linear segment of a persistence vine")

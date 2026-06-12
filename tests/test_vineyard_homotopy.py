@@ -7,12 +7,6 @@ import pytest
 PRIME = 5
 
 
-def order_after_events(result):
-    if result.events:
-        return result.events[-1].order
-    return result.final_order
-
-
 def simplex_key(simplex):
     return (simplex.dimension(), tuple(simplex))
 
@@ -95,8 +89,11 @@ def test_homotopy_records_single_crossing_and_vines():
     assert len(result.events) == 1
     assert result.events[0].time == pytest.approx(0.5)
     assert (result.events[0].first, result.events[0].second) == (0, 1)
+    assert result.events[0].first_pair_before == result.vineyard.unpaired
+    assert result.events[0].second_pair_before == result.vineyard.unpaired
+    assert result.events[0].first_pair_after == result.vineyard.unpaired
+    assert result.events[0].second_pair_after == result.vineyard.unpaired
     assert result.final_order == [1, 0]
-    assert order_after_events(result) == [1, 0]
 
     segments = [segment for vine in result.vines for segment in vine.segments]
     assert len(segments) == 4
