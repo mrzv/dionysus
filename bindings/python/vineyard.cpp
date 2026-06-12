@@ -80,10 +80,19 @@ struct CrossingCandidate
     double  time;
     Index   left;
     Index   right;
+    double  priority_slope;
+    unsigned priority_dimension;
+    Index   priority_cell;
 
     bool operator<(const CrossingCandidate& other) const
     {
-        return time > other.time;
+        if (std::abs(time - other.time) > epsilon)
+            return time > other.time;
+        if (std::abs(priority_slope - other.priority_slope) > epsilon)
+            return priority_slope > other.priority_slope;
+        if (priority_dimension != other.priority_dimension)
+            return priority_dimension > other.priority_dimension;
+        return priority_cell > other.priority_cell;
     }
 };
 
@@ -379,11 +388,10 @@ void record_transposition(VineyardHomotopyResult& result,
                           Vineyard& vineyard,
                           const HomotopyData& data,
                           double t,
-                          Index position,
-                          std::vector<Index>& order)
+                          Index position)
 {
-    Index first = order[position];
-    Index second = order[position + 1];
+    Index first = vineyard.cell_at(position);
+    Index second = vineyard.cell_at(position + 1);
     Index first_pair_before = vineyard.pair(first);
     Index second_pair_before = vineyard.pair(second);
 
@@ -397,7 +405,6 @@ void record_transposition(VineyardHomotopyResult& result,
     std::vector<Feature> before_features = local_features(vineyard, local_before);
 
     auto swapped = vineyard.transpose_position(position);
-    std::swap(order[position], order[position + 1]);
     Index first_pair_after = vineyard.pair(first);
     Index second_pair_after = vineyard.pair(second);
 
@@ -428,96 +435,55 @@ void record_transposition(VineyardHomotopyResult& result,
 template<class Vineyard>
 void push_candidate(EventQueue& queue,
                     const Vineyard& vineyard,
-                    const std::vector<double>& values0,
-                    const std::vector<double>& values1,
+                    const HomotopyData& data,
                     double current_t,
                     Index position);
 
 template<class Vineyard>
 void push_candidate_neighborhood(EventQueue& queue,
                                  const Vineyard& vineyard,
-                                 const std::vector<double>& values0,
-                                 const std::vector<double>& values1,
+                                 const HomotopyData& data,
                                  double current_t,
                                  Index position)
 {
     if (position > 0)
-        push_candidate(queue, vineyard, values0, values1, current_t, position - 1);
-    push_candidate(queue, vineyard, values0, values1, current_t, position);
-    push_candidate(queue, vineyard, values0, values1, current_t, position + 1);
+        push_candidate(queue, vineyard, data, current_t, position - 1);
+    push_candidate(queue, vineyard, data, current_t, position);
+    push_candidate(queue, vineyard, data, current_t, position + 1);
 }
 
-template<class Vineyard>
-bool process_degeneracies(VineyardHomotopyResult& result,
-                          ActiveVines& active_vines,
-                          Vineyard& vineyard,
-                          const HomotopyData& data,
-                          double t,
-                          EventQueue* queue = nullptr)
+bool tie_less(const HomotopyData& data, Index x, Index y)
 {
-    bool changed = false;
-    Index n = vineyard.size();
-    Index block_begin = 0;
-    std::vector<Index> order = current_order(vineyard);
-    while (block_begin < n)
-    {
-        double block_value = value_at(data.values0, data.values1, order[block_begin], t);
-        Index block_end = block_begin + 1;
-        while (block_end < n && std::abs(value_at(data.values0, data.values1, order[block_end], t) - block_value) <= epsilon)
-            ++block_end;
+    double sx = slope(data.values0, data.values1, x);
+    double sy = slope(data.values0, data.values1, y);
+    if (std::abs(sx - sy) > epsilon)
+        return sx < sy;
+    if (data.dimensions[x] != data.dimensions[y])
+        return data.dimensions[x] < data.dimensions[y];
+    return x < y;
+}
 
-        if (block_end - block_begin > 1)
-        {
-            std::vector<Index> target(order.begin() + block_begin, order.begin() + block_end);
-            std::sort(target.begin(), target.end(), [&data](Index x, Index y)
-                      {
-                          double sx = slope(data.values0, data.values1, x);
-                          double sy = slope(data.values0, data.values1, y);
-                          if (std::abs(sx - sy) > epsilon)
-                              return sx < sy;
-                          if (data.dimensions[x] != data.dimensions[y])
-                              return data.dimensions[x] < data.dimensions[y];
-                          return x < y;
-                      });
-
-            for (Index target_position = block_begin; target_position < block_end; ++target_position)
-            {
-                Index desired = target[target_position - block_begin];
-                Index current_position = target_position;
-                while (order[current_position] != desired)
-                    ++current_position;
-
-                while (current_position > target_position)
-                {
-                    Index position = current_position - 1;
-                    Index first = order[position];
-                    Index second = order[position + 1];
-                    validate_transposition(data.boundary, first, second);
-                    record_transposition(result, active_vines, vineyard, data, t, position, order);
-                    if (queue)
-                        push_candidate_neighborhood(*queue, vineyard, data.values0, data.values1, t, position);
-                    changed = true;
-                    --current_position;
-                }
-            }
-        }
-
-        block_begin = block_end;
-    }
-    return changed;
+bool adjacent_inverted_at(const HomotopyData& data, Index left, Index right, double t)
+{
+    double left_value = value_at(data.values0, data.values1, left, t);
+    double right_value = value_at(data.values0, data.values1, right, t);
+    if (left_value > right_value + epsilon)
+        return true;
+    if (std::abs(left_value - right_value) <= epsilon)
+        return tie_less(data, right, left);
+    return false;
 }
 
 template<class Vineyard>
 double crossing_time(const Vineyard& vineyard,
-                     const std::vector<double>& values0,
-                     const std::vector<double>& values1,
+                     const HomotopyData& data,
                      Index position,
                      double current_t)
 {
     Index a = vineyard.cell_at(position);
     Index b = vineyard.cell_at(position + 1);
-    double d = value_at(values0, values1, b, current_t) - value_at(values0, values1, a, current_t);
-    double sd = slope(values0, values1, b) - slope(values0, values1, a);
+    double d = value_at(data.values0, data.values1, b, current_t) - value_at(data.values0, data.values1, a, current_t);
+    double sd = slope(data.values0, data.values1, b) - slope(data.values0, data.values1, a);
     if (d > epsilon && sd < -epsilon)
     {
         double t = current_t - d / sd;
@@ -529,51 +495,72 @@ double crossing_time(const Vineyard& vineyard,
 
 template<class Vineyard>
 EventQueue build_event_queue(const Vineyard& vineyard,
-                             const std::vector<double>& values0,
-                             const std::vector<double>& values1,
+                             const HomotopyData& data,
                              double current_t)
 {
     EventQueue queue;
     for (Index p = 0; p + 1 < vineyard.size(); ++p)
-        push_candidate(queue, vineyard, values0, values1, current_t, p);
+        push_candidate(queue, vineyard, data, current_t, p);
     return queue;
 }
 
 template<class Vineyard>
 void push_candidate(EventQueue& queue,
                     const Vineyard& vineyard,
-                    const std::vector<double>& values0,
-                    const std::vector<double>& values1,
+                    const HomotopyData& data,
                     double current_t,
                     Index position)
 {
     if (position + 1 >= vineyard.size())
         return;
 
-    double t = crossing_time(vineyard, values0, values1, position, current_t);
+    Index left = vineyard.cell_at(position);
+    Index right = vineyard.cell_at(position + 1);
+    double t = std::numeric_limits<double>::infinity();
+    if (adjacent_inverted_at(data, left, right, current_t))
+        t = current_t;
+    else
+        t = crossing_time(vineyard, data, position, current_t);
+
     if (std::isfinite(t))
-        queue.push(CrossingCandidate { t, vineyard.cell_at(position), vineyard.cell_at(position + 1) });
+        queue.push(CrossingCandidate {
+            t,
+            left,
+            right,
+            slope(data.values0, data.values1, right),
+            data.dimensions[right],
+            right
+        });
 }
 
 template<class Vineyard>
-double pop_next_event_time(EventQueue& queue,
-                           const Vineyard& vineyard,
-                           double current_t)
+bool pop_next_candidate(EventQueue& queue,
+                        const Vineyard& vineyard,
+                        const HomotopyData& data,
+                        double current_t,
+                        CrossingCandidate& candidate,
+                        Index& position)
 {
     while (!queue.empty())
     {
-        CrossingCandidate candidate = queue.top();
+        CrossingCandidate next = queue.top();
         queue.pop();
 
-        if (candidate.time <= current_t + epsilon)
+        if (next.time < current_t - epsilon)
             continue;
-        if (candidate.time > 1.0 + epsilon)
+        if (next.time > 1.0 + epsilon)
             continue;
-        if (vineyard.position(candidate.left) + 1 != vineyard.position(candidate.right))
+        if (vineyard.position(next.left) + 1 != vineyard.position(next.right))
             continue;
-        return std::min(1.0, candidate.time);
+        double t = next.time <= current_t + epsilon ? current_t : std::min(1.0, next.time);
+        position = vineyard.position(next.left);
+        if (!adjacent_inverted_at(data, next.left, next.right, t))
+            continue;
+        candidate = next;
+        candidate.time = t;
+        return true;
     }
-    return std::numeric_limits<double>::infinity();
+    return false;
 }
 
 template<class Vineyard>
@@ -591,22 +578,25 @@ VineyardHomotopyResult run_homotopy(const PyFiltration& filtration,
         open_feature(result, active_vines, feature, 0.0, -1);
 
     double current_t = 0.0;
-
-    process_degeneracies(result, active_vines, *vineyard, data, current_t);
-    EventQueue event_queue = build_event_queue(*vineyard, data.values0, data.values1, current_t);
+    EventQueue event_queue = build_event_queue(*vineyard, data, current_t);
 
     while (current_t < 1.0 - epsilon)
     {
-        double next_t = pop_next_event_time(event_queue, *vineyard, current_t);
-        if (!std::isfinite(next_t) || next_t > 1.0 - epsilon)
+        CrossingCandidate candidate;
+        Index position = 0;
+        if (!pop_next_candidate(event_queue, *vineyard, data, current_t, candidate, position) || candidate.time > 1.0 - epsilon)
         {
             close_all_features(result, active_vines, data.values0, data.values1, 1.0, -1);
             current_t = 1.0;
             break;
         }
 
-        current_t = next_t;
-        process_degeneracies(result, active_vines, *vineyard, data, current_t, &event_queue);
+        current_t = candidate.time;
+        Index first = vineyard->cell_at(position);
+        Index second = vineyard->cell_at(position + 1);
+        validate_transposition(data.boundary, first, second);
+        record_transposition(result, active_vines, *vineyard, data, current_t, position);
+        push_candidate_neighborhood(event_queue, *vineyard, data, current_t, position);
     }
 
     result.final_order = current_order(*vineyard);

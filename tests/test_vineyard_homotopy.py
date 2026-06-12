@@ -118,6 +118,29 @@ def test_homotopy_processes_simultaneous_degenerate_block():
     assert result.final_order == [2, 1, 0]
 
 
+def test_homotopy_processes_disjoint_simultaneous_crossings():
+    filtration = d.Filtration([[0], [1], [2], [3]])
+
+    result = d.vineyard_homotopy(
+        filtration, [0.0, 1.0, 10.0, 11.0], [1.0, 0.0, 11.0, 10.0], field=d.Zp(PRIME)
+    )
+
+    assert [event.time for event in result.events] == [pytest.approx(0.5)] * 2
+    assert {(event.first, event.second) for event in result.events} == {(0, 1), (2, 3)}
+    assert result.final_order == [1, 0, 3, 2]
+
+
+def test_homotopy_processes_initial_equal_value_inversions():
+    filtration = d.Filtration([[0], [1], [2]])
+
+    result = d.vineyard_homotopy(
+        filtration, [0.0, 0.0, 0.0], [2.0, 1.0, 0.0], field=d.Zp(PRIME)
+    )
+
+    assert [event.time for event in result.events] == [pytest.approx(0.0)] * 3
+    assert result.final_order == [2, 1, 0]
+
+
 def test_homotopy_preserves_filtration_order_with_dimension_ties():
     filtration = d.Filtration([[0], [1], [0, 1]])
 
