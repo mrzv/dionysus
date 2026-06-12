@@ -8,7 +8,8 @@ namespace py = pybind11;
 #include "field.h"
 
 using PyVineyardMatrix = dionysus::VineyardMatrix<PyZpField>;
-using PyVineyard = dionysus::Vineyard<PyZpField>;
+using PyVineyardV = dionysus::VineyardV<PyZpField>;
+using PyVineyardU = dionysus::VineyardU<PyZpField>;
 
 void init_vineyard(py::module& m)
 {
@@ -76,41 +77,79 @@ void init_vineyard(py::module& m)
                                })
     ;
 
-    py::class_<PyVineyard>(m, "Vineyard", "matrix_v-based vineyard state for adjacent transpositions")
+    py::class_<PyVineyardV>(m, "VineyardV", "matrix_v-based vineyard state for adjacent transpositions")
         .def(py::init([make_chain](PyZpField field, Columns columns)
-                      {
-                          PyVineyard::Chains chains;
-                          chains.reserve(columns.size());
-                          for (auto& column : columns)
-                              chains.emplace_back(make_chain(std::move(column)));
-                          return new PyVineyard(field, std::move(chains));
-                      }), "field"_a = PyZpField(2), "columns"_a = Columns())
-        .def("__len__",      &PyVineyard::size,      "number of cells")
-        .def("field",        &PyVineyard::field,     "field used for coefficients")
-        .def("cell_at",      &PyVineyard::cell_at,   "cell id at a current filtration position")
-        .def("position",     &PyVineyard::position,  "current filtration position of a cell id")
-        .def("low",          &PyVineyard::low,       "cached low cell id of a reduced column")
-        .def("pivot",        &PyVineyard::pivot,     "column id with the given low cell id")
-        .def("pair",         &PyVineyard::pair,      "persistence pair of the given cell id")
-        .def("transpose_position", &PyVineyard::transpose_position, "position"_a,
-                                                            "repair the vineyard state after transposing adjacent filtration positions")
-        .def("reduced_column", [make_column](const PyVineyard& v, Index column)
-                                {
-                                    return make_column(v.reduced_column(column));
-                                }, "column"_a,
-                                "return a reduced column as (coefficient, stable_row_id) entries")
-        .def("chain",        [make_column](const PyVineyard& v, Index column)
-                                {
-                                    return make_column(v.chain(column));
-                                }, "column"_a,
-                                "return a V-matrix chain as (coefficient, stable_column_id) entries")
-        .def_property_readonly("unpaired", [](const PyVineyard&) { return PyVineyard::unpaired(); },
-                              "index representing lack of pair")
-        .def("__repr__",     [](const PyVineyard& v)
-                              {
-                                  std::ostringstream oss;
-                                  oss << "Vineyard with " << v.size() << " cells over " << py::repr(py::cast(v.field()));
-                                  return oss.str();
-                              })
+                       {
+                           PyVineyardV::Chains chains;
+                           chains.reserve(columns.size());
+                           for (auto& column : columns)
+                               chains.emplace_back(make_chain(std::move(column)));
+                           return new PyVineyardV(field, std::move(chains));
+                       }), "field"_a = PyZpField(2), "columns"_a = Columns())
+        .def("__len__",      &PyVineyardV::size,      "number of cells")
+        .def("field",        &PyVineyardV::field,     "field used for coefficients")
+        .def("cell_at",      &PyVineyardV::cell_at,   "cell id at a current filtration position")
+        .def("position",     &PyVineyardV::position,  "current filtration position of a cell id")
+        .def("low",          &PyVineyardV::low,       "cached low cell id of a reduced column")
+        .def("pivot",        &PyVineyardV::pivot,     "column id with the given low cell id")
+        .def("pair",         &PyVineyardV::pair,      "persistence pair of the given cell id")
+        .def("transpose_position", &PyVineyardV::transpose_position, "position"_a,
+                                                             "repair the vineyard state after transposing adjacent filtration positions")
+        .def("reduced_column", [make_column](const PyVineyardV& v, Index column)
+                                 {
+                                     return make_column(v.reduced_column(column));
+                                 }, "column"_a,
+                                 "return a reduced column as (coefficient, stable_row_id) entries")
+        .def("chain",        [make_column](const PyVineyardV& v, Index column)
+                                 {
+                                     return make_column(v.basis(column));
+                                 }, "column"_a,
+                                 "return a V-matrix chain as (coefficient, stable_column_id) entries")
+        .def_property_readonly("unpaired", [](const PyVineyardV&) { return PyVineyardV::unpaired(); },
+                               "index representing lack of pair")
+        .def("__repr__",     [](const PyVineyardV& v)
+                               {
+                                   std::ostringstream oss;
+                                   oss << "VineyardV with " << v.size() << " cells over " << py::repr(py::cast(v.field()));
+                                   return oss.str();
+                               })
+    ;
+
+    py::class_<PyVineyardU>(m, "VineyardU", "matrix_u-based vineyard state for adjacent transpositions")
+        .def(py::init([make_chain](PyZpField field, Columns columns)
+                       {
+                           PyVineyardU::Chains chains;
+                           chains.reserve(columns.size());
+                           for (auto& column : columns)
+                               chains.emplace_back(make_chain(std::move(column)));
+                           return new PyVineyardU(field, std::move(chains));
+                       }), "field"_a = PyZpField(2), "columns"_a = Columns())
+        .def("__len__",      &PyVineyardU::size,      "number of cells")
+        .def("field",        &PyVineyardU::field,     "field used for coefficients")
+        .def("cell_at",      &PyVineyardU::cell_at,   "cell id at a current filtration position")
+        .def("position",     &PyVineyardU::position,  "current filtration position of a cell id")
+        .def("low",          &PyVineyardU::low,       "cached low cell id of a reduced column")
+        .def("pivot",        &PyVineyardU::pivot,     "column id with the given low cell id")
+        .def("pair",         &PyVineyardU::pair,      "persistence pair of the given cell id")
+        .def("transpose_position", &PyVineyardU::transpose_position, "position"_a,
+                                                             "repair the vineyard state after transposing adjacent filtration positions")
+        .def("reduced_column", [make_column](const PyVineyardU& v, Index column)
+                                 {
+                                     return make_column(v.reduced_column(column));
+                                 }, "column"_a,
+                                 "return a reduced column as (coefficient, stable_row_id) entries")
+        .def("trail",        [make_column](const PyVineyardU& v, Index row)
+                                 {
+                                     return make_column(v.basis(row));
+                                 }, "row"_a,
+                                 "return a U-matrix trail row as (coefficient, stable_column_id) entries")
+        .def_property_readonly("unpaired", [](const PyVineyardU&) { return PyVineyardU::unpaired(); },
+                               "index representing lack of pair")
+        .def("__repr__",     [](const PyVineyardU& v)
+                               {
+                                   std::ostringstream oss;
+                                   oss << "VineyardU with " << v.size() << " cells over " << py::repr(py::cast(v.field()));
+                                   return oss.str();
+                               })
     ;
 }

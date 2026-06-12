@@ -12,7 +12,7 @@
 namespace dionysus
 {
 
-template<class Field_, typename Index_ = unsigned>
+template<class Field_, typename Index_, class Decomposition_>
 class Vineyard;
 
 template<class Field_, typename Index_ = unsigned>
@@ -133,7 +133,8 @@ class VineyardMatrix
 
         static bool entry_cmp(const Entry& x, const Entry& y)     { return x.index() < y.index(); }
 
-        friend class Vineyard<Field_, Index_>;
+        template<class, typename, class>
+        friend class Vineyard;
 
         Field       field_;
         Chains      columns_;
@@ -143,25 +144,55 @@ class VineyardMatrix
         Indices     column_with_low_;
 };
 
-template<class Field_, typename Index_>
+struct VineyardVDecomposition {};
+struct VineyardUDecomposition {};
+
+template<class Decomposition, class Field, typename Index>
+struct VineyardPersistence;
+
+template<class Field, typename Index>
+struct VineyardPersistence<VineyardVDecomposition, Field, Index>
+{
+    using Persistence = OrdinaryPersistenceWithV<Field, Index>;
+
+    static typename Persistence::Chains take_basis(Persistence& persistence)
+    {
+        return std::move(persistence.template visitor<0>().v_);
+    }
+};
+
+template<class Field, typename Index>
+struct VineyardPersistence<VineyardUDecomposition, Field, Index>
+{
+    using Persistence = OrdinaryPersistenceWithU<Field, Index>;
+
+    static typename Persistence::Chains take_basis(Persistence& persistence)
+    {
+        return std::move(persistence.template visitor<0>().u_);
+    }
+};
+
+template<class Field_, typename Index_, class Decomposition_>
 class Vineyard
 {
     public:
         using Field        = Field_;
         using Index        = Index_;
+        using Decomposition = Decomposition_;
         using FieldElement = typename Field::Element;
         using Entry        = ChainEntry<Field, Index>;
         using Chain        = std::vector<Entry>;
         using Chains       = std::vector<Chain>;
         using Indices      = std::vector<Index>;
         using Matrix       = VineyardMatrix<Field, Index>;
-        using Persistence  = OrdinaryPersistenceWithV<Field, Index>;
+        using PersistenceTraits = VineyardPersistence<Decomposition, Field, Index>;
+        using Persistence  = typename PersistenceTraits::Persistence;
 
     public:
         Vineyard(const Field& field, Chains boundary):
             field_(field),
             reduced_(field_, boundary.size()),
-            chains_(),
+            basis_(),
             pairs_(boundary.size(), unpaired())
         {
             for (Index i = 0; i < size(); ++i)
@@ -172,7 +203,7 @@ class Vineyard
             for (Index i = 0; i < size(); ++i)
                 persistence.add(std::move(boundary[i]));
 
-            chains_ = std::move(persistence.template visitor<0>().v_);
+            basis_ = PersistenceTraits::take_basis(persistence);
 
             for (Index i = 0; i < size(); ++i)
             {
@@ -186,7 +217,7 @@ class Vineyard
         const Field&    field() const                           { return field_; }
 
         const Chain&    reduced_column(Index column) const       { return reduced_[column]; }
-        const Chain&    chain(Index column) const                { return chains_.at(column); }
+        const Chain&    basis(Index column) const                { return basis_.at(column); }
 
         Index           cell_at(Index p) const                   { return reduced_.cell_at(p); }
         Index           position(Index cell) const               { return reduced_.position(cell); }
@@ -210,7 +241,7 @@ class Vineyard
             Index pivot_b = reduced_.pivot(b);
             bool r_pivot_b_contains_a = pivot_b != unpaired() && contains(reduced_.columns_[pivot_b], a);
 
-            bool cancelled_v = cancel_chain_entry(b, a);
+            bool cancelled = clear_transposition_entry(b, a, Decomposition());
             auto swapped = reduced_.transpose_position(p);
 
             if (a_positive && b_positive)
@@ -239,7 +270,7 @@ class Vineyard
                 }
             } else if (!a_positive && !b_positive)
             {
-                if (cancelled_v && reduced_.position(low_b) < reduced_.position(low_a))
+                if (cancelled && reduced_.position(low_b) < reduced_.position(low_a))
                 {
                     add_to_cancel_low(a, b, low_a);
                     reduced_.set_low_unchecked(a, low_b);
@@ -253,7 +284,7 @@ class Vineyard
                 }
             } else if (!a_positive && b_positive)
             {
-                if (cancelled_v)
+                if (cancelled)
                 {
                     add_to_cancel_low(a, b, low_a);
                     reduced_.set_low_unchecked(a, unpaired());
@@ -326,22 +357,44 @@ class Vineyard
             add_to(column, m, other);
         }
 
-        bool cancel_chain_entry(Index column, Index other)
+        bool clear_transposition_entry(Index column, Index other, VineyardVDecomposition)
         {
             FieldElement x;
-            if (!coefficient(chains_[column], other, x))
+            if (!coefficient(basis_[column], other, x))
                 return false;
 
-            FieldElement y = coefficient(chains_[other], other);
+            FieldElement y = coefficient(basis_[other], other);
             FieldElement m = field_.neg(field_.div(x, y));
             add_to(column, m, other);
+            return true;
+        }
+
+        bool clear_transposition_entry(Index column, Index other, VineyardUDecomposition)
+        {
+            FieldElement x;
+            if (!coefficient(basis_[other], column, x))
+                return false;
+
+            FieldElement y = coefficient(basis_[column], column);
+            FieldElement m = field_.neg(field_.div(x, y));
+            add_to(column, field_.neg(m), other);
             return true;
         }
 
         void add_to(Index column, FieldElement m, Index other)
         {
             dionysus::Chain<Chain>::addto(reduced_.columns_[column], m, reduced_.columns_[other], field_, entry_cmp);
-            dionysus::Chain<Chain>::addto(chains_[column], m, chains_[other], field_, entry_cmp);
+            add_to_basis(column, m, other, Decomposition());
+        }
+
+        void add_to_basis(Index column, FieldElement m, Index other, VineyardVDecomposition)
+        {
+            dionysus::Chain<Chain>::addto(basis_[column], m, basis_[other], field_, entry_cmp);
+        }
+
+        void add_to_basis(Index column, FieldElement m, Index other, VineyardUDecomposition)
+        {
+            dionysus::Chain<Chain>::addto(basis_[other], field_.neg(m), basis_[column], field_, entry_cmp);
         }
 
         FieldElement coefficient(const Chain& chain, Index row) const
@@ -380,8 +433,14 @@ class Vineyard
 
         Field       field_;
         Matrix      reduced_;
-        Chains      chains_;
+        Chains      basis_;
         Indices     pairs_;
 };
+
+template<class Field_, typename Index_ = unsigned>
+using VineyardV = Vineyard<Field_, Index_, VineyardVDecomposition>;
+
+template<class Field_, typename Index_ = unsigned>
+using VineyardU = Vineyard<Field_, Index_, VineyardUDecomposition>;
 
 }

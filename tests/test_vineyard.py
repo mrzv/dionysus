@@ -68,6 +68,30 @@ def recompute_matrix_v(columns, current_order):
     return stable_reduced, stable_chains, stable_pairs
 
 
+def recompute_matrix_u(columns, current_order):
+    reduced, trails = d.homology_persistence(
+        matrix_filtration(columns, current_order), prime=PRIME, method="matrix_u"
+    )
+
+    stable_reduced = [[] for _ in current_order]
+    stable_trails = [[] for _ in current_order]
+    stable_pairs = [reduced.unpaired for _ in current_order]
+
+    for position, cell in enumerate(current_order):
+        stable_reduced[cell] = normalize(
+            (entry.element, current_order[entry.index]) for entry in reduced[position]
+        )
+        stable_trails[cell] = normalize(
+            (entry.element, current_order[entry.index]) for entry in trails[position]
+        )
+
+        pair = reduced.pair(position)
+        if pair != reduced.unpaired:
+            stable_pairs[cell] = current_order[pair]
+
+    return stable_reduced, stable_trails, stable_pairs
+
+
 def vineyard_state(vineyard):
     return (
         [vineyard.reduced_column(i) for i in range(len(vineyard))],
@@ -76,8 +100,29 @@ def vineyard_state(vineyard):
     )
 
 
+def vineyard_u_state(vineyard):
+    return (
+        [vineyard.reduced_column(i) for i in range(len(vineyard))],
+        [vineyard.trail(i) for i in range(len(vineyard))],
+        [vineyard.pair(i) for i in range(len(vineyard))],
+    )
+
+
 def pairs(vineyard):
     return [vineyard.pair(i) for i in range(len(vineyard))]
+
+
+def multiply_reduced_by_trails(reduced, trails):
+    columns = [{} for _ in range(len(reduced))]
+    for row, trail in enumerate(trails):
+        for coefficient, column_index in trail:
+            column = columns[column_index]
+            for reduced_coefficient, reduced_index in reduced[row]:
+                column[reduced_index] = (
+                    column.get(reduced_index, 0) + coefficient * reduced_coefficient
+                ) % PRIME
+
+    return [normalize((coefficient, index) for index, coefficient in column.items()) for column in columns]
 
 
 def assert_low_pivot_caches_match_columns(vineyard):
@@ -104,6 +149,20 @@ def assert_matches_recomputation(vineyard):
     assert_low_pivot_caches_match_columns(vineyard)
 
 
+def assert_u_matches_recomputation(vineyard):
+    expected = recompute_matrix_u(BOUNDARY, order(vineyard))
+
+    assert vineyard_u_state(vineyard) == expected
+    assert_low_pivot_caches_match_columns(vineyard)
+
+
+def assert_reconstructs_boundary(vineyard, columns):
+    reduced = [vineyard.reduced_column(i) for i in range(len(vineyard))]
+    trails = [vineyard.trail(i) for i in range(len(vineyard))]
+
+    assert multiply_reduced_by_trails(reduced, trails) == [normalize(column) for column in columns]
+
+
 def assert_pairs_match_recomputation(vineyard, columns):
     _, _, expected_pairs = recompute_matrix_v(columns, order(vineyard))
 
@@ -127,13 +186,13 @@ def transpose_and_assert_pair_locality(vineyard, position):
 
 
 def test_vineyard_initializes_from_matrix_v_reduction():
-    vineyard = d.Vineyard(d.Zp(PRIME), BOUNDARY)
+    vineyard = d.VineyardV(d.Zp(PRIME), BOUNDARY)
 
     assert_matches_recomputation(vineyard)
 
 
 def test_vineyard_transpose_repairs_duplicate_low():
-    vineyard = d.Vineyard(d.Zp(PRIME), BOUNDARY)
+    vineyard = d.VineyardV(d.Zp(PRIME), BOUNDARY)
 
     assert vineyard.transpose_position(0) == (0, 1)
 
@@ -142,7 +201,7 @@ def test_vineyard_transpose_repairs_duplicate_low():
 
 
 def test_vineyard_handles_multiple_adjacent_transpositions():
-    vineyard = d.Vineyard(d.Zp(PRIME), BOUNDARY)
+    vineyard = d.VineyardV(d.Zp(PRIME), BOUNDARY)
 
     for position in [0, 0, 2, 2]:
         vineyard.transpose_position(position)
@@ -150,9 +209,36 @@ def test_vineyard_handles_multiple_adjacent_transpositions():
 
 
 def test_vineyard_handles_triangle_vertex_and_edge_transpositions():
-    vineyard = d.Vineyard(d.Zp(PRIME), TRIANGLE_BOUNDARY)
+    vineyard = d.VineyardV(d.Zp(PRIME), TRIANGLE_BOUNDARY)
 
     assert_pairs_match_recomputation(vineyard, TRIANGLE_BOUNDARY)
     for position in [0, 1, 0, 3, 4, 3]:
         transpose_and_assert_pair_locality(vineyard, position)
         assert_pairs_match_recomputation(vineyard, TRIANGLE_BOUNDARY)
+
+
+def test_vineyard_u_initializes_from_matrix_u_reduction():
+    vineyard = d.VineyardU(d.Zp(PRIME), BOUNDARY)
+
+    assert_u_matches_recomputation(vineyard)
+    assert_reconstructs_boundary(vineyard, BOUNDARY)
+
+
+def test_vineyard_u_handles_multiple_adjacent_transpositions():
+    vineyard = d.VineyardU(d.Zp(PRIME), BOUNDARY)
+
+    for position in [0, 0, 2, 2]:
+        vineyard.transpose_position(position)
+        assert_u_matches_recomputation(vineyard)
+        assert_reconstructs_boundary(vineyard, BOUNDARY)
+
+
+def test_vineyard_u_handles_triangle_vertex_and_edge_transpositions():
+    vineyard = d.VineyardU(d.Zp(PRIME), TRIANGLE_BOUNDARY)
+
+    assert_pairs_match_recomputation(vineyard, TRIANGLE_BOUNDARY)
+    assert_reconstructs_boundary(vineyard, TRIANGLE_BOUNDARY)
+    for position in [0, 1, 0, 3, 4, 3]:
+        transpose_and_assert_pair_locality(vineyard, position)
+        assert_pairs_match_recomputation(vineyard, TRIANGLE_BOUNDARY)
+        assert_reconstructs_boundary(vineyard, TRIANGLE_BOUNDARY)
