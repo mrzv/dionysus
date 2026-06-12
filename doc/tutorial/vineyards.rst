@@ -13,16 +13,15 @@ filtration order changes. Dionysus exposes two related interfaces:
 Adjacent transpositions
 ~~~~~~~~~~~~~~~~~~~~~~~
 
-The low-level vineyard state is initialized from either a filtration or boundary
-columns in stable cell ids. For explicit columns, the stable ids are the column
-positions. For a simple edge, the two vertices have ids ``0`` and ``1``, and the
-edge has id ``2``:
+The low-level vineyard state can be initialized directly from a filtration. The
+stable ids are the current filtration indices. For a simple edge, the two
+vertices have ids ``0`` and ``1``, and the edge has id ``2``:
 
 .. doctest::
 
     >>> import dionysus as d
-    >>> columns = [[], [], [(1, 0), (1, 1)]]
-    >>> v = d.Vineyard(columns, field=d.Zp(2))
+    >>> f = d.Filtration([[0], [1], [0, 1]])
+    >>> v = d.Vineyard(f, field=d.Zp(2))
     >>> isinstance(v, d.VineyardV)
     True
     >>> [v.pair(i) == v.unpaired for i in range(len(v))]
@@ -35,21 +34,21 @@ The default ``Vineyard`` factory uses the ``matrix_v`` method. Pass
 
 .. doctest::
 
-    >>> u = d.Vineyard(columns, field=d.Zp(2), method='matrix_u')
+    >>> u = d.Vineyard(f, field=d.Zp(2), method='matrix_u')
     >>> isinstance(u, d.VineyardU)
     True
 
-When initialized from a :class:`~dionysus._dionysus.Filtration`, the stable ids
-are the current filtration indices. Dionysus does not sort the filtration for
-you; call :meth:`~dionysus._dionysus.Filtration.sort` first if you want the
-usual data/dimension/lexicographic order.
+The constructor does not sort the filtration for you; call
+:meth:`~dionysus._dionysus.Filtration.sort` first if you want the usual
+data/dimension/lexicographic order.
 
 .. doctest::
 
-    >>> f = d.Filtration([[0], [1], [0, 1]])
-    >>> vf = d.Vineyard(f, field=d.Zp(2))
-    >>> [vf.cell_at(i) for i in range(len(vf))]
+    >>> [v.cell_at(i) for i in range(len(v))]
     [0, 1, 2]
+
+For lower-level uses, ``Vineyard`` also accepts explicit boundary columns in
+stable cell ids, e.g. ``d.Vineyard([[], [], [(1, 0), (1, 1)]], field=d.Zp(2))``.
 
 Both vineyard states support adjacent swaps by current filtration position. The
 state updates the reduced matrix, the ``V`` chains or ``U`` trails, and the
@@ -88,8 +87,8 @@ each intermediate order remains a filtration.
 
     >>> f = d.Filtration([[0], [1], [0, 1]])
     >>> result = d.vineyard_linear_homotopy(f,
-    ...                                     [0.0, 1.0, 1.0],
-    ...                                     [1.0, 0.0, 1.0],
+    ...                                     [0.0, 1.0, 2.0],
+    ...                                     [1.0, 0.0, 2.0],
     ...                                     field=d.Zp(2))
     >>> [(round(e.time, 1), e.first, e.second) for e in result.events]
     [(0.5, 0, 1)]
@@ -112,9 +111,41 @@ vineyard state:
 .. doctest::
 
     >>> result = d.vineyard_linear_homotopy(f,
-    ...                                     [0.0, 1.0, 1.0],
-    ...                                     [1.0, 0.0, 1.0],
+    ...                                     [0.0, 1.0, 2.0],
+    ...                                     [1.0, 0.0, 2.0],
     ...                                     field=d.Zp(2),
     ...                                     method='matrix_u')
     >>> isinstance(result.vineyard, d.VineyardU)
     True
+
+The vines are stored as piecewise-linear segments. Each segment records its time
+interval, birth and death values at the interval endpoints, and the stable cell
+ids that define the feature:
+
+.. doctest::
+
+    >>> result = d.vineyard_linear_homotopy(f,
+    ...                                     [0.0, 1.0, 2.0],
+    ...                                     [1.0, 0.0, 2.0],
+    ...                                     field=d.Zp(2))
+    >>> unpaired = result.vineyard.unpaired
+    >>> for i, vine in enumerate(result.vines):
+    ...     for segment in vine.segments:
+    ...         if segment.death_cell == unpaired:
+    ...             death_cell = 'inf'
+    ...             point0 = (round(segment.birth0, 1), 'inf')
+    ...             point1 = (round(segment.birth1, 1), 'inf')
+    ...         else:
+    ...             death_cell = segment.death_cell
+    ...             point0 = (round(segment.birth0, 1), round(segment.death0, 1))
+    ...             point1 = (round(segment.birth1, 1), round(segment.death1, 1))
+    ...         print(i,
+    ...               (round(segment.t0, 1), round(segment.t1, 1)),
+    ...               segment.birth_cell,
+    ...               death_cell,
+    ...               point0,
+    ...               point1)
+    0 (0.0, 0.5) 0 inf (0.0, 'inf') (0.5, 'inf')
+    1 (0.0, 0.5) 1 2 (1.0, 2.0) (0.5, 2.0)
+    2 (0.5, 1.0) 0 2 (0.5, 2.0) (1.0, 2.0)
+    3 (0.5, 1.0) 1 inf (0.5, 'inf') (0.0, 'inf')
