@@ -181,6 +181,8 @@ HomotopyData prepare_homotopy_data(const PyFiltration& filtration,
             Index face_input = filtration.index(it->index(), filtration.size());
             column.emplace_back(it->element(), data.input_to_stable[face_input]);
         }
+        std::sort(column.begin(), column.end(), [](const PyVineyardMatrix::Entry& x, const PyVineyardMatrix::Entry& y)
+                  { return x.index() < y.index(); });
         data.boundary[stable] = std::move(column);
     }
 
@@ -253,41 +255,74 @@ void append_interval(VineyardHomotopyResult& result,
     active_vines = std::move(next_active);
 }
 
-template<class Vineyard>
-void validate_filtration_order(const Vineyard& vineyard, const Chains& boundary)
+bool boundary_contains(const Chain& column, Index row)
 {
-    for (Index column = 0; column < vineyard.size(); ++column)
-        for (const auto& entry : boundary[column])
-            if (vineyard.position(entry.index()) > vineyard.position(column))
-                throw std::logic_error("vineyard homotopy transposition produced a non-filtration order");
+    auto it = std::lower_bound(column.begin(), column.end(), row,
+                               [](const PyVineyardMatrix::Entry& entry, Index index)
+                               { return entry.index() < index; });
+    return it != column.end() && it->index() == row;
+}
+
+void validate_transposition(const Chains& boundary, Index first, Index second)
+{
+    if (boundary_contains(boundary[second], first))
+        throw std::logic_error("vineyard homotopy transposition produced a non-filtration order");
 }
 
 template<class Vineyard>
-void record_transposition(VineyardHomotopyResult& result, Vineyard& vineyard, double t, Index position)
+void record_transposition(VineyardHomotopyResult& result,
+                          Vineyard& vineyard,
+                          double t,
+                          Index position,
+                          std::vector<Index>& order)
 {
     auto swapped = vineyard.transpose_position(position);
+    std::swap(order[position], order[position + 1]);
     result.events.push_back(VineyardHomotopyEvent {
         t,
         position,
         swapped.first,
         swapped.second,
-        current_order(vineyard),
+        order,
         current_pairs(vineyard)
     });
+}
+
+template<class Vineyard>
+void push_candidate(EventQueue& queue,
+                    const Vineyard& vineyard,
+                    const std::vector<double>& values0,
+                    const std::vector<double>& values1,
+                    double current_t,
+                    Index position);
+
+template<class Vineyard>
+void push_candidate_neighborhood(EventQueue& queue,
+                                 const Vineyard& vineyard,
+                                 const std::vector<double>& values0,
+                                 const std::vector<double>& values1,
+                                 double current_t,
+                                 Index position)
+{
+    if (position > 0)
+        push_candidate(queue, vineyard, values0, values1, current_t, position - 1);
+    push_candidate(queue, vineyard, values0, values1, current_t, position);
+    push_candidate(queue, vineyard, values0, values1, current_t, position + 1);
 }
 
 template<class Vineyard>
 bool process_degeneracies(VineyardHomotopyResult& result,
                           Vineyard& vineyard,
                           const HomotopyData& data,
-                          double t)
+                          double t,
+                          EventQueue* queue = nullptr)
 {
     bool changed = false;
     Index n = vineyard.size();
     Index block_begin = 0;
+    std::vector<Index> order = current_order(vineyard);
     while (block_begin < n)
     {
-        std::vector<Index> order = current_order(vineyard);
         double block_value = value_at(data.values0, data.values1, order[block_begin], t);
         Index block_end = block_begin + 1;
         while (block_end < n && std::abs(value_at(data.values0, data.values1, order[block_end], t) - block_value) <= epsilon)
@@ -310,18 +345,21 @@ bool process_degeneracies(VineyardHomotopyResult& result,
             for (Index target_position = block_begin; target_position < block_end; ++target_position)
             {
                 Index desired = target[target_position - block_begin];
-                order = current_order(vineyard);
                 Index current_position = target_position;
                 while (order[current_position] != desired)
                     ++current_position;
 
                 while (current_position > target_position)
                 {
-                    record_transposition(result, vineyard, t, current_position - 1);
-                    validate_filtration_order(vineyard, data.boundary);
+                    Index position = current_position - 1;
+                    Index first = order[position];
+                    Index second = order[position + 1];
+                    validate_transposition(data.boundary, first, second);
+                    record_transposition(result, vineyard, t, position, order);
+                    if (queue)
+                        push_candidate_neighborhood(*queue, vineyard, data.values0, data.values1, t, position);
                     changed = true;
                     --current_position;
-                    order = current_order(vineyard);
                 }
             }
         }
@@ -359,12 +397,24 @@ EventQueue build_event_queue(const Vineyard& vineyard,
 {
     EventQueue queue;
     for (Index p = 0; p + 1 < vineyard.size(); ++p)
-    {
-        double t = crossing_time(vineyard, values0, values1, p, current_t);
-        if (std::isfinite(t))
-            queue.push(CrossingCandidate { t, vineyard.cell_at(p), vineyard.cell_at(p + 1) });
-    }
+        push_candidate(queue, vineyard, values0, values1, current_t, p);
     return queue;
+}
+
+template<class Vineyard>
+void push_candidate(EventQueue& queue,
+                    const Vineyard& vineyard,
+                    const std::vector<double>& values0,
+                    const std::vector<double>& values1,
+                    double current_t,
+                    Index position)
+{
+    if (position + 1 >= vineyard.size())
+        return;
+
+    double t = crossing_time(vineyard, values0, values1, position, current_t);
+    if (std::isfinite(t))
+        queue.push(CrossingCandidate { t, vineyard.cell_at(position), vineyard.cell_at(position + 1) });
 }
 
 template<class Vineyard>
@@ -421,10 +471,9 @@ VineyardHomotopyResult run_homotopy(const PyFiltration& filtration,
         append_interval(result, active_vines, *vineyard, data.values0, data.values1,
                         current_t, next_t, last_event, first_event_at_time);
         current_t = next_t;
-        bool changed = process_degeneracies(result, *vineyard, data, current_t);
+        bool changed = process_degeneracies(result, *vineyard, data, current_t, &event_queue);
         if (changed)
             last_event = static_cast<int>(result.events.size()) - 1;
-        event_queue = build_event_queue(*vineyard, data.values0, data.values1, current_t);
     }
 
     result.final_order = current_order(*vineyard);
