@@ -1,7 +1,6 @@
 #pragma once
 
 #include <algorithm>
-#include <array>
 #include <limits>
 #include <stdexcept>
 #include <utility>
@@ -155,7 +154,6 @@ class Vineyard
         using Chain        = std::vector<Entry>;
         using Chains       = std::vector<Chain>;
         using Indices      = std::vector<Index>;
-        using LocalCells   = std::array<Index, 4>;
         using Matrix       = VineyardMatrix<Field, Index>;
         using Persistence  = OrdinaryPersistenceWithV<Field, Index>;
 
@@ -204,7 +202,6 @@ class Vineyard
 
             Index a = reduced_.cell_at(p);
             Index b = reduced_.cell_at(p + 1);
-            LocalCells local = {{ a, b, pairs_[a], pairs_[b] }};
             bool a_positive = reduced_.low(a) == unpaired();
             bool b_positive = reduced_.low(b) == unpaired();
             Index low_a = reduced_.low(a);
@@ -218,25 +215,59 @@ class Vineyard
 
             if (a_positive && b_positive)
             {
-                if (pivot_a != unpaired() && pivot_b != unpaired() && r_pivot_b_contains_a)
+                if (r_pivot_b_contains_a)
                 {
-                    if (reduced_.position(pivot_a) < reduced_.position(pivot_b))
+                    if (pivot_a == unpaired())
+                    {
+                        reduced_.set_low_unchecked(pivot_b, a);
+                        pair_cells(a, pivot_b);
+                        clear_pair(b);
+                    } else if (reduced_.position(pivot_a) < reduced_.position(pivot_b))
+                    {
                         add_to_cancel_low(pivot_b, pivot_a, a);
+                        reduced_.set_low_unchecked(pivot_a, a);
+                        reduced_.set_low_unchecked(pivot_b, b);
+                    }
                     else
+                    {
                         add_to_cancel_low(pivot_a, pivot_b, a);
+                        reduced_.set_low_unchecked(pivot_b, a);
+                        reduced_.set_low_unchecked(pivot_a, b);
+                        pair_cells(a, pivot_b);
+                        pair_cells(b, pivot_a);
+                    }
                 }
             } else if (!a_positive && !b_positive)
             {
                 if (cancelled_v && reduced_.position(low_b) < reduced_.position(low_a))
+                {
                     add_to_cancel_low(a, b, low_a);
+                    reduced_.set_low_unchecked(a, low_b);
+                    reduced_.set_low_unchecked(b, low_a);
+                    pair_cells(a, low_b);
+                    pair_cells(b, low_a);
+                } else
+                {
+                    reduced_.set_low_unchecked(a, low_a);
+                    reduced_.set_low_unchecked(b, low_b);
+                }
             } else if (!a_positive && b_positive)
             {
                 if (cancelled_v)
+                {
                     add_to_cancel_low(a, b, low_a);
+                    reduced_.set_low_unchecked(a, unpaired());
+                    reduced_.set_low_unchecked(b, low_a);
+                    if (pivot_b != unpaired())
+                        reduced_.set_low_unchecked(pivot_b, a);
+                    pair_cells(b, low_a);
+                    if (pivot_b != unpaired())
+                        pair_cells(a, pivot_b);
+                    else
+                        clear_pair(a);
+                }
             }
 
-            refresh_local_lows(local);
-            refresh_local_pairs(local);
             return swapped;
         }
 
@@ -255,67 +286,36 @@ class Vineyard
                 validate_index(e.index());
         }
 
-        void refresh_local_lows(const LocalCells& local)
-        {
-            for (size_t i = 0; i < local.size(); ++i)
-            {
-                Index column = local[i];
-                if (skip_local(local, i, column))
-                    continue;
-                reduced_.set_low_unchecked(column, reduced_.compute_low(reduced_.columns_[column]));
-            }
-        }
-
-        void refresh_local_pairs(const LocalCells& local)
-        {
-            for (size_t i = 0; i < local.size(); ++i)
-            {
-                Index cell = local[i];
-                if (skip_local(local, i, cell))
-                    continue;
-
-                Index partner = pairs_[cell];
-                if (partner != unpaired())
-                    pairs_[partner] = unpaired();
-                pairs_[cell] = unpaired();
-            }
-
-            for (size_t i = 0; i < local.size(); ++i)
-            {
-                Index column = local[i];
-                if (skip_local(local, i, column))
-                    continue;
-
-                Index l = reduced_.low(column);
-                if (l == unpaired())
-                    continue;
-                if (!contains(local, l))
-                    throw std::logic_error("vineyard local pair update escaped local set");
-                if ((pairs_[column] != unpaired() && pairs_[column] != l) ||
-                    (pairs_[l] != unpaired() && pairs_[l] != column))
-                    throw std::logic_error("vineyard pair update is inconsistent");
-                pairs_[column] = l;
-                pairs_[l] = column;
-            }
-        }
-
-        bool skip_local(const LocalCells& local, size_t i, Index cell) const
+        void clear_pair(Index cell)
         {
             if (cell == unpaired())
-                return true;
+                return;
             validate_index(cell);
-            for (size_t j = 0; j < i; ++j)
-                if (local[j] == cell)
-                    return true;
-            return false;
+
+            Index partner = pairs_[cell];
+            if (partner != unpaired())
+            {
+                validate_index(partner);
+                if (pairs_[partner] != cell)
+                    throw std::logic_error("vineyard pair map is inconsistent");
+                pairs_[partner] = unpaired();
+            }
+            pairs_[cell] = unpaired();
         }
 
-        bool contains(const LocalCells& local, Index cell) const
+        void pair_cells(Index x, Index y)
         {
-            for (Index local_cell : local)
-                if (local_cell == cell)
-                    return true;
-            return false;
+            if (x == unpaired() || y == unpaired())
+                throw std::logic_error("vineyard cannot pair an unpaired cell");
+            if (x == y)
+                throw std::logic_error("vineyard cannot pair a cell with itself");
+            validate_index(x);
+            validate_index(y);
+
+            clear_pair(x);
+            clear_pair(y);
+            pairs_[x] = y;
+            pairs_[y] = x;
         }
 
         void add_to_cancel_low(Index column, Index other, Index low)
