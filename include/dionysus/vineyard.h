@@ -12,6 +12,9 @@ namespace dionysus
 {
 
 template<class Field_, typename Index_ = unsigned>
+class Vineyard;
+
+template<class Field_, typename Index_ = unsigned>
 class VineyardMatrix
 {
     public:
@@ -128,12 +131,247 @@ class VineyardMatrix
         }
 
         static bool entry_cmp(const Entry& x, const Entry& y)     { return x.index() < y.index(); }
+
+        friend class Vineyard<Field_, Index_>;
+
         Field       field_;
         Chains      columns_;
         Indices     cell_at_;
         Indices     position_;
         Indices     low_of_column_;
         Indices     column_with_low_;
+};
+
+template<class Field_, typename Index_>
+class Vineyard
+{
+    public:
+        using Field        = Field_;
+        using Index        = Index_;
+        using FieldElement = typename Field::Element;
+        using Entry        = ChainEntry<Field, Index>;
+        using Chain        = std::vector<Entry>;
+        using Chains       = std::vector<Chain>;
+        using Matrix       = VineyardMatrix<Field, Index>;
+
+    public:
+        Vineyard(const Field& field, Chains boundary):
+            field_(field),
+            boundary_(std::move(boundary)),
+            reduced_(field_, boundary_.size()),
+            chains_(boundary_.size())
+        {
+            for (Index i = 0; i < size(); ++i)
+            {
+                validate_chain(boundary_[i]);
+                std::sort(boundary_[i].begin(), boundary_[i].end(), entry_cmp);
+                reduced_.columns_[i] = copy_chain(boundary_[i]);
+                chains_[i].emplace_back(field_.id(), i);
+                reduce_column(i);
+            }
+        }
+
+        size_t          size() const                            { return reduced_.size(); }
+        const Field&    field() const                           { return field_; }
+
+        const Chain&    boundary_column(Index column) const      { return boundary_.at(column); }
+        const Chain&    reduced_column(Index column) const       { return reduced_[column]; }
+        const Chain&    chain(Index column) const                { return chains_.at(column); }
+
+        Index           cell_at(Index p) const                   { return reduced_.cell_at(p); }
+        Index           position(Index cell) const               { return reduced_.position(cell); }
+        Index           low(Index column) const                  { return reduced_.low(column); }
+        Index           pivot(Index row) const                   { return reduced_.pivot(row); }
+
+        Index pair(Index i) const
+        {
+            Index l = low(i);
+            if (l != unpaired())
+                return l;
+            return pivot(i);
+        }
+
+        std::pair<Index, Index> transpose_position(Index p)
+        {
+            if (p + 1 >= size())
+                throw std::out_of_range("vineyard transposition position out of range");
+
+            Index a = reduced_.cell_at(p);
+            Index b = reduced_.cell_at(p + 1);
+            if (contains(boundary_[b], a))
+                throw std::invalid_argument("vineyard transposition violates filtration order");
+
+            Index pivot_a = reduced_.pivot(a);
+            Index pivot_b = reduced_.pivot(b);
+
+            auto swapped = reduced_.transpose_position(p);
+            cancel_chain_entry(b, a);
+            repair({ a, b, pivot_a, pivot_b });
+            return swapped;
+        }
+
+        static Index    unpaired()                              { return Matrix::unpaired(); }
+
+    private:
+        void validate_index(Index i) const
+        {
+            if (i >= size())
+                throw std::out_of_range("vineyard index out of range");
+        }
+
+        void validate_chain(const Chain& chain) const
+        {
+            for (const Entry& e : chain)
+                validate_index(e.index());
+        }
+
+        void reduce_column(Index column)
+        {
+            reduced_.set_low_unchecked(column, unpaired());
+
+            while (true)
+            {
+                Index l = reduced_.compute_low(reduced_.columns_[column]);
+                if (l == unpaired())
+                {
+                    reduced_.set_low_unchecked(column, unpaired());
+                    return;
+                }
+
+                Index other = reduced_.pivot(l);
+                if (other == unpaired() || other == column)
+                {
+                    reduced_.set_low_unchecked(column, l);
+                    return;
+                }
+
+                add_to_cancel_low(column, other, l);
+            }
+        }
+
+        void repair(std::initializer_list<Index> candidates)
+        {
+            std::vector<Index> queue;
+            std::vector<bool> queued(size(), false);
+
+            auto enqueue = [this, &queue, &queued](Index column)
+            {
+                if (column == unpaired())
+                    return;
+                validate_index(column);
+                reduced_.set_low_unchecked(column, unpaired());
+                if (!queued[column])
+                {
+                    queued[column] = true;
+                    queue.emplace_back(column);
+                }
+            };
+
+            for (Index column : candidates)
+                enqueue(column);
+
+            while (!queue.empty())
+            {
+                auto next = std::min_element(queue.begin(), queue.end(), [this](Index x, Index y)
+                                             { return reduced_.position(x) < reduced_.position(y); });
+                Index column = *next;
+                queue.erase(next);
+                queued[column] = false;
+
+                while (true)
+                {
+                    Index l = reduced_.compute_low(reduced_.columns_[column]);
+                    if (l == unpaired())
+                    {
+                        reduced_.set_low_unchecked(column, unpaired());
+                        break;
+                    }
+
+                    Index other = reduced_.pivot(l);
+                    if (other == unpaired() || other == column)
+                    {
+                        reduced_.set_low_unchecked(column, l);
+                        break;
+                    }
+
+                    if (reduced_.position(other) < reduced_.position(column))
+                    {
+                        add_to_cancel_low(column, other, l);
+                    } else
+                    {
+                        enqueue(other);
+                        reduced_.set_low_unchecked(column, l);
+                        break;
+                    }
+                }
+            }
+        }
+
+        void add_to_cancel_low(Index column, Index other, Index low)
+        {
+            FieldElement x = coefficient(reduced_.columns_[column], low);
+            FieldElement y = coefficient(reduced_.columns_[other], low);
+            FieldElement m = field_.neg(field_.div(x, y));
+            add_to(column, m, other);
+        }
+
+        void cancel_chain_entry(Index column, Index other)
+        {
+            FieldElement x;
+            if (!coefficient(chains_[column], other, x))
+                return;
+
+            FieldElement y = coefficient(chains_[other], other);
+            FieldElement m = field_.neg(field_.div(x, y));
+            add_to(column, m, other);
+        }
+
+        void add_to(Index column, FieldElement m, Index other)
+        {
+            dionysus::Chain<Chain>::addto(reduced_.columns_[column], m, reduced_.columns_[other], field_, entry_cmp);
+            dionysus::Chain<Chain>::addto(chains_[column], m, chains_[other], field_, entry_cmp);
+        }
+
+        FieldElement coefficient(const Chain& chain, Index row) const
+        {
+            FieldElement element;
+            if (coefficient(chain, row, element))
+                return element;
+            throw std::logic_error("vineyard low entry missing from column");
+        }
+
+        bool coefficient(const Chain& chain, Index row, FieldElement& element) const
+        {
+            auto it = std::lower_bound(chain.begin(), chain.end(), row,
+                                       [](const Entry& e, Index i) { return e.index() < i; });
+            if (it == chain.end() || it->index() != row)
+                return false;
+            element = it->element();
+            return true;
+        }
+
+        bool contains(const Chain& chain, Index row) const
+        {
+            auto it = std::lower_bound(chain.begin(), chain.end(), row,
+                                       [](const Entry& e, Index i) { return e.index() < i; });
+            return it != chain.end() && it->index() == row;
+        }
+
+        static bool entry_cmp(const Entry& x, const Entry& y)     { return x.index() < y.index(); }
+
+        static Chain copy_chain(const Chain& chain)
+        {
+            Chain copy;
+            copy.reserve(chain.size());
+            for (const Entry& e : chain)
+                copy.emplace_back(e.element(), e.index());
+            return copy;
+        }
+
+        Field       field_;
+        Chains      boundary_;
+        Matrix      reduced_;
+        Chains      chains_;
 };
 
 }
