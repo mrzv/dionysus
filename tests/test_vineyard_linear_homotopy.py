@@ -1,4 +1,6 @@
 import math
+import random
+from itertools import combinations
 
 import dionysus as d
 import pytest
@@ -76,6 +78,50 @@ def assert_final_pairs_match_recomputation(filtration, values0, values1, method=
 
     assert result.final_order == expected_order
     assert [result.vineyard.pair(i) for i in range(len(filtration))] == expected_pairs
+
+
+def complete_simplex_skeleton(points, skeleton):
+    return [
+        simplex
+        for dimension in range(skeleton + 1)
+        for simplex in combinations(range(points), dimension + 1)
+    ]
+
+
+def shuffled_dimension_filtration(simplices, rng):
+    order = []
+    max_dimension = max(len(simplex) for simplex in simplices) - 1
+    for dimension in range(max_dimension + 1):
+        cells = [
+            i for i, simplex in enumerate(simplices) if len(simplex) == dimension + 1
+        ]
+        rng.shuffle(cells)
+        order.extend(cells)
+
+    return [simplices[i] for i in order]
+
+
+def random_adjacent_filtration_order(size, dimensions, rng, swaps):
+    order = list(range(size))
+    positions_by_dimension = {
+        dimension: [i for i, d in enumerate(dimensions) if d == dimension]
+        for dimension in set(dimensions)
+    }
+
+    for _ in range(swaps):
+        dimension = rng.choice(list(positions_by_dimension))
+        positions = positions_by_dimension[dimension]
+        position = rng.choice(positions[:-1])
+        order[position], order[position + 1] = order[position + 1], order[position]
+
+    return order
+
+
+def values_for_order(order):
+    values = [0.0] * len(order)
+    for value, cell in enumerate(order):
+        values[cell] = float(value)
+    return values
 
 
 def test_linear_homotopy_records_single_crossing_and_vines():
@@ -213,6 +259,36 @@ def test_linear_homotopy_final_pairs_match_matrix_u_recomputation():
     assert_final_pairs_match_recomputation(
         filtration, values0, values1, method="matrix_u"
     )
+
+
+def test_linear_homotopy_complete_simplex_2_skeleton_on_50_points():
+    rng = random.Random(20260612)
+    simplices = shuffled_dimension_filtration(
+        complete_simplex_skeleton(points=50, skeleton=2), rng
+    )
+    filtration = d.Filtration(simplices)
+    values0 = [float(i) for i in range(len(filtration))]
+    dimensions = [simplex.dimension() for simplex in filtration]
+    final_order = random_adjacent_filtration_order(
+        len(filtration), dimensions, rng, swaps=500
+    )
+    values1 = values_for_order(final_order)
+
+    vineyard = d.Vineyard(filtration, field=d.Zp(PRIME))
+    expected_start_pairs, expected_start_order = recompute_endpoint_pairs(
+        filtration, values0, values0, method="matrix_v"
+    )
+
+    assert expected_start_order == list(range(len(filtration)))
+    assert [vineyard.pair(i) for i in range(len(filtration))] == expected_start_pairs
+
+    result = d.vineyard_linear_homotopy(filtration, values0, values1, field=d.Zp(PRIME))
+    expected_final_pairs, expected_final_order = recompute_endpoint_pairs(
+        filtration, values0, values1, method="matrix_v"
+    )
+
+    assert result.final_order == expected_final_order
+    assert [result.vineyard.pair(i) for i in range(len(filtration))] == expected_final_pairs
 
 
 def test_linear_homotopy_rejects_non_filtration_endpoint_values():
