@@ -26,7 +26,7 @@ using Chains = PyVineyardMatrix::Chains;
 
 constexpr double epsilon = 1e-10;
 
-struct VineyardHomotopyEvent
+struct VineyardLinearHomotopyEvent
 {
     double  time;
     Index   position;
@@ -57,15 +57,15 @@ struct VineyardVine
     std::vector<VineyardSegment> segments;
 };
 
-struct VineyardHomotopyResult
+struct VineyardLinearHomotopyResult
 {
     py::object                         vineyard;
-    std::vector<VineyardHomotopyEvent> events;
+    std::vector<VineyardLinearHomotopyEvent> events;
     std::vector<VineyardVine>          vines;
     std::vector<Index>                 final_order;
 };
 
-struct HomotopyData
+struct LinearHomotopyData
 {
     Chains                  boundary;
     std::vector<Index>      stable_to_input;
@@ -147,22 +147,22 @@ void validate_endpoint_filtration(const PyFiltration& filtration, const std::vec
         {
             Index face = filtration.index(*it, filtration.size());
             if (values[face] > values[i] + epsilon)
-                throw std::invalid_argument("homotopy values are not a filtration on the complex");
+                throw std::invalid_argument("linear homotopy values are not a filtration on the complex");
         }
 }
 
-HomotopyData prepare_homotopy_data(const PyFiltration& filtration,
-                                   const std::vector<double>& input_values0,
-                                   const std::vector<double>& input_values1,
-                                   const PyZpField& field)
+LinearHomotopyData prepare_linear_homotopy_data(const PyFiltration& filtration,
+                                                const std::vector<double>& input_values0,
+                                                const std::vector<double>& input_values1,
+                                                const PyZpField& field)
 {
     if (input_values0.size() != filtration.size() || input_values1.size() != filtration.size())
-        throw std::invalid_argument("homotopy value vectors must match filtration size");
+        throw std::invalid_argument("linear homotopy value vectors must match filtration size");
 
     validate_endpoint_filtration(filtration, input_values0);
     validate_endpoint_filtration(filtration, input_values1);
 
-    HomotopyData data;
+    LinearHomotopyData data;
     data.stable_to_input.resize(filtration.size());
     data.input_to_stable.resize(filtration.size());
     for (Index i = 0; i < filtration.size(); ++i)
@@ -256,7 +256,7 @@ std::vector<Feature> local_features(const Vineyard& vineyard, const std::vector<
     return result;
 }
 
-void add_segment(VineyardHomotopyResult& result,
+void add_segment(VineyardLinearHomotopyResult& result,
                  const ActiveVine& active,
                  const std::vector<double>& values0,
                  const std::vector<double>& values1,
@@ -281,7 +281,7 @@ void add_segment(VineyardHomotopyResult& result,
     });
 }
 
-void open_feature(VineyardHomotopyResult& result,
+void open_feature(VineyardLinearHomotopyResult& result,
                   ActiveVines& active_vines,
                   const Feature& feature,
                   double t0,
@@ -313,7 +313,7 @@ void reopen_feature(ActiveVines& active_vines,
     };
 }
 
-ActiveVine close_feature(VineyardHomotopyResult& result,
+ActiveVine close_feature(VineyardLinearHomotopyResult& result,
                          ActiveVines& active_vines,
                          const Feature& feature,
                          const std::vector<double>& values0,
@@ -323,7 +323,7 @@ ActiveVine close_feature(VineyardHomotopyResult& result,
 {
     auto it = active_vines.find(feature);
     if (it == active_vines.end())
-        throw std::logic_error("vineyard homotopy active vine is missing");
+        throw std::logic_error("vineyard linear homotopy active vine is missing");
 
     ActiveVine active = it->second;
     add_segment(result, active, values0, values1, t1, event1);
@@ -331,7 +331,7 @@ ActiveVine close_feature(VineyardHomotopyResult& result,
     return active;
 }
 
-void close_and_reopen_features(VineyardHomotopyResult& result,
+void close_and_reopen_features(VineyardLinearHomotopyResult& result,
                                ActiveVines& active_vines,
                                const std::vector<Feature>& before,
                                const std::vector<Feature>& after,
@@ -356,7 +356,7 @@ void close_and_reopen_features(VineyardHomotopyResult& result,
     }
 }
 
-void close_all_features(VineyardHomotopyResult& result,
+void close_all_features(VineyardLinearHomotopyResult& result,
                         ActiveVines& active_vines,
                         const std::vector<double>& values0,
                         const std::vector<double>& values1,
@@ -379,14 +379,14 @@ bool boundary_contains(const Chain& column, Index row)
 void validate_transposition(const Chains& boundary, Index first, Index second)
 {
     if (boundary_contains(boundary[second], first))
-        throw std::logic_error("vineyard homotopy transposition produced a non-filtration order");
+        throw std::logic_error("vineyard linear homotopy transposition produced a non-filtration order");
 }
 
 template<class Vineyard>
-void record_transposition(VineyardHomotopyResult& result,
+void record_transposition(VineyardLinearHomotopyResult& result,
                           ActiveVines& active_vines,
                           Vineyard& vineyard,
-                          const HomotopyData& data,
+                          const LinearHomotopyData& data,
                           double t,
                           Index position)
 {
@@ -418,7 +418,7 @@ void record_transposition(VineyardHomotopyResult& result,
     std::vector<Feature> after_features = local_features(vineyard, local_after);
 
     int event = static_cast<int>(result.events.size());
-    result.events.push_back(VineyardHomotopyEvent {
+    result.events.push_back(VineyardLinearHomotopyEvent {
         t,
         position,
         swapped.first,
@@ -435,14 +435,14 @@ void record_transposition(VineyardHomotopyResult& result,
 template<class Vineyard>
 void push_candidate(EventQueue& queue,
                     const Vineyard& vineyard,
-                    const HomotopyData& data,
+                    const LinearHomotopyData& data,
                     double current_t,
                     Index position);
 
 template<class Vineyard>
 void push_candidate_neighborhood(EventQueue& queue,
                                  const Vineyard& vineyard,
-                                 const HomotopyData& data,
+                                 const LinearHomotopyData& data,
                                  double current_t,
                                  Index position)
 {
@@ -452,7 +452,7 @@ void push_candidate_neighborhood(EventQueue& queue,
     push_candidate(queue, vineyard, data, current_t, position + 1);
 }
 
-bool tie_less(const HomotopyData& data, Index x, Index y)
+bool tie_less(const LinearHomotopyData& data, Index x, Index y)
 {
     double sx = slope(data.values0, data.values1, x);
     double sy = slope(data.values0, data.values1, y);
@@ -463,7 +463,7 @@ bool tie_less(const HomotopyData& data, Index x, Index y)
     return x < y;
 }
 
-bool adjacent_inverted_at(const HomotopyData& data, Index left, Index right, double t)
+bool adjacent_inverted_at(const LinearHomotopyData& data, Index left, Index right, double t)
 {
     double left_value = value_at(data.values0, data.values1, left, t);
     double right_value = value_at(data.values0, data.values1, right, t);
@@ -476,7 +476,7 @@ bool adjacent_inverted_at(const HomotopyData& data, Index left, Index right, dou
 
 template<class Vineyard>
 double crossing_time(const Vineyard& vineyard,
-                     const HomotopyData& data,
+                     const LinearHomotopyData& data,
                      Index position,
                      double current_t)
 {
@@ -495,7 +495,7 @@ double crossing_time(const Vineyard& vineyard,
 
 template<class Vineyard>
 EventQueue build_event_queue(const Vineyard& vineyard,
-                             const HomotopyData& data,
+                             const LinearHomotopyData& data,
                              double current_t)
 {
     EventQueue queue;
@@ -507,7 +507,7 @@ EventQueue build_event_queue(const Vineyard& vineyard,
 template<class Vineyard>
 void push_candidate(EventQueue& queue,
                     const Vineyard& vineyard,
-                    const HomotopyData& data,
+                    const LinearHomotopyData& data,
                     double current_t,
                     Index position)
 {
@@ -536,7 +536,7 @@ void push_candidate(EventQueue& queue,
 template<class Vineyard>
 bool pop_next_candidate(EventQueue& queue,
                         const Vineyard& vineyard,
-                        const HomotopyData& data,
+                        const LinearHomotopyData& data,
                         double current_t,
                         CrossingCandidate& candidate,
                         Index& position)
@@ -564,15 +564,15 @@ bool pop_next_candidate(EventQueue& queue,
 }
 
 template<class Vineyard>
-VineyardHomotopyResult run_homotopy(const PyFiltration& filtration,
-                                    const std::vector<double>& values0,
-                                    const std::vector<double>& values1,
-                                    const PyZpField& field)
+VineyardLinearHomotopyResult run_linear_homotopy(const PyFiltration& filtration,
+                                                const std::vector<double>& values0,
+                                                const std::vector<double>& values1,
+                                                const PyZpField& field)
 {
-    HomotopyData data = prepare_homotopy_data(filtration, values0, values1, field);
+    LinearHomotopyData data = prepare_linear_homotopy_data(filtration, values0, values1, field);
     auto* vineyard = new Vineyard(field, data.boundary);
 
-    VineyardHomotopyResult result;
+    VineyardLinearHomotopyResult result;
     ActiveVines active_vines;
     for (const auto& feature : features(*vineyard))
         open_feature(result, active_vines, feature, 0.0, -1);
@@ -640,15 +640,15 @@ void init_vineyard(py::module& m)
         return chains;
     };
 
-    py::class_<VineyardHomotopyEvent>(m, "VineyardHomotopyEvent", "one adjacent transposition in a vineyard homotopy")
-        .def_readonly("time",               &VineyardHomotopyEvent::time)
-        .def_readonly("position",           &VineyardHomotopyEvent::position)
-        .def_readonly("first",              &VineyardHomotopyEvent::first)
-        .def_readonly("second",             &VineyardHomotopyEvent::second)
-        .def_readonly("first_pair_before",  &VineyardHomotopyEvent::first_pair_before)
-        .def_readonly("second_pair_before", &VineyardHomotopyEvent::second_pair_before)
-        .def_readonly("first_pair_after",   &VineyardHomotopyEvent::first_pair_after)
-        .def_readonly("second_pair_after",  &VineyardHomotopyEvent::second_pair_after)
+    py::class_<VineyardLinearHomotopyEvent>(m, "VineyardLinearHomotopyEvent", "one adjacent transposition in a vineyard linear homotopy")
+        .def_readonly("time",               &VineyardLinearHomotopyEvent::time)
+        .def_readonly("position",           &VineyardLinearHomotopyEvent::position)
+        .def_readonly("first",              &VineyardLinearHomotopyEvent::first)
+        .def_readonly("second",             &VineyardLinearHomotopyEvent::second)
+        .def_readonly("first_pair_before",  &VineyardLinearHomotopyEvent::first_pair_before)
+        .def_readonly("second_pair_before", &VineyardLinearHomotopyEvent::second_pair_before)
+        .def_readonly("first_pair_after",   &VineyardLinearHomotopyEvent::first_pair_after)
+        .def_readonly("second_pair_after",  &VineyardLinearHomotopyEvent::second_pair_after)
     ;
 
     py::class_<VineyardSegment>(m, "VineyardSegment", "one linear segment of a persistence vine")
@@ -668,11 +668,11 @@ void init_vineyard(py::module& m)
         .def_readonly("segments", &VineyardVine::segments)
     ;
 
-    py::class_<VineyardHomotopyResult>(m, "VineyardHomotopyResult", "result of a straight-line vineyard homotopy")
-        .def_readonly("vineyard",    &VineyardHomotopyResult::vineyard)
-        .def_readonly("events",      &VineyardHomotopyResult::events)
-        .def_readonly("vines",       &VineyardHomotopyResult::vines)
-        .def_readonly("final_order", &VineyardHomotopyResult::final_order)
+    py::class_<VineyardLinearHomotopyResult>(m, "VineyardLinearHomotopyResult", "result of a vineyard linear homotopy")
+        .def_readonly("vineyard",    &VineyardLinearHomotopyResult::vineyard)
+        .def_readonly("events",      &VineyardLinearHomotopyResult::events)
+        .def_readonly("vines",       &VineyardLinearHomotopyResult::vines)
+        .def_readonly("final_order", &VineyardLinearHomotopyResult::final_order)
     ;
 
     py::class_<PyVineyardMatrix>(m, "VineyardMatrix", "matrix storage for vineyard updates using stable cell ids")
@@ -794,17 +794,17 @@ void init_vineyard(py::module& m)
           }, "field"_a = PyZpField(2), "columns"_a = Columns(), "method"_a = "matrix_v",
           "construct a vineyard state using method='matrix_v' or method='matrix_u'");
 
-    m.def("vineyard_homotopy", [](const PyFiltration& filtration,
-                                  std::vector<double> values0,
-                                  std::vector<double> values1,
-                                  PyZpField field,
-                                  std::string method)
+    m.def("vineyard_linear_homotopy", [](const PyFiltration& filtration,
+                                         std::vector<double> values0,
+                                         std::vector<double> values1,
+                                         PyZpField field,
+                                         std::string method)
           {
               if (method == "matrix_v")
-                  return run_homotopy<PyVineyardV>(filtration, values0, values1, field);
+                  return run_linear_homotopy<PyVineyardV>(filtration, values0, values1, field);
               if (method == "matrix_u")
-                  return run_homotopy<PyVineyardU>(filtration, values0, values1, field);
+                  return run_linear_homotopy<PyVineyardU>(filtration, values0, values1, field);
               throw py::value_error("unknown vineyard method: " + method);
           }, "filtration"_a, "values0"_a, "values1"_a, "field"_a = PyZpField(2), "method"_a = "matrix_v",
-          "compute a straight-line vineyard homotopy between two filtration functions");
+          "compute a vineyard linear homotopy between two filtration functions");
 }

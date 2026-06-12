@@ -97,6 +97,38 @@ Matrices
 .. autoclass:: dionysus.zigzag.ApexRepresentative
 
 
+Vineyards
+---------
+
+.. autoclass:: dionysus._dionysus.VineyardMatrix
+    :members:
+    :special-members: __len__, __getitem__
+
+.. autoclass:: dionysus._dionysus.VineyardV
+    :members:
+    :special-members: __len__
+
+.. autoclass:: dionysus._dionysus.VineyardU
+    :members:
+    :special-members: __len__
+
+.. autofunction:: dionysus._dionysus.Vineyard
+
+.. autofunction:: dionysus._dionysus.vineyard_linear_homotopy
+
+.. autoclass:: dionysus._dionysus.VineyardLinearHomotopyEvent
+    :members:
+
+.. autoclass:: dionysus._dionysus.VineyardSegment
+    :members:
+
+.. autoclass:: dionysus._dionysus.VineyardVine
+    :members:
+
+.. autoclass:: dionysus._dionysus.VineyardLinearHomotopyResult
+    :members:
+
+
 Plotting
 --------
 

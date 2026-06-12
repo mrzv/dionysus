@@ -67,7 +67,7 @@ def recompute_endpoint_pairs(filtration, values0, values1, method):
 
 
 def assert_final_pairs_match_recomputation(filtration, values0, values1, method="matrix_v"):
-    result = d.vineyard_homotopy(
+    result = d.vineyard_linear_homotopy(
         filtration, values0, values1, field=d.Zp(PRIME), method=method
     )
     expected_pairs, expected_order = recompute_endpoint_pairs(
@@ -78,10 +78,10 @@ def assert_final_pairs_match_recomputation(filtration, values0, values1, method=
     assert [result.vineyard.pair(i) for i in range(len(filtration))] == expected_pairs
 
 
-def test_homotopy_records_single_crossing_and_vines():
+def test_linear_homotopy_records_single_crossing_and_vines():
     filtration = d.Filtration([[0], [1]])
 
-    result = d.vineyard_homotopy(
+    result = d.vineyard_linear_homotopy(
         filtration, [0.0, 1.0], [1.0, 0.0], field=d.Zp(PRIME)
     )
 
@@ -102,10 +102,10 @@ def test_homotopy_records_single_crossing_and_vines():
     assert all(math.isinf(segment.death0) and math.isinf(segment.death1) for segment in segments)
 
 
-def test_homotopy_processes_simultaneous_degenerate_block():
+def test_linear_homotopy_processes_simultaneous_degenerate_block():
     filtration = d.Filtration([[0], [1], [2]])
 
-    result = d.vineyard_homotopy(
+    result = d.vineyard_linear_homotopy(
         filtration, [0.0, 1.0, 2.0], [2.0, 1.0, 0.0], field=d.Zp(PRIME)
     )
 
@@ -118,10 +118,10 @@ def test_homotopy_processes_simultaneous_degenerate_block():
     assert result.final_order == [2, 1, 0]
 
 
-def test_homotopy_processes_disjoint_simultaneous_crossings():
+def test_linear_homotopy_processes_disjoint_simultaneous_crossings():
     filtration = d.Filtration([[0], [1], [2], [3]])
 
-    result = d.vineyard_homotopy(
+    result = d.vineyard_linear_homotopy(
         filtration, [0.0, 1.0, 10.0, 11.0], [1.0, 0.0, 11.0, 10.0], field=d.Zp(PRIME)
     )
 
@@ -130,10 +130,10 @@ def test_homotopy_processes_disjoint_simultaneous_crossings():
     assert result.final_order == [1, 0, 3, 2]
 
 
-def test_homotopy_processes_initial_equal_value_inversions():
+def test_linear_homotopy_processes_initial_equal_value_inversions():
     filtration = d.Filtration([[0], [1], [2]])
 
-    result = d.vineyard_homotopy(
+    result = d.vineyard_linear_homotopy(
         filtration, [0.0, 0.0, 0.0], [2.0, 1.0, 0.0], field=d.Zp(PRIME)
     )
 
@@ -141,10 +141,10 @@ def test_homotopy_processes_initial_equal_value_inversions():
     assert result.final_order == [2, 1, 0]
 
 
-def test_homotopy_preserves_filtration_order_with_dimension_ties():
+def test_linear_homotopy_preserves_filtration_order_with_dimension_ties():
     filtration = d.Filtration([[0], [1], [0, 1]])
 
-    result = d.vineyard_homotopy(
+    result = d.vineyard_linear_homotopy(
         filtration, [0.0, 1.0, 1.0], [1.0, 0.0, 1.0], field=d.Zp(PRIME)
     )
 
@@ -154,10 +154,10 @@ def test_homotopy_preserves_filtration_order_with_dimension_ties():
     assert result.vineyard.position(1) < result.vineyard.position(2)
 
 
-def test_homotopy_supports_matrix_u():
+def test_linear_homotopy_supports_matrix_u():
     filtration = d.Filtration([[0], [1], [0, 1]])
 
-    result = d.vineyard_homotopy(
+    result = d.vineyard_linear_homotopy(
         filtration,
         [0.0, 1.0, 1.0],
         [1.0, 0.0, 1.0],
@@ -172,7 +172,7 @@ def test_homotopy_supports_matrix_u():
     assert result.vineyard.position(1) < result.vineyard.position(2)
 
 
-def test_homotopy_final_pairs_match_matrix_v_recomputation():
+def test_linear_homotopy_final_pairs_match_matrix_v_recomputation():
     filtration = d.Filtration([[0], [1], [2], [0, 1], [1, 2], [0, 2]])
     values0 = [0.0, 1.0, 2.0, 2.0, 3.0, 3.0]
     values1 = [2.0, 0.0, 1.0, 2.0, 1.0, 3.0]
@@ -180,7 +180,7 @@ def test_homotopy_final_pairs_match_matrix_v_recomputation():
     assert_final_pairs_match_recomputation(filtration, values0, values1)
 
 
-def test_homotopy_final_pairs_match_matrix_u_recomputation():
+def test_linear_homotopy_final_pairs_match_matrix_u_recomputation():
     filtration = d.Filtration([[0], [1], [2], [0, 1], [1, 2], [0, 2]])
     values0 = [0.0, 1.0, 2.0, 2.0, 3.0, 3.0]
     values1 = [2.0, 0.0, 1.0, 2.0, 1.0, 3.0]
@@ -190,17 +190,17 @@ def test_homotopy_final_pairs_match_matrix_u_recomputation():
     )
 
 
-def test_homotopy_rejects_non_filtration_endpoint_values():
+def test_linear_homotopy_rejects_non_filtration_endpoint_values():
     filtration = d.Filtration([[0], [1], [0, 1]])
 
     with pytest.raises(ValueError, match="not a filtration"):
-        d.vineyard_homotopy(
+        d.vineyard_linear_homotopy(
             filtration, [0.0, 0.0, 1.0], [0.0, 1.0, 0.5], field=d.Zp(PRIME)
         )
 
 
-def test_homotopy_rejects_unknown_method():
+def test_linear_homotopy_rejects_unknown_method():
     filtration = d.Filtration([[0]])
 
     with pytest.raises(ValueError, match="unknown vineyard method"):
-        d.vineyard_homotopy(filtration, [0.0], [1.0], method="unknown")
+        d.vineyard_linear_homotopy(filtration, [0.0], [1.0], method="unknown")
