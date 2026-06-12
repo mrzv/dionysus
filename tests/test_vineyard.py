@@ -9,6 +9,16 @@ BOUNDARY = [
     [(1, 0), (2, 1)],
 ]
 
+TRIANGLE_BOUNDARY = [
+    [],
+    [],
+    [],
+    [(4, 0), (1, 1)],
+    [(4, 1), (1, 2)],
+    [(4, 0), (1, 2)],
+    [(1, 3), (1, 4), (4, 5)],
+]
+
 
 def normalize(column):
     return [
@@ -66,10 +76,54 @@ def vineyard_state(vineyard):
     )
 
 
+def pairs(vineyard):
+    return [vineyard.pair(i) for i in range(len(vineyard))]
+
+
+def assert_low_pivot_caches_match_columns(vineyard):
+    current_order = order(vineyard)
+    position = {cell: p for p, cell in enumerate(current_order)}
+    expected_lows = [vineyard.unpaired] * len(vineyard)
+    expected_pivots = [vineyard.unpaired] * len(vineyard)
+
+    for column in range(len(vineyard)):
+        reduced_column = vineyard.reduced_column(column)
+        if reduced_column:
+            low = max(reduced_column, key=lambda entry: position[entry[1]])[1]
+            expected_lows[column] = low
+            expected_pivots[low] = column
+
+    assert [vineyard.low(i) for i in range(len(vineyard))] == expected_lows
+    assert [vineyard.pivot(i) for i in range(len(vineyard))] == expected_pivots
+
+
 def assert_matches_recomputation(vineyard):
     expected = recompute_matrix_v(BOUNDARY, order(vineyard))
 
     assert vineyard_state(vineyard) == expected
+    assert_low_pivot_caches_match_columns(vineyard)
+
+
+def assert_pairs_match_recomputation(vineyard, columns):
+    _, _, expected_pairs = recompute_matrix_v(columns, order(vineyard))
+
+    assert pairs(vineyard) == expected_pairs
+    assert_low_pivot_caches_match_columns(vineyard)
+
+
+def transpose_and_assert_pair_locality(vineyard, position):
+    before = pairs(vineyard)
+    a = vineyard.cell_at(position)
+    b = vineyard.cell_at(position + 1)
+    local = {a, b, before[a], before[b]}
+    local.discard(vineyard.unpaired)
+
+    vineyard.transpose_position(position)
+
+    after = pairs(vineyard)
+    for cell in range(len(vineyard)):
+        if cell not in local:
+            assert after[cell] == before[cell]
 
 
 def test_vineyard_initializes_from_matrix_v_reduction():
@@ -94,3 +148,11 @@ def test_vineyard_handles_multiple_adjacent_transpositions():
         vineyard.transpose_position(position)
         assert_matches_recomputation(vineyard)
 
+
+def test_vineyard_handles_triangle_vertex_and_edge_transpositions():
+    vineyard = d.Vineyard(d.Zp(PRIME), TRIANGLE_BOUNDARY)
+
+    assert_pairs_match_recomputation(vineyard, TRIANGLE_BOUNDARY)
+    for position in [0, 1, 0, 3, 4, 3]:
+        transpose_and_assert_pair_locality(vineyard, position)
+        assert_pairs_match_recomputation(vineyard, TRIANGLE_BOUNDARY)

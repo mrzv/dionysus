@@ -1,7 +1,7 @@
 #pragma once
 
 #include <algorithm>
-#include <initializer_list>
+#include <array>
 #include <limits>
 #include <stdexcept>
 #include <utility>
@@ -154,6 +154,8 @@ class Vineyard
         using Entry        = ChainEntry<Field, Index>;
         using Chain        = std::vector<Entry>;
         using Chains       = std::vector<Chain>;
+        using Indices      = std::vector<Index>;
+        using LocalCells   = std::array<Index, 4>;
         using Matrix       = VineyardMatrix<Field, Index>;
         using Persistence  = OrdinaryPersistenceWithV<Field, Index>;
 
@@ -161,7 +163,8 @@ class Vineyard
         Vineyard(const Field& field, Chains boundary):
             field_(field),
             reduced_(field_, boundary.size()),
-            chains_()
+            chains_(),
+            pairs_(boundary.size(), unpaired())
         {
             for (Index i = 0; i < size(); ++i)
                 validate_chain(boundary[i]);
@@ -177,6 +180,7 @@ class Vineyard
             {
                 reduced_.columns_[i] = std::move(persistence.column(i));
                 reduced_.set_low_unchecked(i, initial_low(reduced_.columns_[i]));
+                pairs_[i] = persistence.pair(i);
             }
         }
 
@@ -191,13 +195,7 @@ class Vineyard
         Index           low(Index column) const                  { return reduced_.low(column); }
         Index           pivot(Index row) const                   { return reduced_.pivot(row); }
 
-        Index pair(Index i) const
-        {
-            Index l = low(i);
-            if (l != unpaired())
-                return l;
-            return pivot(i);
-        }
+        Index           pair(Index i) const                      { return pairs_.at(i); }
 
         std::pair<Index, Index> transpose_position(Index p)
         {
@@ -206,13 +204,39 @@ class Vineyard
 
             Index a = reduced_.cell_at(p);
             Index b = reduced_.cell_at(p + 1);
-
+            LocalCells local = {{ a, b, pairs_[a], pairs_[b] }};
+            bool a_positive = reduced_.low(a) == unpaired();
+            bool b_positive = reduced_.low(b) == unpaired();
+            Index low_a = reduced_.low(a);
+            Index low_b = reduced_.low(b);
             Index pivot_a = reduced_.pivot(a);
             Index pivot_b = reduced_.pivot(b);
+            bool r_pivot_b_contains_a = pivot_b != unpaired() && contains(reduced_.columns_[pivot_b], a);
 
+            bool cancelled_v = cancel_chain_entry(b, a);
             auto swapped = reduced_.transpose_position(p);
-            cancel_chain_entry(b, a);
-            repair({ a, b, pivot_a, pivot_b });
+
+            if (a_positive && b_positive)
+            {
+                if (pivot_a != unpaired() && pivot_b != unpaired() && r_pivot_b_contains_a)
+                {
+                    if (reduced_.position(pivot_a) < reduced_.position(pivot_b))
+                        add_to_cancel_low(pivot_b, pivot_a, a);
+                    else
+                        add_to_cancel_low(pivot_a, pivot_b, a);
+                }
+            } else if (!a_positive && !b_positive)
+            {
+                if (cancelled_v && reduced_.position(low_b) < reduced_.position(low_a))
+                    add_to_cancel_low(a, b, low_a);
+            } else if (!a_positive && b_positive)
+            {
+                if (cancelled_v)
+                    add_to_cancel_low(a, b, low_a);
+            }
+
+            refresh_local_lows(local);
+            refresh_local_pairs(local);
             return swapped;
         }
 
@@ -231,62 +255,67 @@ class Vineyard
                 validate_index(e.index());
         }
 
-        void repair(std::initializer_list<Index> candidates)
+        void refresh_local_lows(const LocalCells& local)
         {
-            std::vector<Index> queue;
-            std::vector<bool> queued(size(), false);
-
-            auto enqueue = [this, &queue, &queued](Index column)
+            for (size_t i = 0; i < local.size(); ++i)
             {
-                if (column == unpaired())
-                    return;
-                validate_index(column);
-                reduced_.set_low_unchecked(column, unpaired());
-                if (!queued[column])
-                {
-                    queued[column] = true;
-                    queue.emplace_back(column);
-                }
-            };
-
-            for (Index column : candidates)
-                enqueue(column);
-
-            while (!queue.empty())
-            {
-                auto next = std::min_element(queue.begin(), queue.end(), [this](Index x, Index y)
-                                             { return reduced_.position(x) < reduced_.position(y); });
-                Index column = *next;
-                queue.erase(next);
-                queued[column] = false;
-
-                while (true)
-                {
-                    Index l = reduced_.compute_low(reduced_.columns_[column]);
-                    if (l == unpaired())
-                    {
-                        reduced_.set_low_unchecked(column, unpaired());
-                        break;
-                    }
-
-                    Index other = reduced_.pivot(l);
-                    if (other == unpaired() || other == column)
-                    {
-                        reduced_.set_low_unchecked(column, l);
-                        break;
-                    }
-
-                    if (reduced_.position(other) < reduced_.position(column))
-                    {
-                        add_to_cancel_low(column, other, l);
-                    } else
-                    {
-                        enqueue(other);
-                        reduced_.set_low_unchecked(column, l);
-                        break;
-                    }
-                }
+                Index column = local[i];
+                if (skip_local(local, i, column))
+                    continue;
+                reduced_.set_low_unchecked(column, reduced_.compute_low(reduced_.columns_[column]));
             }
+        }
+
+        void refresh_local_pairs(const LocalCells& local)
+        {
+            for (size_t i = 0; i < local.size(); ++i)
+            {
+                Index cell = local[i];
+                if (skip_local(local, i, cell))
+                    continue;
+
+                Index partner = pairs_[cell];
+                if (partner != unpaired())
+                    pairs_[partner] = unpaired();
+                pairs_[cell] = unpaired();
+            }
+
+            for (size_t i = 0; i < local.size(); ++i)
+            {
+                Index column = local[i];
+                if (skip_local(local, i, column))
+                    continue;
+
+                Index l = reduced_.low(column);
+                if (l == unpaired())
+                    continue;
+                if (!contains(local, l))
+                    throw std::logic_error("vineyard local pair update escaped local set");
+                if ((pairs_[column] != unpaired() && pairs_[column] != l) ||
+                    (pairs_[l] != unpaired() && pairs_[l] != column))
+                    throw std::logic_error("vineyard pair update is inconsistent");
+                pairs_[column] = l;
+                pairs_[l] = column;
+            }
+        }
+
+        bool skip_local(const LocalCells& local, size_t i, Index cell) const
+        {
+            if (cell == unpaired())
+                return true;
+            validate_index(cell);
+            for (size_t j = 0; j < i; ++j)
+                if (local[j] == cell)
+                    return true;
+            return false;
+        }
+
+        bool contains(const LocalCells& local, Index cell) const
+        {
+            for (Index local_cell : local)
+                if (local_cell == cell)
+                    return true;
+            return false;
         }
 
         void add_to_cancel_low(Index column, Index other, Index low)
@@ -297,15 +326,16 @@ class Vineyard
             add_to(column, m, other);
         }
 
-        void cancel_chain_entry(Index column, Index other)
+        bool cancel_chain_entry(Index column, Index other)
         {
             FieldElement x;
             if (!coefficient(chains_[column], other, x))
-                return;
+                return false;
 
             FieldElement y = coefficient(chains_[other], other);
             FieldElement m = field_.neg(field_.div(x, y));
             add_to(column, m, other);
+            return true;
         }
 
         void add_to(Index column, FieldElement m, Index other)
@@ -332,6 +362,13 @@ class Vineyard
             return true;
         }
 
+        bool contains(const Chain& chain, Index row) const
+        {
+            auto it = std::lower_bound(chain.begin(), chain.end(), row,
+                                       [](const Entry& e, Index i) { return e.index() < i; });
+            return it != chain.end() && it->index() == row;
+        }
+
         static bool entry_cmp(const Entry& x, const Entry& y)     { return x.index() < y.index(); }
 
         static Index initial_low(const Chain& chain)
@@ -344,6 +381,7 @@ class Vineyard
         Field       field_;
         Matrix      reduced_;
         Chains      chains_;
+        Indices     pairs_;
 };
 
 }
