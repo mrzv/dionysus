@@ -3,6 +3,7 @@
 #include <cmath>
 #include <limits>
 #include <map>
+#include <queue>
 #include <sstream>
 #include <string>
 #include <tuple>
@@ -71,6 +72,20 @@ struct HomotopyData
     std::vector<double>     values1;
     std::vector<unsigned>   dimensions;
 };
+
+struct CrossingCandidate
+{
+    double  time;
+    Index   left;
+    Index   right;
+
+    bool operator<(const CrossingCandidate& other) const
+    {
+        return time > other.time;
+    }
+};
+
+using EventQueue = std::priority_queue<CrossingCandidate>;
 
 double value_at(const std::vector<double>& values0, const std::vector<double>& values1, Index cell, double t)
 {
@@ -317,26 +332,60 @@ bool process_degeneracies(VineyardHomotopyResult& result,
 }
 
 template<class Vineyard>
-double next_event_time(const Vineyard& vineyard,
-                       const std::vector<double>& values0,
-                       const std::vector<double>& values1,
-                       double current_t)
+double crossing_time(const Vineyard& vineyard,
+                     const std::vector<double>& values0,
+                     const std::vector<double>& values1,
+                     Index position,
+                     double current_t)
 {
-    double next_t = std::numeric_limits<double>::infinity();
+    Index a = vineyard.cell_at(position);
+    Index b = vineyard.cell_at(position + 1);
+    double d = value_at(values0, values1, b, current_t) - value_at(values0, values1, a, current_t);
+    double sd = slope(values0, values1, b) - slope(values0, values1, a);
+    if (d > epsilon && sd < -epsilon)
+    {
+        double t = current_t - d / sd;
+        if (t > current_t + epsilon && t <= 1.0 + epsilon)
+            return std::min(1.0, t);
+    }
+    return std::numeric_limits<double>::infinity();
+}
+
+template<class Vineyard>
+EventQueue build_event_queue(const Vineyard& vineyard,
+                             const std::vector<double>& values0,
+                             const std::vector<double>& values1,
+                             double current_t)
+{
+    EventQueue queue;
     for (Index p = 0; p + 1 < vineyard.size(); ++p)
     {
-        Index a = vineyard.cell_at(p);
-        Index b = vineyard.cell_at(p + 1);
-        double d = value_at(values0, values1, b, current_t) - value_at(values0, values1, a, current_t);
-        double sd = slope(values0, values1, b) - slope(values0, values1, a);
-        if (d > epsilon && sd < -epsilon)
-        {
-            double t = current_t - d / sd;
-            if (t > current_t + epsilon && t <= 1.0 + epsilon)
-                next_t = std::min(next_t, std::min(1.0, t));
-        }
+        double t = crossing_time(vineyard, values0, values1, p, current_t);
+        if (std::isfinite(t))
+            queue.push(CrossingCandidate { t, vineyard.cell_at(p), vineyard.cell_at(p + 1) });
     }
-    return next_t;
+    return queue;
+}
+
+template<class Vineyard>
+double pop_next_event_time(EventQueue& queue,
+                           const Vineyard& vineyard,
+                           double current_t)
+{
+    while (!queue.empty())
+    {
+        CrossingCandidate candidate = queue.top();
+        queue.pop();
+
+        if (candidate.time <= current_t + epsilon)
+            continue;
+        if (candidate.time > 1.0 + epsilon)
+            continue;
+        if (vineyard.position(candidate.left) + 1 != vineyard.position(candidate.right))
+            continue;
+        return std::min(1.0, candidate.time);
+    }
+    return std::numeric_limits<double>::infinity();
 }
 
 template<class Vineyard>
@@ -356,10 +405,11 @@ VineyardHomotopyResult run_homotopy(const PyFiltration& filtration,
     bool changed_at_current = process_degeneracies(result, *vineyard, data, current_t);
     if (changed_at_current)
         last_event = static_cast<int>(result.events.size()) - 1;
+    EventQueue event_queue = build_event_queue(*vineyard, data.values0, data.values1, current_t);
 
     while (current_t < 1.0 - epsilon)
     {
-        double next_t = next_event_time(*vineyard, data.values0, data.values1, current_t);
+        double next_t = pop_next_event_time(event_queue, *vineyard, current_t);
         if (!std::isfinite(next_t) || next_t > 1.0 - epsilon)
         {
             append_interval(result, active_vines, *vineyard, data.values0, data.values1, current_t, 1.0, last_event, -1);
@@ -371,8 +421,10 @@ VineyardHomotopyResult run_homotopy(const PyFiltration& filtration,
         append_interval(result, active_vines, *vineyard, data.values0, data.values1,
                         current_t, next_t, last_event, first_event_at_time);
         current_t = next_t;
-        process_degeneracies(result, *vineyard, data, current_t);
-        last_event = static_cast<int>(result.events.size()) - 1;
+        bool changed = process_degeneracies(result, *vineyard, data, current_t);
+        if (changed)
+            last_event = static_cast<int>(result.events.size()) - 1;
+        event_queue = build_event_queue(*vineyard, data.values0, data.values1, current_t);
     }
 
     result.final_order = current_order(*vineyard);
