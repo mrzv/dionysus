@@ -1,4 +1,5 @@
 import dionysus as d
+import pytest
 
 
 PRIME = 5
@@ -242,3 +243,23 @@ def test_vineyard_u_handles_triangle_vertex_and_edge_transpositions():
         transpose_and_assert_pair_locality(vineyard, position)
         assert_pairs_match_recomputation(vineyard, TRIANGLE_BOUNDARY)
         assert_reconstructs_boundary(vineyard, TRIANGLE_BOUNDARY)
+
+
+def test_vineyard_factory_defaults_to_matrix_v():
+    vineyard = d.Vineyard(d.Zp(PRIME), BOUNDARY)
+
+    assert isinstance(vineyard, d.VineyardV)
+    assert_matches_recomputation(vineyard)
+
+
+def test_vineyard_factory_supports_matrix_u():
+    vineyard = d.Vineyard(d.Zp(PRIME), BOUNDARY, method="matrix_u")
+
+    assert isinstance(vineyard, d.VineyardU)
+    assert_u_matches_recomputation(vineyard)
+    assert_reconstructs_boundary(vineyard, BOUNDARY)
+
+
+def test_vineyard_factory_rejects_unknown_method():
+    with pytest.raises(ValueError, match="unknown vineyard method"):
+        d.Vineyard(d.Zp(PRIME), BOUNDARY, method="unknown")

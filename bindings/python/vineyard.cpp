@@ -1,6 +1,7 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 #include <sstream>
+#include <string>
 namespace py = pybind11;
 
 #include <dionysus/vineyard.h>
@@ -34,6 +35,15 @@ void init_vineyard(py::module& m)
         for (const auto& entry : chain)
             entries.emplace_back(entry.element(), entry.index());
         return entries;
+    };
+
+    auto make_chains = [make_chain](Columns columns)
+    {
+        PyVineyardMatrix::Chains chains;
+        chains.reserve(columns.size());
+        for (auto& column : columns)
+            chains.emplace_back(make_chain(std::move(column)));
+        return chains;
     };
 
     py::class_<PyVineyardMatrix>(m, "VineyardMatrix", "matrix storage for vineyard updates using stable cell ids")
@@ -78,13 +88,9 @@ void init_vineyard(py::module& m)
     ;
 
     py::class_<PyVineyardV>(m, "VineyardV", "matrix_v-based vineyard state for adjacent transpositions")
-        .def(py::init([make_chain](PyZpField field, Columns columns)
+        .def(py::init([make_chains](PyZpField field, Columns columns)
                        {
-                           PyVineyardV::Chains chains;
-                           chains.reserve(columns.size());
-                           for (auto& column : columns)
-                               chains.emplace_back(make_chain(std::move(column)));
-                           return new PyVineyardV(field, std::move(chains));
+                           return new PyVineyardV(field, make_chains(std::move(columns)));
                        }), "field"_a = PyZpField(2), "columns"_a = Columns())
         .def("__len__",      &PyVineyardV::size,      "number of cells")
         .def("field",        &PyVineyardV::field,     "field used for coefficients")
@@ -116,13 +122,9 @@ void init_vineyard(py::module& m)
     ;
 
     py::class_<PyVineyardU>(m, "VineyardU", "matrix_u-based vineyard state for adjacent transpositions")
-        .def(py::init([make_chain](PyZpField field, Columns columns)
+        .def(py::init([make_chains](PyZpField field, Columns columns)
                        {
-                           PyVineyardU::Chains chains;
-                           chains.reserve(columns.size());
-                           for (auto& column : columns)
-                               chains.emplace_back(make_chain(std::move(column)));
-                           return new PyVineyardU(field, std::move(chains));
+                           return new PyVineyardU(field, make_chains(std::move(columns)));
                        }), "field"_a = PyZpField(2), "columns"_a = Columns())
         .def("__len__",      &PyVineyardU::size,      "number of cells")
         .def("field",        &PyVineyardU::field,     "field used for coefficients")
@@ -152,4 +154,14 @@ void init_vineyard(py::module& m)
                                    return oss.str();
                                })
     ;
+
+    m.def("Vineyard", [make_chains](PyZpField field, Columns columns, std::string method) -> py::object
+          {
+              if (method == "matrix_v")
+                  return py::cast(new PyVineyardV(field, make_chains(std::move(columns))), py::return_value_policy::take_ownership);
+              if (method == "matrix_u")
+                  return py::cast(new PyVineyardU(field, make_chains(std::move(columns))), py::return_value_policy::take_ownership);
+              throw py::value_error("unknown vineyard method: " + method);
+          }, "field"_a = PyZpField(2), "columns"_a = Columns(), "method"_a = "matrix_v",
+          "construct a vineyard state using method='matrix_v' or method='matrix_u'");
 }
