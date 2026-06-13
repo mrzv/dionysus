@@ -65,10 +65,9 @@ The stable ids do not change during transpositions. Methods such as ``pair()``,
 ``low()``, ``pivot()``, ``reduced_column()``, ``chain()``, and ``trail()`` use
 those stable ids.
 
-By default, vineyard updates maintain a valid reduced decomposition but do not
-force the same representatives that a fresh reduction would choose at the final
-order. Pass ``lazy=True`` to additionally clear crossing-bar entries in ``V`` or
-``U`` and maintain the lazy decomposition produced by recomputing from scratch:
+By default, vineyard updates maintain a valid reduced decomposition but may keep
+extra representatives in ``V`` or ``U``. Pass ``lazy=True`` to additionally clear
+the local crossing-bar entry detected by the transposition case analysis:
 
 .. doctest::
 
@@ -129,8 +128,8 @@ vineyard state:
     >>> isinstance(result.vineyard, d.VineyardU)
     True
 
-Pass ``lazy=True`` to ``vineyard_linear_homotopy`` when the final ``V`` or ``U``
-representatives should match a fresh reduction at the final order.
+Pass ``lazy=True`` to ``vineyard_linear_homotopy`` to perform the same local lazy
+cleanup during the sweep.
 
 The vines are stored as piecewise-linear segments. Each segment records its time
 interval, birth and death values at the interval endpoints, and the stable cell

@@ -247,6 +247,7 @@ class Vineyard
 
             if (a_positive && b_positive)
             {
+                bool pairing_switched = false;
                 if (r_pivot_b_contains_a)
                 {
                     if (pivot_a == unpaired())
@@ -254,6 +255,7 @@ class Vineyard
                         reduced_.set_low_unchecked(pivot_b, a);
                         pair_cells(a, pivot_b);
                         clear_pair(b);
+                        pairing_switched = true;
                     } else if (reduced_.position(pivot_a) < reduced_.position(pivot_b))
                     {
                         add_to_cancel_low(pivot_b, pivot_a, a);
@@ -267,7 +269,15 @@ class Vineyard
                         reduced_.set_low_unchecked(pivot_a, b);
                         pair_cells(a, pivot_b);
                         pair_cells(b, pivot_a);
+                        pairing_switched = true;
                     }
+                }
+
+                if (!pairing_switched && pivot_a != unpaired() && pivot_b != unpaired() &&
+                    reduced_.position(pivot_b) < reduced_.position(pivot_a))
+                {
+                    if (lazy_)
+                        clear_lazy_entry(pivot_a, pivot_b, Decomposition());
                 }
             } else if (!a_positive && !b_positive)
             {
@@ -282,6 +292,8 @@ class Vineyard
                 {
                     reduced_.set_low_unchecked(a, low_a);
                     reduced_.set_low_unchecked(b, low_b);
+                    if (lazy_)
+                        clear_lazy_entry(b, a, Decomposition());
                 }
             } else if (!a_positive && b_positive)
             {
@@ -299,13 +311,6 @@ class Vineyard
                         clear_pair(a);
                 }
             }
-
-            repair_lazy_around(a);
-            repair_lazy_around(b);
-            repair_lazy_around(low_a);
-            repair_lazy_around(low_b);
-            repair_lazy_around(pivot_a);
-            repair_lazy_around(pivot_b);
 
             return swapped;
         }
@@ -387,89 +392,6 @@ class Vineyard
             FieldElement m = field_.neg(field_.div(x, y));
             add_to(column, field_.neg(m), other);
             return true;
-        }
-
-        void repair_lazy_around(Index cell)
-        {
-            if (!lazy_)
-                return;
-            if (cell == unpaired())
-                return;
-            validate_index(cell);
-
-            if (reduced_.low(cell) != unpaired())
-                repair_lazy_death(cell, Decomposition());
-
-            Index partner = pairs_[cell];
-            if (partner != unpaired() && reduced_.low(partner) != unpaired())
-                repair_lazy_death(partner, Decomposition());
-        }
-
-        void repair_lazy_death(Index death, VineyardVDecomposition)
-        {
-            while (repair_one_lazy_v_entry(death))
-            {}
-        }
-
-        bool repair_one_lazy_v_entry(Index death)
-        {
-            Chain column = basis_[death];
-            for (const Entry& entry : column)
-            {
-                Index other_death = entry.index();
-                if (other_death == death)
-                    continue;
-                if (other_death >= size())
-                    continue;
-                if (!bars_cross(death, other_death))
-                    continue;
-                return clear_lazy_entry(death, other_death, VineyardVDecomposition());
-            }
-            return false;
-        }
-
-        void repair_lazy_death(Index death, VineyardUDecomposition)
-        {
-            while (repair_one_lazy_u_entry(death))
-            {}
-        }
-
-        bool repair_one_lazy_u_entry(Index death)
-        {
-            for (Index other_death = 0; other_death < size(); ++other_death)
-            {
-                if (other_death == death)
-                    continue;
-                if (!bars_cross(death, other_death))
-                    continue;
-                if (clear_lazy_entry(death, other_death, VineyardUDecomposition()))
-                    return true;
-            }
-            return false;
-        }
-
-        bool bars_cross(Index death, Index other_death) const
-        {
-            if (reduced_.low(death) == unpaired() || reduced_.low(other_death) == unpaired())
-                return false;
-
-            Index birth = pairs_[death];
-            Index other_birth = pairs_[other_death];
-            if (birth == unpaired() || other_birth == unpaired())
-                return false;
-            if (birth == other_birth || death == other_death)
-                return false;
-            if (reduced_.position(death) < reduced_.position(birth) ||
-                reduced_.position(other_death) < reduced_.position(other_birth))
-                return false;
-
-            Index b0 = reduced_.position(birth);
-            Index d0 = reduced_.position(death);
-            Index b1 = reduced_.position(other_birth);
-            Index d1 = reduced_.position(other_death);
-
-            return (b0 < b1 && b1 < d0 && d0 < d1) ||
-                   (b1 < b0 && b0 < d1 && d1 < d0);
         }
 
         bool clear_lazy_entry(Index column, Index other, VineyardVDecomposition)

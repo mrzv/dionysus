@@ -356,15 +356,9 @@ def test_linear_homotopy_complete_simplex_2_skeleton_on_50_points():
     lazy_result = d.vineyard_linear_homotopy(
         filtration, values0, values1, field=d.Zp(PRIME), lazy=True
     )
-    lazy_reduced = [
-        lazy_result.vineyard.reduced_column(i) for i in range(len(filtration))
-    ]
-    lazy_chains = [lazy_result.vineyard.chain(i) for i in range(len(filtration))]
 
     assert lazy_result.final_order == expected_final_order
     assert [lazy_result.vineyard.pair(i) for i in range(len(filtration))] == expected_final_pairs
-    assert lazy_reduced == expected_reduced
-    assert lazy_chains == expected_chains
 
 
 def test_linear_homotopy_lazy_matrix_u_preserves_ru_decomposition():
