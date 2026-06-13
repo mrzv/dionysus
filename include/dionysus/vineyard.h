@@ -189,11 +189,12 @@ class Vineyard
         using Persistence  = typename PersistenceTraits::Persistence;
 
     public:
-        Vineyard(const Field& field, Chains boundary):
+        Vineyard(const Field& field, Chains boundary, bool lazy = false):
             field_(field),
             reduced_(field_, boundary.size()),
             basis_(),
-            pairs_(boundary.size(), unpaired())
+            pairs_(boundary.size(), unpaired()),
+            lazy_(lazy)
         {
             for (Index i = 0; i < size(); ++i)
                 validate_chain(boundary[i]);
@@ -246,6 +247,7 @@ class Vineyard
 
             if (a_positive && b_positive)
             {
+                bool pairing_switched = false;
                 if (r_pivot_b_contains_a)
                 {
                     if (pivot_a == unpaired())
@@ -253,6 +255,7 @@ class Vineyard
                         reduced_.set_low_unchecked(pivot_b, a);
                         pair_cells(a, pivot_b);
                         clear_pair(b);
+                        pairing_switched = true;
                     } else if (reduced_.position(pivot_a) < reduced_.position(pivot_b))
                     {
                         add_to_cancel_low(pivot_b, pivot_a, a);
@@ -266,7 +269,15 @@ class Vineyard
                         reduced_.set_low_unchecked(pivot_a, b);
                         pair_cells(a, pivot_b);
                         pair_cells(b, pivot_a);
+                        pairing_switched = true;
                     }
+                }
+
+                if (!pairing_switched && pivot_a != unpaired() && pivot_b != unpaired() &&
+                    reduced_.position(pivot_b) < reduced_.position(pivot_a))
+                {
+                    if (lazy_)
+                        clear_lazy_entry(pivot_a, pivot_b, Decomposition());
                 }
             } else if (!a_positive && !b_positive)
             {
@@ -281,6 +292,8 @@ class Vineyard
                 {
                     reduced_.set_low_unchecked(a, low_a);
                     reduced_.set_low_unchecked(b, low_b);
+                    if (lazy_)
+                        clear_lazy_entry(b, a, Decomposition());
                 }
             } else if (!a_positive && b_positive)
             {
@@ -381,6 +394,30 @@ class Vineyard
             return true;
         }
 
+        bool clear_lazy_entry(Index column, Index other, VineyardVDecomposition)
+        {
+            FieldElement x;
+            if (!coefficient(basis_[column], other, x))
+                return false;
+
+            FieldElement y = coefficient(basis_[other], other);
+            FieldElement m = field_.neg(field_.div(x, y));
+            add_to(column, m, other);
+            return true;
+        }
+
+        bool clear_lazy_entry(Index column, Index other, VineyardUDecomposition)
+        {
+            FieldElement x;
+            if (!coefficient(basis_[other], column, x))
+                return false;
+
+            FieldElement y = coefficient(basis_[column], column);
+            FieldElement m = field_.div(x, y);
+            add_to(column, m, other);
+            return true;
+        }
+
         void add_to(Index column, FieldElement m, Index other)
         {
             dionysus::Chain<Chain>::addto(reduced_.columns_[column], m, reduced_.columns_[other], field_, entry_cmp);
@@ -435,6 +472,7 @@ class Vineyard
         Matrix      reduced_;
         Chains      basis_;
         Indices     pairs_;
+        bool        lazy_;
 };
 
 template<class Field_, typename Index_ = unsigned>

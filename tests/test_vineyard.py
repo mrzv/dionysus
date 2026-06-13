@@ -20,7 +20,6 @@ TRIANGLE_BOUNDARY = [
     [(1, 3), (1, 4), (4, 5)],
 ]
 
-
 def normalize(column):
     return [
         (coefficient % PRIME, index)

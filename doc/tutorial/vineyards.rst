@@ -65,6 +65,17 @@ The stable ids do not change during transpositions. Methods such as ``pair()``,
 ``low()``, ``pivot()``, ``reduced_column()``, ``chain()``, and ``trail()`` use
 those stable ids.
 
+By default, vineyard updates maintain a valid reduced decomposition.
+Pass ``lazy=True`` to additionally maintain the same decomposition as
+would be produced by computing persistence from scratch (using the original
+ELZ algorithm):
+
+.. doctest::
+
+    >>> lazy = d.Vineyard(f, field=d.Zp(2), lazy=True)
+    >>> lazy.transpose(0)
+    (0, 1)
+
 Linear homotopy
 ~~~~~~~~~~~~~~~
 
@@ -117,6 +128,8 @@ vineyard state:
     ...                                     method='matrix_u')
     >>> isinstance(result.vineyard, d.VineyardU)
     True
+
+Pass ``lazy=True`` to ``vineyard_linear_homotopy`` to maintain the lazy decomposition.
 
 The vines are stored as piecewise-linear segments. Each segment records its time
 interval, birth and death values at the interval endpoints, and the stable cell
