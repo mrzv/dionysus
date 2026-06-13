@@ -133,19 +133,14 @@ ids that define the feature:
     ...     for segment in vine.segments:
     ...         if segment.death_cell == unpaired:
     ...             death_cell = 'inf'
-    ...             point0 = (round(segment.birth0, 1), 'inf')
-    ...             point1 = (round(segment.birth1, 1), 'inf')
+    ...             endpoint0 = (round(segment.t0, 1), round(segment.birth0, 1), 'inf')
+    ...             endpoint1 = (round(segment.t1, 1), round(segment.birth1, 1), 'inf')
     ...         else:
     ...             death_cell = segment.death_cell
-    ...             point0 = (round(segment.birth0, 1), round(segment.death0, 1))
-    ...             point1 = (round(segment.birth1, 1), round(segment.death1, 1))
-    ...         print(i,
-    ...               (round(segment.t0, 1), round(segment.t1, 1)),
-    ...               segment.birth_cell,
-    ...               death_cell,
-    ...               point0,
-    ...               point1)
-    0 (0.0, 0.5) 0 inf (0.0, 'inf') (0.5, 'inf')
-    0 (0.5, 1.0) 1 inf (0.5, 'inf') (0.0, 'inf')
-    1 (0.0, 0.5) 1 2 (1.0, 2.0) (0.5, 2.0)
-    1 (0.5, 1.0) 0 2 (0.5, 2.0) (1.0, 2.0)
+    ...             endpoint0 = (round(segment.t0, 1), round(segment.birth0, 1), round(segment.death0, 1))
+    ...             endpoint1 = (round(segment.t1, 1), round(segment.birth1, 1), round(segment.death1, 1))
+    ...         print(i, segment.birth_cell, death_cell, endpoint0, endpoint1)
+    0 0 inf (0.0, 0.0, 'inf') (0.5, 0.5, 'inf')
+    0 1 inf (0.5, 0.5, 'inf') (1.0, 0.0, 'inf')
+    1 1 2 (0.0, 1.0, 2.0) (0.5, 0.5, 2.0)
+    1 0 2 (0.5, 0.5, 2.0) (1.0, 1.0, 2.0)
