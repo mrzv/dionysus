@@ -18,6 +18,7 @@
 #
 # import os
 # import sys
+import re
 # sys.path.insert(0, os.path.abspath('.'))
 
 
@@ -159,3 +160,14 @@ texinfo_documents = [
 ]
 
 add_module_names = False
+
+
+def _format_pybind11_signatures(app, what, name, obj, options, lines):
+    for i, line in enumerate(lines):
+        match = re.match(r"^(\s*\d+\.\s+)(.*dionysus\._dionysus.*)$", line)
+        if match:
+            lines[i] = f"{match.group(1)}``{match.group(2)}``"
+
+
+def setup(app):
+    app.connect('autodoc-process-docstring', _format_pybind11_signatures)
