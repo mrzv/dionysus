@@ -1,7 +1,9 @@
+.. _vineyards:
+
 Vineyards
 ---------
 
-Vineyards track how persistence pairings and persistence points change while a
+Vineyards track how persistence pairings and diagram points change as
 filtration order changes. Dionysus exposes two related interfaces:
 
 * ``VineyardV`` and ``VineyardU`` maintain a reduced boundary matrix under
