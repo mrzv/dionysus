@@ -101,6 +101,32 @@ def recompute_endpoint_matrix_v(filtration, values0, values1):
     return stable_reduced, stable_chains, stable_pairs, current_order
 
 
+def stable_boundary_columns(filtration, values0):
+    stable_to_input, input_to_stable = stable_maps(filtration, values0)
+    columns = [[] for _ in stable_to_input]
+    for stable, input_index in enumerate(stable_to_input):
+        simplex = filtration[input_index]
+        column = []
+        for boundary_index, face in enumerate(simplex.boundary()):
+            coefficient = 1 if boundary_index % 2 == 0 else PRIME - 1
+            column.append((coefficient, input_to_stable[filtration.index(face)]))
+        columns[stable] = normalize(column)
+    return columns
+
+
+def multiply_reduced_by_trails(reduced, trails):
+    columns = [{} for _ in range(len(reduced))]
+    for row, trail in enumerate(trails):
+        for coefficient, column_index in trail:
+            column = columns[column_index]
+            for reduced_coefficient, reduced_index in reduced[row]:
+                column[reduced_index] = (
+                    column.get(reduced_index, 0) + coefficient * reduced_coefficient
+                ) % PRIME
+
+    return [normalize((coefficient, index) for index, coefficient in column.items()) for column in columns]
+
+
 def assert_final_pairs_match_recomputation(filtration, values0, values1, method="matrix_v"):
     result = d.vineyard_linear_homotopy(
         filtration, values0, values1, field=d.Zp(PRIME), method=method
@@ -326,6 +352,41 @@ def test_linear_homotopy_complete_simplex_2_skeleton_on_50_points():
     assert [result.vineyard.pair(i) for i in range(len(filtration))] == expected_final_pairs
     assert vineyard_reduced != expected_reduced
     assert vineyard_chains != expected_chains
+
+    lazy_result = d.vineyard_linear_homotopy(
+        filtration, values0, values1, field=d.Zp(PRIME), lazy=True
+    )
+    lazy_reduced = [
+        lazy_result.vineyard.reduced_column(i) for i in range(len(filtration))
+    ]
+    lazy_chains = [lazy_result.vineyard.chain(i) for i in range(len(filtration))]
+
+    assert lazy_result.final_order == expected_final_order
+    assert [lazy_result.vineyard.pair(i) for i in range(len(filtration))] == expected_final_pairs
+    assert lazy_reduced == expected_reduced
+    assert lazy_chains == expected_chains
+
+
+def test_linear_homotopy_lazy_matrix_u_preserves_ru_decomposition():
+    filtration = d.Filtration([[0], [1], [2], [0, 1], [1, 2], [0, 2]])
+    values0 = [0.0, 1.0, 2.0, 2.0, 3.0, 3.0]
+    values1 = [2.0, 0.0, 1.0, 2.0, 1.0, 3.0]
+
+    result = d.vineyard_linear_homotopy(
+        filtration,
+        values0,
+        values1,
+        field=d.Zp(PRIME),
+        method="matrix_u",
+        lazy=True,
+    )
+
+    reduced = [result.vineyard.reduced_column(i) for i in range(len(filtration))]
+    trails = [result.vineyard.trail(i) for i in range(len(filtration))]
+
+    assert multiply_reduced_by_trails(reduced, trails) == stable_boundary_columns(
+        filtration, values0
+    )
 
 
 def test_linear_homotopy_rejects_non_filtration_endpoint_values():

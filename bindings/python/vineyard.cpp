@@ -641,12 +641,13 @@ bool pop_next_candidate(EventQueue& queue,
 
 template<class Vineyard>
 VineyardLinearHomotopyResult run_linear_homotopy(const PyFiltration& filtration,
-                                                const std::vector<double>& values0,
-                                                const std::vector<double>& values1,
-                                                const PyZpField& field)
+                                                 const std::vector<double>& values0,
+                                                 const std::vector<double>& values1,
+                                                 const PyZpField& field,
+                                                 bool lazy)
 {
     LinearHomotopyData data = prepare_linear_homotopy_data(filtration, values0, values1, field);
-    auto* vineyard = new Vineyard(field, data.boundary);
+    auto* vineyard = new Vineyard(field, data.boundary, lazy);
 
     VineyardLinearHomotopyResult result;
     ActiveVines active_vines;
@@ -793,14 +794,14 @@ void init_vineyard(py::module& m)
     ;
 
     py::class_<PyVineyardV>(m, "VineyardV", "matrix_v-based vineyard state for adjacent transpositions")
-        .def(py::init([make_chains](Columns columns, PyZpField field)
+        .def(py::init([make_chains](Columns columns, PyZpField field, bool lazy)
                         {
-                            return new PyVineyardV(field, make_chains(std::move(columns)));
-                        }), "columns"_a = Columns(), "field"_a = PyZpField(2))
-        .def(py::init([](const PyFiltration& filtration, PyZpField field)
+                            return new PyVineyardV(field, make_chains(std::move(columns)), lazy);
+                        }), "columns"_a = Columns(), "field"_a = PyZpField(2), "lazy"_a = false)
+        .def(py::init([](const PyFiltration& filtration, PyZpField field, bool lazy)
                        {
-                           return new PyVineyardV(field, boundary_from_filtration(filtration, field));
-                       }), "filtration"_a, "field"_a = PyZpField(2))
+                           return new PyVineyardV(field, boundary_from_filtration(filtration, field), lazy);
+                       }), "filtration"_a, "field"_a = PyZpField(2), "lazy"_a = false)
         .def("__len__",      &PyVineyardV::size,      "number of cells")
         .def("field",        &PyVineyardV::field,     "field used for coefficients")
         .def("cell_at",      &PyVineyardV::cell_at,   "cell id at a current filtration position")
@@ -831,14 +832,14 @@ void init_vineyard(py::module& m)
     ;
 
     py::class_<PyVineyardU>(m, "VineyardU", "matrix_u-based vineyard state for adjacent transpositions")
-        .def(py::init([make_chains](Columns columns, PyZpField field)
+        .def(py::init([make_chains](Columns columns, PyZpField field, bool lazy)
                         {
-                            return new PyVineyardU(field, make_chains(std::move(columns)));
-                        }), "columns"_a = Columns(), "field"_a = PyZpField(2))
-        .def(py::init([](const PyFiltration& filtration, PyZpField field)
+                            return new PyVineyardU(field, make_chains(std::move(columns)), lazy);
+                        }), "columns"_a = Columns(), "field"_a = PyZpField(2), "lazy"_a = false)
+        .def(py::init([](const PyFiltration& filtration, PyZpField field, bool lazy)
                        {
-                           return new PyVineyardU(field, boundary_from_filtration(filtration, field));
-                       }), "filtration"_a, "field"_a = PyZpField(2))
+                           return new PyVineyardU(field, boundary_from_filtration(filtration, field), lazy);
+                       }), "filtration"_a, "field"_a = PyZpField(2), "lazy"_a = false)
         .def("__len__",      &PyVineyardU::size,      "number of cells")
         .def("field",        &PyVineyardU::field,     "field used for coefficients")
         .def("cell_at",      &PyVineyardU::cell_at,   "cell id at a current filtration position")
@@ -868,37 +869,38 @@ void init_vineyard(py::module& m)
                                })
     ;
 
-    m.def("Vineyard", [make_chains](Columns columns, PyZpField field, std::string method) -> py::object
+    m.def("Vineyard", [make_chains](Columns columns, PyZpField field, std::string method, bool lazy) -> py::object
           {
               if (method == "matrix_v")
-                  return py::cast(new PyVineyardV(field, make_chains(std::move(columns))), py::return_value_policy::take_ownership);
+                  return py::cast(new PyVineyardV(field, make_chains(std::move(columns)), lazy), py::return_value_policy::take_ownership);
               if (method == "matrix_u")
-                  return py::cast(new PyVineyardU(field, make_chains(std::move(columns))), py::return_value_policy::take_ownership);
+                  return py::cast(new PyVineyardU(field, make_chains(std::move(columns)), lazy), py::return_value_policy::take_ownership);
               throw py::value_error("unknown vineyard method: " + method);
-          }, "columns"_a = Columns(), "field"_a = PyZpField(2), "method"_a = "matrix_v",
+          }, "columns"_a = Columns(), "field"_a = PyZpField(2), "method"_a = "matrix_v", "lazy"_a = false,
           "construct a vineyard state using method='matrix_v' or method='matrix_u'");
 
-    m.def("Vineyard", [](const PyFiltration& filtration, PyZpField field, std::string method) -> py::object
+    m.def("Vineyard", [](const PyFiltration& filtration, PyZpField field, std::string method, bool lazy) -> py::object
           {
               if (method == "matrix_v")
-                  return py::cast(new PyVineyardV(field, boundary_from_filtration(filtration, field)), py::return_value_policy::take_ownership);
+                  return py::cast(new PyVineyardV(field, boundary_from_filtration(filtration, field), lazy), py::return_value_policy::take_ownership);
               if (method == "matrix_u")
-                  return py::cast(new PyVineyardU(field, boundary_from_filtration(filtration, field)), py::return_value_policy::take_ownership);
+                  return py::cast(new PyVineyardU(field, boundary_from_filtration(filtration, field), lazy), py::return_value_policy::take_ownership);
               throw py::value_error("unknown vineyard method: " + method);
-          }, "filtration"_a, "field"_a = PyZpField(2), "method"_a = "matrix_v",
+          }, "filtration"_a, "field"_a = PyZpField(2), "method"_a = "matrix_v", "lazy"_a = false,
           "construct a vineyard state using method='matrix_v' or method='matrix_u'");
 
     m.def("vineyard_linear_homotopy", [](const PyFiltration& filtration,
                                          std::vector<double> values0,
-                                         std::vector<double> values1,
-                                         PyZpField field,
-                                         std::string method)
+                                          std::vector<double> values1,
+                                          PyZpField field,
+                                          std::string method,
+                                          bool lazy)
           {
               if (method == "matrix_v")
-                  return run_linear_homotopy<PyVineyardV>(filtration, values0, values1, field);
+                  return run_linear_homotopy<PyVineyardV>(filtration, values0, values1, field, lazy);
               if (method == "matrix_u")
-                  return run_linear_homotopy<PyVineyardU>(filtration, values0, values1, field);
+                  return run_linear_homotopy<PyVineyardU>(filtration, values0, values1, field, lazy);
               throw py::value_error("unknown vineyard method: " + method);
-          }, "filtration"_a, "values0"_a, "values1"_a, "field"_a = PyZpField(2), "method"_a = "matrix_v",
+          }, "filtration"_a, "values0"_a, "values1"_a, "field"_a = PyZpField(2), "method"_a = "matrix_v", "lazy"_a = false,
           "compute a vineyard linear homotopy between two filtration functions");
 }

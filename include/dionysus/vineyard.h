@@ -189,11 +189,12 @@ class Vineyard
         using Persistence  = typename PersistenceTraits::Persistence;
 
     public:
-        Vineyard(const Field& field, Chains boundary):
+        Vineyard(const Field& field, Chains boundary, bool lazy = false):
             field_(field),
             reduced_(field_, boundary.size()),
             basis_(),
-            pairs_(boundary.size(), unpaired())
+            pairs_(boundary.size(), unpaired()),
+            lazy_(lazy)
         {
             for (Index i = 0; i < size(); ++i)
                 validate_chain(boundary[i]);
@@ -299,6 +300,13 @@ class Vineyard
                 }
             }
 
+            repair_lazy_around(a);
+            repair_lazy_around(b);
+            repair_lazy_around(low_a);
+            repair_lazy_around(low_b);
+            repair_lazy_around(pivot_a);
+            repair_lazy_around(pivot_b);
+
             return swapped;
         }
 
@@ -381,6 +389,113 @@ class Vineyard
             return true;
         }
 
+        void repair_lazy_around(Index cell)
+        {
+            if (!lazy_)
+                return;
+            if (cell == unpaired())
+                return;
+            validate_index(cell);
+
+            if (reduced_.low(cell) != unpaired())
+                repair_lazy_death(cell, Decomposition());
+
+            Index partner = pairs_[cell];
+            if (partner != unpaired() && reduced_.low(partner) != unpaired())
+                repair_lazy_death(partner, Decomposition());
+        }
+
+        void repair_lazy_death(Index death, VineyardVDecomposition)
+        {
+            while (repair_one_lazy_v_entry(death))
+            {}
+        }
+
+        bool repair_one_lazy_v_entry(Index death)
+        {
+            Chain column = basis_[death];
+            for (const Entry& entry : column)
+            {
+                Index other_death = entry.index();
+                if (other_death == death)
+                    continue;
+                if (other_death >= size())
+                    continue;
+                if (!bars_cross(death, other_death))
+                    continue;
+                return clear_lazy_entry(death, other_death, VineyardVDecomposition());
+            }
+            return false;
+        }
+
+        void repair_lazy_death(Index death, VineyardUDecomposition)
+        {
+            while (repair_one_lazy_u_entry(death))
+            {}
+        }
+
+        bool repair_one_lazy_u_entry(Index death)
+        {
+            for (Index other_death = 0; other_death < size(); ++other_death)
+            {
+                if (other_death == death)
+                    continue;
+                if (!bars_cross(death, other_death))
+                    continue;
+                if (clear_lazy_entry(death, other_death, VineyardUDecomposition()))
+                    return true;
+            }
+            return false;
+        }
+
+        bool bars_cross(Index death, Index other_death) const
+        {
+            if (reduced_.low(death) == unpaired() || reduced_.low(other_death) == unpaired())
+                return false;
+
+            Index birth = pairs_[death];
+            Index other_birth = pairs_[other_death];
+            if (birth == unpaired() || other_birth == unpaired())
+                return false;
+            if (birth == other_birth || death == other_death)
+                return false;
+            if (reduced_.position(death) < reduced_.position(birth) ||
+                reduced_.position(other_death) < reduced_.position(other_birth))
+                return false;
+
+            Index b0 = reduced_.position(birth);
+            Index d0 = reduced_.position(death);
+            Index b1 = reduced_.position(other_birth);
+            Index d1 = reduced_.position(other_death);
+
+            return (b0 < b1 && b1 < d0 && d0 < d1) ||
+                   (b1 < b0 && b0 < d1 && d1 < d0);
+        }
+
+        bool clear_lazy_entry(Index column, Index other, VineyardVDecomposition)
+        {
+            FieldElement x;
+            if (!coefficient(basis_[column], other, x))
+                return false;
+
+            FieldElement y = coefficient(basis_[other], other);
+            FieldElement m = field_.neg(field_.div(x, y));
+            add_to(column, m, other);
+            return true;
+        }
+
+        bool clear_lazy_entry(Index column, Index other, VineyardUDecomposition)
+        {
+            FieldElement x;
+            if (!coefficient(basis_[other], column, x))
+                return false;
+
+            FieldElement y = coefficient(basis_[column], column);
+            FieldElement m = field_.div(x, y);
+            add_to(column, m, other);
+            return true;
+        }
+
         void add_to(Index column, FieldElement m, Index other)
         {
             dionysus::Chain<Chain>::addto(reduced_.columns_[column], m, reduced_.columns_[other], field_, entry_cmp);
@@ -435,6 +550,7 @@ class Vineyard
         Matrix      reduced_;
         Chains      basis_;
         Indices     pairs_;
+        bool        lazy_;
 };
 
 template<class Field_, typename Index_ = unsigned>
