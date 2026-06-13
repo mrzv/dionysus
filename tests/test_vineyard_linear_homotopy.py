@@ -68,6 +68,39 @@ def recompute_endpoint_pairs(filtration, values0, values1, method):
     return pairs, current_order
 
 
+def normalize(column):
+    return [
+        (coefficient % PRIME, index)
+        for coefficient, index in sorted(column, key=lambda entry: entry[1])
+        if coefficient % PRIME
+    ]
+
+
+def recompute_endpoint_matrix_v(filtration, values0, values1):
+    matrix_filtration, current_order = endpoint_matrix_filtration(filtration, values0, values1)
+    reduced, chains = d.homology_persistence(
+        matrix_filtration, prime=PRIME, method="matrix_v"
+    )
+
+    stable_reduced = [[] for _ in current_order]
+    stable_chains = [[] for _ in current_order]
+    stable_pairs = [reduced.unpaired for _ in current_order]
+
+    for position, stable in enumerate(current_order):
+        stable_reduced[stable] = normalize(
+            (entry.element, current_order[entry.index]) for entry in reduced[position]
+        )
+        stable_chains[stable] = normalize(
+            (entry.element, current_order[entry.index]) for entry in chains[position]
+        )
+
+        pair = reduced.pair(position)
+        if pair != reduced.unpaired:
+            stable_pairs[stable] = current_order[pair]
+
+    return stable_reduced, stable_chains, stable_pairs, current_order
+
+
 def assert_final_pairs_match_recomputation(filtration, values0, values1, method="matrix_v"):
     result = d.vineyard_linear_homotopy(
         filtration, values0, values1, field=d.Zp(PRIME), method=method
@@ -283,12 +316,16 @@ def test_linear_homotopy_complete_simplex_2_skeleton_on_50_points():
     assert [vineyard.pair(i) for i in range(len(filtration))] == expected_start_pairs
 
     result = d.vineyard_linear_homotopy(filtration, values0, values1, field=d.Zp(PRIME))
-    expected_final_pairs, expected_final_order = recompute_endpoint_pairs(
-        filtration, values0, values1, method="matrix_v"
+    expected_reduced, expected_chains, expected_final_pairs, expected_final_order = (
+        recompute_endpoint_matrix_v(filtration, values0, values1)
     )
+    vineyard_reduced = [result.vineyard.reduced_column(i) for i in range(len(filtration))]
+    vineyard_chains = [result.vineyard.chain(i) for i in range(len(filtration))]
 
     assert result.final_order == expected_final_order
     assert [result.vineyard.pair(i) for i in range(len(filtration))] == expected_final_pairs
+    assert vineyard_reduced != expected_reduced
+    assert vineyard_chains != expected_chains
 
 
 def test_linear_homotopy_rejects_non_filtration_endpoint_values():
