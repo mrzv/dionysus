@@ -33,6 +33,7 @@ Other features include:
 
   * :ref:`vineyards` allow to update persistence under adjacent filtration transpositions and linear homotopies. They also allow to maintain the lazy decomposition.
   * Alpha shape filtrations are available via `DioDe <https://github.com/mrzv/diode>`_.
+  * :ref:`fast-zigzag-apex` allow to efficiently compute zigzag persistence and compatible representatives by translating through the Mayer--Vietoris pyramid.
 
 **Dependencies:**
   * `Boost <http://www.boost.org/>`_, although Dionysus 2 doesn't link any of its libraries, so it's considerably easier to build the project.
