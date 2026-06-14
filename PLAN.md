@@ -131,9 +131,16 @@ Completed in the boundary extraction batch:
 
 ### Extract Freudenthal Construction
 
-- Move Freudenthal triangulation generation out of `bindings/python/freudenthal.cpp`.
-- Keep NumPy dtype/shape handling in the binding layer.
-- Avoid `const_cast` by constructing simplices with final data where possible.
+- Done: move Freudenthal triangulation generation out of `bindings/python/freudenthal.cpp`.
+- Done: keep NumPy dtype/shape handling in the binding layer.
+- Done: avoid `const_cast` by constructing simplices with final data where possible.
+
+Completed in the Freudenthal extraction batch:
+
+- Added `include/dionysus/freudenthal.h` with a reusable `fill_freudenthal()` helper that accepts shape, element strides, and a data pointer.
+- Reduced `bindings/python/freudenthal.cpp` to dtype dispatch and NumPy shape/stride adaptation.
+- Preserved lower-star and upper-star behavior while assigning simplex data at construction time instead of mutating through `const_cast`.
+- Added Python regression coverage for 1D lower-star, 1D upper-star, 2D lower-star, and unsupported dtype errors.
 
 ### Extract Zigzag Helpers
 
