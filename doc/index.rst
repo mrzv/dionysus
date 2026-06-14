@@ -31,7 +31,7 @@ The second version is re-written from scratch, which helps it accomplish a few g
 
 Other features include:
 
-  * :ref:`vineyards` allow to update persistence under adjacent filtration transpositions and linear homotopies. They also allow to maintain the lazy decomposition.
+  * :ref:`vineyards` allow to update persistence under adjacent filtration transpositions and linear homotopies.
   * Alpha shape filtrations are available via `DioDe <https://github.com/mrzv/diode>`_.
   * :ref:`fast-zigzag-apex` allow to efficiently compute zigzag persistence and compatible representatives by translating through the Mayer--Vietoris pyramid.
 

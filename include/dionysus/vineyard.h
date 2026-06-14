@@ -194,8 +194,9 @@ class Vineyard
             reduced_(field_, boundary.size()),
             basis_(),
             pairs_(boundary.size(), unpaired()),
-            lazy_(lazy)
+            lazy_(false)
         {
+            (void) lazy;
             for (Index i = 0; i < size(); ++i)
                 validate_chain(boundary[i]);
 
