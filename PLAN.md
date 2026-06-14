@@ -21,14 +21,13 @@ This plan prioritizes stabilization, build hygiene, and clearer boundaries betwe
 ### Fix Runtime Metadata
 
 - Done: add `sortedcontainers` to `pyproject.toml`; `bindings/python/dionysus/zigzag.py` imports `SortedSet` directly.
-- Review classifiers in `pyproject.toml` so they match `requires-python >=3.9` and the wheel build script.
-- Update README/docs that still imply pybind11 is vendored, since the current build uses `find_package(pybind11 CONFIG REQUIRED)`.
+- Done: review classifiers in `pyproject.toml` so they match `requires-python >=3.10` and the wheel build script.
+- Done: update README/docs that still imply pybind11 is vendored, since the current build uses `find_package(pybind11 CONFIG REQUIRED)`.
 
 ### Clean Stale Files
 
-- Remove or archive legacy packaging and CI files if they are no longer used:
-  - `setup.py.bak`
-  - `setup.cfg.bak`
+- Done: remove or archive legacy packaging and CI files if they are no longer used:
+  - `setup.py.bak` and `setup.cfg.bak` were ignored local backup files and were removed from the working tree.
   - `.travis.yml`
 - Done: expand `.gitignore` for local/generated artifacts:
   - `.venv/`
@@ -47,6 +46,14 @@ Completed in the first stabilization batch:
 - Converted `tests/test-issue72.py` from top-level execution into pytest tests.
 - Added reduced-matrix pickle roundtrip coverage in `tests/test_matrix_u.py`.
 - Made `tests/test_issue39.py` path-safe, but continue to exclude it from routine verification because it is known to hang.
+
+Completed in the metadata cleanup batch:
+
+- Added Python 3.10-3.14 classifiers to match `requires-python` and `build-wheels.sh`.
+- Updated README and documentation wording so pybind11 is no longer described as vendored.
+- Removed stale pybind11 vendoring from `peru.yaml`; pybind11 is provided by the build environment.
+- Removed stale Travis CI configuration.
+- Removed ignored local `setup.py.bak` and `setup.cfg.bak` files from the working tree.
 
 ## Phase 2: Modernize CMake
 

@@ -7,7 +7,7 @@ The second version (`previous version <http://mrzv.org/software/dionysus/>`_)
 is re-written from scratch, which helps it accomplish a few goals:
 
   * `Modified BSD license <https://github.com/mrzv/dionysus/blob/master/LICENSE.txt>`_ (because GPL causes too many problems in academic software).
-  * No dependency on Boost.Python; Dionysus 2 uses (and includes) `PyBind11 <https://github.com/pybind/pybind11>`_ instead, which greatly simplifies installation.
+  * No dependency on Boost.Python; Dionysus 2 uses `PyBind11 <https://github.com/pybind/pybind11>`_ instead, which greatly simplifies installation.
   * Cleaner, more consistent internal design (for example, all algorithms support arbitrary fields).
   * Some new algorithms, e.g., `omni-field persistence <http://mrzv.org/software/dionysus2/tutorial/omni-field.html#omni-field>`_ and Wasserstein and bottleneck `distance computation <http://mrzv.org/software/dionysus2/tutorial/basics.html#diagram-distances>`_ from `Hera <https://bitbucket.org/grey_narn/hera>`_.
   * A few `plotting <http://mrzv.org/software/dionysus2/tutorial/plotting.html#plotting>`_ routines, based on `Matplotlib <https://matplotlib.org/>`_.
