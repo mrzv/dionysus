@@ -25,6 +25,7 @@ classifiers = [
 dependencies = [
     "intervaltree>=3.1.0",
     "numpy>=2",
+    "sortedcontainers>=2.4.0",
 ]
 requires-python = ">= 3.10"
 

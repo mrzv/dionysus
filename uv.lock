@@ -585,6 +585,7 @@ dependencies = [
     { name = "intervaltree" },
     { name = "numpy", version = "2.2.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
     { name = "numpy", version = "2.4.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
+    { name = "sortedcontainers" },
 ]
 
 [package.dev-dependencies]
@@ -604,6 +605,7 @@ test = [
 requires-dist = [
     { name = "intervaltree", specifier = ">=3.1.0" },
     { name = "numpy", specifier = ">=2" },
+    { name = "sortedcontainers", specifier = ">=2.4.0" },
 ]
 
 [package.metadata.requires-dev]

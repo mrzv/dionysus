@@ -14,13 +14,13 @@ This plan prioritizes stabilization, build hygiene, and clearer boundaries betwe
 
 ### Fix Known Defects
 
-- Fix `include/dionysus/matrix-filtration.h`: the constructor uses `m_->size()` even though `m_` is stored by value.
-- Fix `bindings/python/persistence.cpp`: reduced-matrix pickle restore checks for a one-element tuple but reads four tuple elements.
-- Fix `CMakeLists.txt`: the `if(debug)` block references an undefined option.
+- Done: fix `include/dionysus/matrix-filtration.h`: the constructor used `m_->size()` even though `m_` is stored by value.
+- Done: fix `bindings/python/persistence.cpp`: reduced-matrix pickle restore checked for a one-element tuple but reads four tuple elements.
+- Done: fix `CMakeLists.txt`: the `if(debug)` block referenced an undefined option.
 
 ### Fix Runtime Metadata
 
-- Add `sortedcontainers` to `pyproject.toml`; `bindings/python/dionysus/zigzag.py` imports `SortedSet` directly.
+- Done: add `sortedcontainers` to `pyproject.toml`; `bindings/python/dionysus/zigzag.py` imports `SortedSet` directly.
 - Review classifiers in `pyproject.toml` so they match `requires-python >=3.9` and the wheel build script.
 - Update README/docs that still imply pybind11 is vendored, since the current build uses `find_package(pybind11 CONFIG REQUIRED)`.
 
@@ -30,11 +30,23 @@ This plan prioritizes stabilization, build hygiene, and clearer boundaries betwe
   - `setup.py.bak`
   - `setup.cfg.bak`
   - `.travis.yml`
-- Expand `.gitignore` for local/generated artifacts:
+- Done: expand `.gitignore` for local/generated artifacts:
   - `.venv/`
   - `.mypy_cache/`
   - `.pytest_cache/`
   - existing build/doc/cache outputs as needed
+
+### Phase 1 Progress
+
+Completed in the first stabilization batch:
+
+- Fixed the known `MatrixFiltration` assertion and reduced-matrix pickle restore bugs.
+- Added the explicit CMake `debug` option for the existing `backward.cpp` block.
+- Added the missing `sortedcontainers` runtime dependency and lockfile entry.
+- Added common local cache directories to `.gitignore`.
+- Converted `tests/test-issue72.py` from top-level execution into pytest tests.
+- Added reduced-matrix pickle roundtrip coverage in `tests/test_matrix_u.py`.
+- Made `tests/test_issue39.py` path-safe, but continue to exclude it from routine verification because it is known to hang.
 
 ## Phase 2: Modernize CMake
 

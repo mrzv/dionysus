@@ -9,10 +9,11 @@ endif                       (NOT CMAKE_BUILD_TYPE)
 
 option                      (trace                  "Build Dionysus with trace logging"             OFF)
 option                      (counters               "Build Dionysus with counters"                  OFF)
+option                      (debug                  "Build Dionysus with backward.cpp debugging"    OFF)
 option                      (debug_zigzag           "Turn on debug routines for zigzags"            OFF)
 option                      (build_examples         "Build examples"                                ON)
 option                      (build_python_bindings  "Build Python bindings"                         ON)
-mark_as_advanced            (debug_zigzag)
+mark_as_advanced            (debug debug_zigzag)
 
 find_package                (Boost CONFIG)
 
@@ -62,4 +63,3 @@ endif                       (build_examples)
 if                          (build_python_bindings)
     add_subdirectory        (bindings/python)
 endif                       (build_python_bindings)
-

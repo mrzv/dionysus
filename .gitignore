@@ -1,5 +1,8 @@
 .peru
 **/__pycache__/
+.mypy_cache/
+.pytest_cache/
+.venv/
 build/
 dionysus.egg-info/
 doc/_build

@@ -1,3 +1,5 @@
+import pickle
+
 import dionysus as d
 
 
@@ -92,3 +94,14 @@ def test_matrix_u_skipped_columns_match_matrix_v():
     assert chain_entries(trails[0]) == []
     assert chain_entries(chains[1]) == [(1, 1)]
     assert chain_entries(trails[1]) == [(1, 1)]
+
+
+def test_reduced_matrix_pickle_roundtrip():
+    prime = 5
+    reduced, _ = d.homology_persistence(matrix_filtration(prime), prime=prime, method="matrix_u")
+
+    restored = pickle.loads(pickle.dumps(reduced))
+
+    assert restored.field().prime() == prime
+    assert matrix_columns(restored) == matrix_columns(reduced)
+    assert matrix_pairs(restored) == matrix_pairs(reduced)
