@@ -144,9 +144,16 @@ Completed in the Freudenthal extraction batch:
 
 ### Extract Zigzag Helpers
 
-- Move cone construction and zigzag diagram classification from `bindings/python/zigzag-persistence.cpp` into reusable C++ helpers.
+- Done: move cone construction from `bindings/python/zigzag-persistence.cpp` into a reusable C++ helper.
+- Move zigzag diagram classification from `bindings/python/zigzag-persistence.cpp` into reusable C++ helpers.
 - Keep Python callback and object exposure in the binding layer.
-- Keep the Python `dionysus.fast_zigzag` wrapper behavior unchanged.
+- Done: keep the Python `dionysus.fast_zigzag` wrapper behavior unchanged.
+
+Completed in the zigzag cone extraction batch:
+
+- Added `include/dionysus/zigzag-cone.h` with reusable `make_zigzag_cone()` construction.
+- Reduced the C++ `fast_zigzag()` binding implementation to a thin wrapper that supplies the existing base and cone ordering comparators.
+- Added Python regression coverage for cone ordering and the existing matrix-V issue72 path.
 
 ## Phase 4: Consolidate Filtration Containers
 

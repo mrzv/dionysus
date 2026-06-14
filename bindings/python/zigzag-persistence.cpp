@@ -13,6 +13,7 @@ namespace py = pybind11;
 #include <dionysus/row-reduction.h>
 #include <dionysus/ordinary-persistence.h>
 #include <dionysus/standard-reduction.h>
+#include <dionysus/zigzag-cone.h>
 
 #include "filtration.h"
 #include "persistence.h"                // to get access to PyReducedMatrix::Chain
@@ -217,49 +218,7 @@ PyLinkedMultiFiltration
 fast_zigzag(const PyFiltration&     f,
             const Times&            times)
 {
-    int w = -1;
-    float inf = std::numeric_limits<float>::infinity();
-    PyLinkedMultiFiltration combined;
-    combined.push_back(PySimplex({ w }, -inf), 0);
-
-    for (size_t i = 0; i < f.size(); ++i)
-    {
-        size_t j = 0;
-        for (; j < times[i].size(); ++j)
-        {
-            if (j % 2 == 0)
-                combined.push_back(PySimplex(f[i], times[i][j]), combined.size());
-            else
-                combined.push_back(PySimplex(f[i], times[i][j]).join(w), combined.size() - 1);        // link to the previous appearance
-        }
-
-        // if a simplex doesn't get removed, remove it at infinity
-        if (j % 2 != 0)
-            combined.push_back(PySimplex(f[i], inf).join(w), combined.size() - 1);        // link to the previous appearance
-    }
-
-    DataDimCmp base_cmp;
-    DataDimCmp cone_cmp(true);
-    combined.sort([w,base_cmp,cone_cmp](const PySimplex& x, const PySimplex& y)
-                  {
-                      bool x_cone = x.contains(w);
-                      bool y_cone = y.contains(w);
-
-                      if (x_cone && x.dimension() == 0)
-                          return true;
-                      if (y_cone && y.dimension() == 0)
-                          return false;
-
-                      if (!x_cone && y_cone) return true;
-                      if (x_cone && !y_cone) return false;
-
-                      if (!x_cone)
-                          return base_cmp(x,y);
-                      else
-                          return cone_cmp(x,y);
-                  });
-
-    return combined;
+    return dionysus::make_zigzag_cone<PyLinkedMultiFiltration>(f, times, DataDimCmp(), DataDimCmp(true));
 }
 
 template<class PyReducedMatrix, class Filtration>
