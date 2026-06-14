@@ -59,7 +59,7 @@ Completed in the metadata cleanup batch:
 
 ### Add A Public C++ Target
 
-Create a target-scoped interface library for the header-only C++ core:
+Done: create a target-scoped interface library for the header-only C++ core:
 
 ```cmake
 add_library(dionysus INTERFACE)
@@ -72,14 +72,24 @@ target_compile_features(dionysus INTERFACE cxx_std_14)
 
 ### Replace Global CMake State
 
-- Replace global `include_directories(...)` with `target_include_directories(...)`.
-- Replace global `add_definitions(...)` with `target_compile_definitions(...)`.
-- Replace shared `${libraries}` plumbing with explicit target links.
-- Update these files first:
+- Done: replace global `include_directories(...)` with `target_include_directories(...)` in the project CMake files.
+- Done: replace global `add_definitions(...)` with `target_compile_definitions(...)` on the `dionysus` interface target.
+- Done: replace shared `${libraries}` plumbing with explicit target links for project examples and Python bindings.
+- Done: update these files first:
   - `CMakeLists.txt`
   - `bindings/python/CMakeLists.txt`
   - `examples/CMakeLists.txt`
   - `examples/*/CMakeLists.txt`
+
+### Phase 2 Progress
+
+Completed in the first CMake modernization batch:
+
+- Added the header-only `dionysus` interface target with public include directories and `cxx_std_14` compile features.
+- Moved `DEBUG`, `COUNTERS`, `TRACE`, `DIONYSUS_ZIGZAG_DEBUG`, and `BACKWARD_HAS_DW=1` from global definitions onto `dionysus`.
+- Linked `_dionysus` privately against `dionysus` and scoped its binding-local and Hera include directories to the extension target.
+- Added a `dionysus_examples` interface target for shared example includes and links.
+- Updated example executables to link `dionysus_examples` instead of the shared `${libraries}` variable.
 
 ### Installation Boundary
 

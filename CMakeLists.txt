@@ -17,40 +17,42 @@ mark_as_advanced            (debug debug_zigzag)
 
 find_package                (Boost CONFIG)
 
+add_library                 (dionysus INTERFACE)
+target_include_directories  (dionysus INTERFACE
+                             $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+                             $<INSTALL_INTERFACE:include>)
+target_compile_features     (dionysus INTERFACE cxx_std_14)
+
 # Debugging
 if                          (${CMAKE_BUILD_TYPE} STREQUAL "Debug" OR
                              ${CMAKE_BUILD_TYPE} STREQUAL "RelWithDebInfo")
-    add_definitions         (-DDEBUG)
+    target_compile_definitions(dionysus INTERFACE DEBUG)
 endif                       ()
-set                         (CMAKE_CXX_STANDARD 14)
 
 if                          (counters)
-    add_definitions         (-DCOUNTERS)
+    target_compile_definitions(dionysus INTERFACE COUNTERS)
 endif                       (counters)
 
 # Logging
 if                          (trace)
-    add_definitions         (-DTRACE)
+    target_compile_definitions(dionysus INTERFACE TRACE)
 endif                       (trace)
 
 if                          (debug_zigzag)
-    add_definitions         (-DDIONYSUS_ZIGZAG_DEBUG)
+    target_compile_definitions(dionysus INTERFACE DIONYSUS_ZIGZAG_DEBUG)
 endif                       (debug_zigzag)
 
-# Set includes
-set                         (CMAKE_INCLUDE_SYSTEM_FLAG_CXX "-isystem")
-include_directories         (${CMAKE_CURRENT_BINARY_DIR}
-                             ${CMAKE_CURRENT_SOURCE_DIR}
-                             ${CMAKE_CURRENT_SOURCE_DIR}/include
-                             SYSTEM ${Boost_INCLUDE_DIRS})
+if                          (Boost_INCLUDE_DIRS)
+    target_include_directories(dionysus SYSTEM INTERFACE ${Boost_INCLUDE_DIRS})
+endif                       ()
 
 # backward.cpp
 if                          (debug)
     find_library            (LIBDW_LIBRARY NAMES dw)
     if                      (LIBDW_LIBRARY)
         set                 (DEBUG_SOURCES ${CMAKE_SOURCE_DIR}/src/backward.cpp)
-        add_definitions     (-DBACKWARD_HAS_DW=1)
-        set                 (libraries ${libraries} ${LIBDW_LIBRARY})
+        target_compile_definitions(dionysus INTERFACE BACKWARD_HAS_DW=1)
+        target_link_libraries(dionysus INTERFACE ${LIBDW_LIBRARY})
     else                    (LIBDW_LIBRARY)
         message             (STATUS "LibDW not found; backward.cpp won't be used")
     endif                   (LIBDW_LIBRARY)

@@ -4,5 +4,5 @@ set                         (targets    rips-basic
 
 foreach                     (t ${targets})
     add_executable          (${t} ${t}.cpp)
-    target_link_libraries   (${t} ${libraries})
+    target_link_libraries   (${t} dionysus_examples)
 endforeach                  (t)
