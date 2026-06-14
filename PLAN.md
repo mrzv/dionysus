@@ -93,8 +93,15 @@ Completed in the first CMake modernization batch:
 
 ### Installation Boundary
 
-- If the C++ API is intended to be public, install/export the headers and the `dionysus` interface target.
-- Keep Python packaging through `scikit-build-core` working throughout the transition.
+- Done: install/export the headers and the `dionysus` interface target for C++ consumers.
+- Done: keep Python packaging through `scikit-build-core` working throughout the transition.
+
+Completed in the install/export batch:
+
+- Added standard CMake package config generation for `DionysusConfig.cmake` and `DionysusConfigVersion.cmake`.
+- Installed `include/dionysus` and exported `Dionysus::dionysus` from `DionysusTargets.cmake`.
+- Used `GNUInstallDirs` for install destinations and kept the existing Python package install layout unchanged.
+- Verified a downstream CMake consumer can `find_package(Dionysus CONFIG REQUIRED)` and link `Dionysus::dionysus` from a temporary install prefix.
 
 ## Phase 3: Thin The Python Binding Layer
 

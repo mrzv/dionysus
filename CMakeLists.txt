@@ -1,5 +1,8 @@
 cmake_minimum_required      (VERSION 3.20)
-project                     (Dionysus)
+project                     (Dionysus VERSION 2.2.2)
+
+include                     (CMakePackageConfigHelpers)
+include                     (GNUInstallDirs)
 
 # Default to Release
 if                          (NOT CMAKE_BUILD_TYPE)
@@ -20,7 +23,7 @@ find_package                (Boost CONFIG)
 add_library                 (dionysus INTERFACE)
 target_include_directories  (dionysus INTERFACE
                              $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-                             $<INSTALL_INTERFACE:include>)
+                             $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
 target_compile_features     (dionysus INTERFACE cxx_std_14)
 
 # Debugging
@@ -42,9 +45,33 @@ if                          (debug_zigzag)
     target_compile_definitions(dionysus INTERFACE DIONYSUS_ZIGZAG_DEBUG)
 endif                       (debug_zigzag)
 
-if                          (Boost_INCLUDE_DIRS)
+if                          (TARGET Boost::headers)
+    target_link_libraries   (dionysus INTERFACE Boost::headers)
+elseif                      (TARGET Boost::boost)
+    target_link_libraries   (dionysus INTERFACE Boost::boost)
+elseif                      (Boost_INCLUDE_DIRS)
     target_include_directories(dionysus SYSTEM INTERFACE ${Boost_INCLUDE_DIRS})
 endif                       ()
+
+install                     (TARGETS dionysus EXPORT DionysusTargets)
+install                     (DIRECTORY include/dionysus DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+
+install                     (EXPORT DionysusTargets
+                             NAMESPACE Dionysus::
+                             DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/Dionysus)
+
+configure_package_config_file(
+                             cmake/DionysusConfig.cmake.in
+                             ${CMAKE_CURRENT_BINARY_DIR}/DionysusConfig.cmake
+                             INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/Dionysus)
+write_basic_package_version_file(
+                             ${CMAKE_CURRENT_BINARY_DIR}/DionysusConfigVersion.cmake
+                             VERSION ${PROJECT_VERSION}
+                             COMPATIBILITY SameMajorVersion)
+install                     (FILES
+                             ${CMAKE_CURRENT_BINARY_DIR}/DionysusConfig.cmake
+                             ${CMAKE_CURRENT_BINARY_DIR}/DionysusConfigVersion.cmake
+                             DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/Dionysus)
 
 # backward.cpp
 if                          (debug)
