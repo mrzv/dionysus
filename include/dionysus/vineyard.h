@@ -288,6 +288,11 @@ class Vineyard
                     reduced_.set_low_unchecked(b, low_a);
                     pair_cells(a, low_b);
                     pair_cells(b, low_a);
+                    if (lazy_)
+                    {
+                        // Earlier transpositions can leave multiple crossing deaths in the affected basis column.
+                        clear_lazy_crossing_entries(b, Decomposition());
+                    }
                 } else
                 {
                     reduced_.set_low_unchecked(a, low_a);
@@ -309,6 +314,8 @@ class Vineyard
                         pair_cells(a, pivot_b);
                     else
                         clear_pair(a);
+                    if (lazy_)
+                        clear_lazy_birth_entries(a, Decomposition());
                 }
             }
 
@@ -416,6 +423,62 @@ class Vineyard
             FieldElement m = field_.div(x, y);
             add_to(column, m, other);
             return true;
+        }
+
+        void clear_lazy_crossing_entries(Index death, VineyardVDecomposition)
+        {
+            Chain entries = basis_[death];
+            for (const Entry& e : entries)
+            {
+                Index other = e.index();
+                if (other != death && other < size() && bars_cross(death, other))
+                    clear_lazy_entry(death, other, VineyardVDecomposition());
+            }
+        }
+
+        void clear_lazy_crossing_entries(Index death, VineyardUDecomposition)
+        {
+            for (Index other = 0; other < size(); ++other)
+                if (other != death && bars_cross(death, other))
+                    clear_lazy_entry(death, other, VineyardUDecomposition());
+        }
+
+        bool bars_cross(Index death, Index other_death) const
+        {
+            Index birth = reduced_.low(death);
+            Index other_birth = reduced_.low(other_death);
+            if (birth == unpaired() || other_birth == unpaired())
+                return false;
+            if (birth == other_birth || death == other_death)
+                return false;
+
+            Index birth_pos = reduced_.position(birth);
+            Index death_pos = reduced_.position(death);
+            Index other_birth_pos = reduced_.position(other_birth);
+            Index other_death_pos = reduced_.position(other_death);
+            if (death_pos <= birth_pos || other_death_pos <= other_birth_pos)
+                return false;
+
+            return (birth_pos < other_birth_pos && other_birth_pos < death_pos && death_pos < other_death_pos) ||
+                   (other_birth_pos < birth_pos && birth_pos < other_death_pos && other_death_pos < death_pos);
+        }
+
+        void clear_lazy_birth_entries(Index birth, VineyardVDecomposition)
+        {
+            for (Index column = 0; column < size(); ++column)
+                if (column != birth)
+                    clear_lazy_entry(column, birth, VineyardVDecomposition());
+        }
+
+        void clear_lazy_birth_entries(Index birth, VineyardUDecomposition)
+        {
+            Chain entries = basis_[birth];
+            for (const Entry& e : entries)
+            {
+                Index column = e.index();
+                if (column != birth && column < size())
+                    clear_lazy_entry(column, birth, VineyardUDecomposition());
+            }
         }
 
         void add_to(Index column, FieldElement m, Index other)

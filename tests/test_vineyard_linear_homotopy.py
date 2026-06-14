@@ -101,6 +101,33 @@ def recompute_endpoint_matrix_v(filtration, values0, values1):
     return stable_reduced, stable_chains, stable_pairs, current_order
 
 
+def recompute_endpoint_matrix_u(filtration, values0, values1):
+    matrix_filtration, current_order = endpoint_matrix_filtration(
+        filtration, values0, values1
+    )
+    reduced, trails = d.homology_persistence(
+        matrix_filtration, prime=PRIME, method="matrix_u"
+    )
+
+    stable_reduced = [[] for _ in current_order]
+    stable_trails = [[] for _ in current_order]
+    stable_pairs = [reduced.unpaired for _ in current_order]
+
+    for position, stable in enumerate(current_order):
+        stable_reduced[stable] = normalize(
+            (entry.element, current_order[entry.index]) for entry in reduced[position]
+        )
+        stable_trails[stable] = normalize(
+            (entry.element, current_order[entry.index]) for entry in trails[position]
+        )
+
+        pair = reduced.pair(position)
+        if pair != reduced.unpaired:
+            stable_pairs[stable] = current_order[pair]
+
+    return stable_reduced, stable_trails, stable_pairs, current_order
+
+
 def stable_boundary_columns(filtration, values0):
     stable_to_input, input_to_stable = stable_maps(filtration, values0)
     columns = [[] for _ in stable_to_input]
@@ -181,6 +208,65 @@ def values_for_order(order):
     for value, cell in enumerate(order):
         values[cell] = float(value)
     return values
+
+
+def values_for_filtration_order(start_simplices, end_simplices):
+    stable_index = {
+        tuple(simplex): index for index, simplex in enumerate(start_simplices)
+    }
+    values = [0.0] * len(start_simplices)
+    for value, simplex in enumerate(end_simplices):
+        values[stable_index[tuple(simplex)]] = float(value)
+    return values
+
+
+def dimension_block(simplices, dimension):
+    return [simplex for simplex in simplices if len(simplex) == dimension + 1]
+
+
+def assert_lazy_matches_recomputation_after_each_transposition(
+    filtration, values0, values1, method
+):
+    result = d.vineyard_linear_homotopy(
+        filtration,
+        values0,
+        values1,
+        field=d.Zp(PRIME),
+        method=method,
+        lazy=True,
+    )
+    vineyard = d.Vineyard(
+        filtration,
+        field=d.Zp(PRIME),
+        method=method,
+        lazy=True,
+    )
+    recompute = (
+        recompute_endpoint_matrix_v if method == "matrix_v" else recompute_endpoint_matrix_u
+    )
+    basis = vineyard.chain if method == "matrix_v" else vineyard.trail
+    order = list(range(len(filtration)))
+
+    for prefix, event in enumerate(result.events, start=1):
+        vineyard.transpose(event.position)
+        order[event.position], order[event.position + 1] = (
+            order[event.position + 1],
+            order[event.position],
+        )
+
+        expected_reduced, expected_basis, expected_pairs, expected_order = recompute(
+            filtration, values0, values_for_order(order)
+        )
+        context = (method, prefix, event.first, event.second)
+
+        assert order == expected_order, context
+        assert [vineyard.pair(i) for i in range(len(filtration))] == expected_pairs, context
+        assert [
+            vineyard.reduced_column(i) for i in range(len(filtration))
+        ] == expected_reduced, context
+        assert [basis(i) for i in range(len(filtration))] == expected_basis, context
+
+    return result
 
 
 def test_linear_homotopy_records_single_crossing_and_vines():
@@ -359,6 +445,39 @@ def test_linear_homotopy_complete_simplex_2_skeleton_on_50_points():
 
     assert lazy_result.final_order == expected_final_order
     assert [lazy_result.vineyard.pair(i) for i in range(len(filtration))] == expected_final_pairs
+
+
+def test_linear_homotopy_lazy_distinct_filtrations_preserve_representatives():
+    rng = random.Random(22407)
+    simplices = shuffled_dimension_filtration(
+        complete_simplex_skeleton(points=18, skeleton=2), rng
+    )
+    end_simplices = (
+        dimension_block(simplices, 0)
+        + dimension_block(simplices, 1)[1:]
+        + dimension_block(simplices, 1)[:1]
+        + dimension_block(simplices, 2)
+    )
+    filtration = d.Filtration(simplices)
+    values0 = [float(i) for i in range(len(filtration))]
+    values1 = values_for_filtration_order(simplices, end_simplices)
+
+    result = assert_lazy_matches_recomputation_after_each_transposition(
+        filtration, values0, values1, "matrix_v"
+    )
+
+    assert len(filtration) == 987
+    assert end_simplices != simplices
+    assert len(result.events) == 152
+
+    result = assert_lazy_matches_recomputation_after_each_transposition(
+        filtration,
+        values0,
+        values1,
+        "matrix_u",
+    )
+
+    assert len(result.events) == 152
 
 
 def test_linear_homotopy_lazy_matrix_u_preserves_ru_decomposition():
