@@ -109,9 +109,16 @@ Several binding files contain reusable algorithmic code. Move that code into the
 
 ### Extract Boundary Matrix Construction
 
-- Move boundary/coboundary matrix construction from `bindings/python/boundary.cpp` into a reusable C++ helper.
+- Done: move boundary/coboundary matrix construction from `bindings/python/boundary.cpp` into a reusable C++ helper.
 - Reuse the helper from vineyard construction and persistence-related paths where applicable.
-- Keep Python functions `boundary()` and `coboundary()` unchanged.
+- Done: keep Python functions `boundary()` and `coboundary()` unchanged.
+
+Completed in the boundary extraction batch:
+
+- Added `include/dionysus/boundary-matrix.h` with reusable `make_boundary_matrix_filtration()` and `make_coboundary_matrix_filtration()` helpers.
+- Reduced `bindings/python/boundary.cpp` to thin wrappers that call the reusable helpers for `Filtration` and `MultiFiltration`.
+- Preserved the existing default prime-3 signed coefficient behavior.
+- Added Python regression coverage for boundary and coboundary construction from both `Filtration` and `MultiFiltration`.
 
 ### Extract Vineyard Linear Homotopy
 
