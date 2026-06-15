@@ -110,7 +110,7 @@ Several binding files contain reusable algorithmic code. Move that code into the
 ### Extract Boundary Matrix Construction
 
 - Done: move boundary/coboundary matrix construction from `bindings/python/boundary.cpp` into a reusable C++ helper.
-- Reuse the helper from vineyard construction and persistence-related paths where applicable.
+- Done: reuse shared boundary construction from vineyard construction paths where applicable.
 - Done: keep Python functions `boundary()` and `coboundary()` unchanged.
 
 Completed in the boundary extraction batch:
@@ -119,6 +119,12 @@ Completed in the boundary extraction batch:
 - Reduced `bindings/python/boundary.cpp` to thin wrappers that call the reusable helpers for `Filtration` and `MultiFiltration`.
 - Preserved the existing default prime-3 signed coefficient behavior.
 - Added Python regression coverage for boundary and coboundary construction from both `Filtration` and `MultiFiltration`.
+
+Completed in the vineyard boundary-chain reuse batch:
+
+- Added reusable `make_boundary_chains()` construction to `include/dionysus/boundary-matrix.h`.
+- Reduced `VineyardV`, `VineyardU`, and `Vineyard(...)` filtration constructors to call the shared helper instead of a binding-local boundary builder.
+- Kept invalid filtration order validation behavior through standard C++ exceptions mapped by pybind.
 
 ### Extract Vineyard Linear Homotopy
 

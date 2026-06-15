@@ -9,6 +9,7 @@
 #include <tuple>
 namespace py = pybind11;
 
+#include <dionysus/boundary-matrix.h>
 #include <dionysus/vineyard.h>
 
 #include "field.h"
@@ -151,27 +152,6 @@ void sort_chain(Chain& column)
 {
     std::sort(column.begin(), column.end(), [](const PyVineyardMatrix::Entry& x, const PyVineyardMatrix::Entry& y)
               { return x.index() < y.index(); });
-}
-
-Chains boundary_from_filtration(const PyFiltration& filtration, const PyZpField& field)
-{
-    Chains boundary(filtration.size());
-
-    for (Index i = 0; i < filtration.size(); ++i)
-    {
-        Chain column;
-        for (auto it = filtration[i].boundary_begin(field); it != filtration[i].boundary_end(field); ++it)
-        {
-            Index face = filtration.index(it->index(), filtration.size());
-            if (face >= i)
-                throw py::value_error("filtration boundary face does not precede simplex");
-            column.emplace_back(it->element(), face);
-        }
-        sort_chain(column);
-        boundary[i] = std::move(column);
-    }
-
-    return boundary;
 }
 
 void validate_endpoint_filtration(const PyFiltration& filtration, const std::vector<double>& values)
@@ -799,7 +779,7 @@ void init_vineyard(py::module& m)
                         }), "columns"_a = Columns(), "field"_a = PyZpField(2))
         .def(py::init([](const PyFiltration& filtration, PyZpField field)
                        {
-                           return new PyVineyardV(field, boundary_from_filtration(filtration, field));
+                           return new PyVineyardV(field, dionysus::make_boundary_chains<Chains>(filtration, field));
                        }), "filtration"_a, "field"_a = PyZpField(2))
         .def("__len__",      &PyVineyardV::size,      "number of cells")
         .def("field",        &PyVineyardV::field,     "field used for coefficients")
@@ -837,7 +817,7 @@ void init_vineyard(py::module& m)
                         }), "columns"_a = Columns(), "field"_a = PyZpField(2))
         .def(py::init([](const PyFiltration& filtration, PyZpField field)
                        {
-                           return new PyVineyardU(field, boundary_from_filtration(filtration, field));
+                           return new PyVineyardU(field, dionysus::make_boundary_chains<Chains>(filtration, field));
                        }), "filtration"_a, "field"_a = PyZpField(2))
         .def("__len__",      &PyVineyardU::size,      "number of cells")
         .def("field",        &PyVineyardU::field,     "field used for coefficients")
@@ -881,9 +861,9 @@ void init_vineyard(py::module& m)
     m.def("Vineyard", [](const PyFiltration& filtration, PyZpField field, std::string method) -> py::object
           {
               if (method == "matrix_v")
-                  return py::cast(new PyVineyardV(field, boundary_from_filtration(filtration, field)), py::return_value_policy::take_ownership);
+                  return py::cast(new PyVineyardV(field, dionysus::make_boundary_chains<Chains>(filtration, field)), py::return_value_policy::take_ownership);
               if (method == "matrix_u")
-                  return py::cast(new PyVineyardU(field, boundary_from_filtration(filtration, field)), py::return_value_policy::take_ownership);
+                  return py::cast(new PyVineyardU(field, dionysus::make_boundary_chains<Chains>(filtration, field)), py::return_value_policy::take_ownership);
               throw py::value_error("unknown vineyard method: " + method);
           }, "filtration"_a, "field"_a = PyZpField(2), "method"_a = "matrix_v",
           "construct a vineyard state using method='matrix_v' or method='matrix_u'");
