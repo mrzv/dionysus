@@ -209,6 +209,13 @@ Completed in the filtration coverage batch:
 - Captured the current duplicate lookup contract where `index(simplex, bound)` returns the duplicate at or before the search bound and simplex `data` is not part of lookup identity.
 - Added boundary-face lookup coverage for duplicate-preserving filtrations to ensure simplex boundary searches select the latest matching duplicate before the coface.
 
+Completed in the first filtration consolidation batch:
+
+- Added `include/dionysus/multi-filtration-common.h` for shared duplicate-preserving filtration internals.
+- Reused shared indexed-cell ordering in `MultiFiltration` and `LinkedMultiFiltration`.
+- Reused a shared cell projection functor for order iterators in both duplicate-preserving filtration containers.
+- Kept storage, linked-index maintenance, and public lookup behavior unchanged for later, more invasive consolidation steps.
+
 ## Phase 5: Improve Mutation And Numeric Boundaries
 
 ### Remove Unsafe Data Mutation Patterns

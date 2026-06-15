@@ -10,6 +10,8 @@
 
 #include <boost/iterator/transform_iterator.hpp>
 
+#include "multi-filtration-common.h"
+
 namespace b   = boost;
 namespace bmi = boost::multi_index;
 
@@ -29,6 +31,8 @@ class MultiFiltration
 
         struct CellWithIndex: Cell
         {
+            using Cell = Cell_;
+
                         CellWithIndex(const Cell& c_, size_t i_):
                             Cell(c_), i(i_)             {}
                         CellWithIndex(Cell&& c_, size_t i_):
@@ -38,15 +42,9 @@ class MultiFiltration
 
             friend bool operator<(const CellWithIndex& c, const CellWithIndex& other)
             {
-                const Cell& cc = c;
-                const Cell& oc = other;
-                return cc < oc || (cc == oc && c.i < other.i);
+                return detail::indexed_cell_less(static_cast<const Cell&>(c), c.i,
+                                                 static_cast<const Cell&>(other), other.i);
             }
-        };
-        struct CellWithoutIndex
-        {
-            Cell&           operator()(CellWithIndex& c) const            { return c; }
-            const Cell&     operator()(const CellWithIndex& c) const      { return c; }
         };
         // non-unique to avoid modification conflicts in update_indices()
         using CellLookupIndex = bmi::ordered_non_unique<bmi::identity<CellWithIndex>>;
@@ -58,8 +56,9 @@ class MultiFiltration
         typedef             typename Container::template nth_index<0>::type     Complex;
         typedef             typename Container::template nth_index<1>::type     Order;
 
-        using OrderConstIterator = b::transform_iterator<CellWithoutIndex, typename Order::const_iterator>;
-        using OrderIterator = b::transform_iterator<CellWithoutIndex, typename Order::iterator>;
+        using OrderCell = detail::CellWithoutIndex<CellWithIndex>;
+        using OrderConstIterator = b::transform_iterator<OrderCell, typename Order::const_iterator>;
+        using OrderIterator = b::transform_iterator<OrderCell, typename Order::iterator>;
 
 
     public:

@@ -10,6 +10,8 @@
 
 #include <boost/iterator/transform_iterator.hpp>
 
+#include "multi-filtration-common.h"
+
 namespace b   = boost;
 namespace bmi = boost::multi_index;
 
@@ -29,6 +31,8 @@ class LinkedMultiFiltration
 
         struct LinkedCellWithIndex: Cell
         {
+            using Cell = Cell_;
+
                         LinkedCellWithIndex(const Cell& c_, size_t i_, size_t l_):
                             Cell(c_), i(i_), linked(l_)             {}
                         LinkedCellWithIndex(Cell&& c_, size_t i_, size_t l_):
@@ -39,15 +43,9 @@ class LinkedMultiFiltration
 
             friend bool operator<(const LinkedCellWithIndex& c, const LinkedCellWithIndex& other)
             {
-                const Cell& cc = c;
-                const Cell& oc = other;
-                return cc < oc || (cc == oc && c.i < other.i);
+                return detail::indexed_cell_less(static_cast<const Cell&>(c), c.i,
+                                                 static_cast<const Cell&>(other), other.i);
             }
-        };
-        struct CellWithoutIndex
-        {
-            Cell&           operator()(LinkedCellWithIndex& c) const            { return c; }
-            const Cell&     operator()(const LinkedCellWithIndex& c) const      { return c; }
         };
         // non-unique to avoid modification conflicts in update_indices()
         using CellLookupIndex = bmi::ordered_non_unique<bmi::identity<LinkedCellWithIndex>>;
@@ -60,8 +58,9 @@ class LinkedMultiFiltration
         typedef             typename Container::template nth_index<0>::type     Complex;
         typedef             typename Container::template nth_index<1>::type     Order;
 
-        using OrderConstIterator = b::transform_iterator<CellWithoutIndex, typename Order::const_iterator>;
-        using OrderIterator = b::transform_iterator<CellWithoutIndex, typename Order::iterator>;
+        using OrderCell = detail::CellWithoutIndex<LinkedCellWithIndex>;
+        using OrderConstIterator = b::transform_iterator<OrderCell, typename Order::const_iterator>;
+        using OrderIterator = b::transform_iterator<OrderCell, typename Order::iterator>;
 
 
     public:
