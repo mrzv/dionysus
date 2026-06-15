@@ -225,58 +225,7 @@ template<class PyReducedMatrix, class Filtration>
 std::vector<std::map<std::string, PyDiagram>>
 init_zigzag_diagrams(const PyReducedMatrix& r, const Filtration& f, bool diagonal)
 {
-    using Index = typename PyReducedMatrix::Index;
-
-    int w = -1;
-
-    std::vector<std::map<std::string, PyDiagram>> result;
-    auto result_append = [&result](int dim, std::string type, PySimplex::Data birth, PySimplex::Data death, Index i)
-    {
-        while (dim >= result.size())
-            result.emplace_back();
-
-        result[dim][type].emplace_back(birth,death,i);
-    };
-
-    for (Index i = 1; i < r.size(); ++i)
-    {
-        Index j = r.pair(i);
-        if (j < i) continue;        // skip negative
-
-        assert(j != r.unpaired());
-
-        auto i_data = f[i].data();
-        auto j_data = f[j].data();
-
-        if (!diagonal && i_data == j_data) continue;
-
-        bool i_cone = f[i].contains(w);
-        bool j_cone = f[j].contains(w);
-
-        if (!i_cone && !j_cone)
-        {
-            // ordinary (closed-open)
-            result_append(f[i].dimension(), "co", i_data, j_data, i);
-        } else if (i_cone && j_cone)
-        {
-            // relative (open-closed)
-            result_append(f[i].dimension() - 1, "oc", j_data, i_data, i);
-        } else
-        {
-            assert(!i_cone && j_cone);
-            if (i_data > j_data)        // TODO: can we check this non-numerically
-            {
-                // extended (open-open)
-                result_append(f[i].dimension() - 1, "oo", j_data, i_data, i);
-            } else
-            {
-                // extended (closed-closed)
-                result_append(f[i].dimension(), "cc", i_data, j_data, i);
-            }
-        }
-    }
-
-    return result;
+    return dionysus::init_zigzag_diagrams<PyReducedMatrix, Filtration, PyDiagram>(r, f, diagonal);
 }
 
 #include "chain.h"

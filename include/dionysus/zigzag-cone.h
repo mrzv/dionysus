@@ -1,7 +1,11 @@
 #ifndef DIONYSUS_ZIGZAG_CONE_H
 #define DIONYSUS_ZIGZAG_CONE_H
 
+#include <cassert>
 #include <limits>
+#include <map>
+#include <string>
+#include <vector>
 
 namespace dionysus
 {
@@ -57,6 +61,59 @@ LinkedFiltration make_zigzag_cone(const Filtration& f,
                   });
 
     return combined;
+}
+
+template<class ReducedMatrix, class Filtration, class Diagram>
+std::vector<std::map<std::string, Diagram>> init_zigzag_diagrams(const ReducedMatrix& r,
+                                                                 const Filtration& f,
+                                                                 bool diagonal,
+                                                                 typename Filtration::Cell::Vertex cone_vertex = -1)
+{
+    using Index = typename ReducedMatrix::Index;
+    using Data = typename Filtration::Cell::Data;
+
+    auto w = cone_vertex;
+    std::vector<std::map<std::string, Diagram>> result;
+    auto result_append = [&result](int dim, std::string type, Data birth, Data death, Index i)
+    {
+        while (dim >= result.size())
+            result.emplace_back();
+
+        result[dim][type].emplace_back(birth, death, i);
+    };
+
+    for (Index i = 1; i < r.size(); ++i)
+    {
+        Index j = r.pair(i);
+        if (j < i) continue;
+
+        assert(j != r.unpaired());
+
+        auto i_data = f[i].data();
+        auto j_data = f[j].data();
+
+        if (!diagonal && i_data == j_data) continue;
+
+        bool i_cone = f[i].contains(w);
+        bool j_cone = f[j].contains(w);
+
+        if (!i_cone && !j_cone)
+        {
+            result_append(f[i].dimension(), "co", i_data, j_data, i);
+        } else if (i_cone && j_cone)
+        {
+            result_append(f[i].dimension() - 1, "oc", j_data, i_data, i);
+        } else
+        {
+            assert(!i_cone && j_cone);
+            if (i_data > j_data)
+                result_append(f[i].dimension() - 1, "oo", j_data, i_data, i);
+            else
+                result_append(f[i].dimension(), "cc", i_data, j_data, i);
+        }
+    }
+
+    return result;
 }
 
 }
