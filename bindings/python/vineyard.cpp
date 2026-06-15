@@ -26,7 +26,7 @@ using Index = PyVineyardMatrix::Index;
 using Chain = PyVineyardMatrix::Chain;
 using Chains = PyVineyardMatrix::Chains;
 
-constexpr double epsilon = 1e-10;
+constexpr double epsilon = dionysus::vineyard_linear_homotopy_epsilon;
 
 struct VineyardLinearHomotopyEvent
 {
@@ -69,27 +69,7 @@ struct VineyardLinearHomotopyResult
 
 using LinearHomotopyData = dionysus::VineyardLinearHomotopyData<Chains>;
 
-struct CrossingCandidate
-{
-    double  time;
-    Index   left;
-    Index   right;
-    double  priority_slope;
-    unsigned priority_dimension;
-    Index   priority_cell;
-
-    bool operator<(const CrossingCandidate& other) const
-    {
-        if (std::abs(time - other.time) > epsilon)
-            return time > other.time;
-        if (std::abs(priority_slope - other.priority_slope) > epsilon)
-            return priority_slope > other.priority_slope;
-        if (priority_dimension != other.priority_dimension)
-            return priority_dimension > other.priority_dimension;
-        return priority_cell > other.priority_cell;
-    }
-};
-
+using CrossingCandidate = dionysus::VineyardLinearCrossingCandidate<Index>;
 using EventQueue = std::priority_queue<CrossingCandidate>;
 using Feature = std::tuple<Index, Index>;
 
@@ -395,137 +375,6 @@ void record_transposition(VineyardLinearHomotopyResult& result,
 }
 
 template<class Vineyard>
-void push_candidate(EventQueue& queue,
-                    const Vineyard& vineyard,
-                    const LinearHomotopyData& data,
-                    double current_t,
-                    Index position);
-
-template<class Vineyard>
-void push_candidate_neighborhood(EventQueue& queue,
-                                 const Vineyard& vineyard,
-                                 const LinearHomotopyData& data,
-                                 double current_t,
-                                 Index position)
-{
-    if (position > 0)
-        push_candidate(queue, vineyard, data, current_t, position - 1);
-    push_candidate(queue, vineyard, data, current_t, position);
-    push_candidate(queue, vineyard, data, current_t, position + 1);
-}
-
-bool tie_less(const LinearHomotopyData& data, Index x, Index y)
-{
-    double sx = dionysus::vineyard_linear_slope(data.values0, data.values1, x);
-    double sy = dionysus::vineyard_linear_slope(data.values0, data.values1, y);
-    if (std::abs(sx - sy) > epsilon)
-        return sx < sy;
-    if (data.dimensions[x] != data.dimensions[y])
-        return data.dimensions[x] < data.dimensions[y];
-    return x < y;
-}
-
-bool adjacent_inverted_at(const LinearHomotopyData& data, Index left, Index right, double t)
-{
-    double left_value = dionysus::vineyard_linear_value_at(data.values0, data.values1, left, t);
-    double right_value = dionysus::vineyard_linear_value_at(data.values0, data.values1, right, t);
-    if (left_value > right_value + epsilon)
-        return true;
-    if (std::abs(left_value - right_value) <= epsilon)
-        return tie_less(data, right, left);
-    return false;
-}
-
-template<class Vineyard>
-double crossing_time(const Vineyard& vineyard,
-                     const LinearHomotopyData& data,
-                     Index position,
-                     double current_t)
-{
-    Index a = vineyard.cell_at(position);
-    Index b = vineyard.cell_at(position + 1);
-    double d = dionysus::vineyard_linear_value_at(data.values0, data.values1, b, current_t) - dionysus::vineyard_linear_value_at(data.values0, data.values1, a, current_t);
-    double sd = dionysus::vineyard_linear_slope(data.values0, data.values1, b) - dionysus::vineyard_linear_slope(data.values0, data.values1, a);
-    if (d > epsilon && sd < -epsilon)
-    {
-        double t = current_t - d / sd;
-        if (t > current_t + epsilon && t <= 1.0 + epsilon)
-            return std::min(1.0, t);
-    }
-    return std::numeric_limits<double>::infinity();
-}
-
-template<class Vineyard>
-EventQueue build_event_queue(const Vineyard& vineyard,
-                             const LinearHomotopyData& data,
-                             double current_t)
-{
-    EventQueue queue;
-    for (Index p = 0; p + 1 < vineyard.size(); ++p)
-        push_candidate(queue, vineyard, data, current_t, p);
-    return queue;
-}
-
-template<class Vineyard>
-void push_candidate(EventQueue& queue,
-                    const Vineyard& vineyard,
-                    const LinearHomotopyData& data,
-                    double current_t,
-                    Index position)
-{
-    if (position + 1 >= vineyard.size())
-        return;
-
-    Index left = vineyard.cell_at(position);
-    Index right = vineyard.cell_at(position + 1);
-    double t = std::numeric_limits<double>::infinity();
-    if (adjacent_inverted_at(data, left, right, current_t))
-        t = current_t;
-    else
-        t = crossing_time(vineyard, data, position, current_t);
-
-    if (std::isfinite(t))
-        queue.push(CrossingCandidate {
-            t,
-            left,
-            right,
-            dionysus::vineyard_linear_slope(data.values0, data.values1, right),
-            data.dimensions[right],
-            right
-        });
-}
-
-template<class Vineyard>
-bool pop_next_candidate(EventQueue& queue,
-                        const Vineyard& vineyard,
-                        const LinearHomotopyData& data,
-                        double current_t,
-                        CrossingCandidate& candidate,
-                        Index& position)
-{
-    while (!queue.empty())
-    {
-        CrossingCandidate next = queue.top();
-        queue.pop();
-
-        if (next.time < current_t - epsilon)
-            continue;
-        if (next.time > 1.0 + epsilon)
-            continue;
-        if (vineyard.position(next.left) + 1 != vineyard.position(next.right))
-            continue;
-        double t = next.time <= current_t + epsilon ? current_t : std::min(1.0, next.time);
-        position = vineyard.position(next.left);
-        if (!adjacent_inverted_at(data, next.left, next.right, t))
-            continue;
-        candidate = next;
-        candidate.time = t;
-        return true;
-    }
-    return false;
-}
-
-template<class Vineyard>
 VineyardLinearHomotopyResult run_linear_homotopy(const PyFiltration& filtration,
                                                  const std::vector<double>& values0,
                                                  const std::vector<double>& values1,
@@ -540,13 +389,13 @@ VineyardLinearHomotopyResult run_linear_homotopy(const PyFiltration& filtration,
         open_feature(result, active_vines, feature, 0.0, -1);
 
     double current_t = 0.0;
-    EventQueue event_queue = build_event_queue(*vineyard, data, current_t);
+    EventQueue event_queue = dionysus::build_vineyard_linear_event_queue<EventQueue>(*vineyard, data, current_t);
 
     while (current_t < 1.0 - epsilon)
     {
         CrossingCandidate candidate;
         Index position = 0;
-        if (!pop_next_candidate(event_queue, *vineyard, data, current_t, candidate, position) || candidate.time > 1.0 - epsilon)
+        if (!dionysus::pop_next_vineyard_linear_candidate(event_queue, *vineyard, data, current_t, candidate, position) || candidate.time > 1.0 - epsilon)
         {
             close_all_features(result, active_vines, data.values0, data.values1, 1.0, -1);
             current_t = 1.0;
@@ -558,7 +407,7 @@ VineyardLinearHomotopyResult run_linear_homotopy(const PyFiltration& filtration,
         Index second = vineyard->cell_at(position + 1);
         validate_transposition(data.boundary, first, second);
         record_transposition(result, active_vines, *vineyard, data, current_t, position);
-        push_candidate_neighborhood(event_queue, *vineyard, data, current_t, position);
+        dionysus::push_vineyard_linear_candidate_neighborhood(event_queue, *vineyard, data, current_t, position);
     }
 
     result.final_order = current_order(*vineyard);

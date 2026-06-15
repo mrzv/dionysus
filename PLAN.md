@@ -139,7 +139,13 @@ Completed in the vineyard homotopy preparation batch:
 
 - Added `include/dionysus/vineyard-linear-homotopy.h` with reusable endpoint validation, stable-order construction, value interpolation, slope calculation, and stable boundary-chain remapping helpers.
 - Reduced `bindings/python/vineyard.cpp` by delegating linear-homotopy data preparation to the reusable helper.
-- Kept event scheduling, result structs, and pybind-owned vineyard result conversion in the binding layer for the next vineyard extraction batch.
+- Kept event scheduling, result structs, and pybind-owned vineyard result conversion in the binding layer for follow-up vineyard extraction batches.
+
+Completed in the vineyard scheduler extraction batch:
+
+- Consolidated vineyard linear-homotopy tolerance on `dionysus::vineyard_linear_homotopy_epsilon`.
+- Moved crossing candidate ordering, adjacent inversion checks, crossing-time calculation, event queue construction, neighborhood updates, and stale candidate popping into `include/dionysus/vineyard-linear-homotopy.h`.
+- Reduced `bindings/python/vineyard.cpp` to call the reusable scheduler helpers while keeping event recording and Python result ownership in the binding layer.
 
 ### Extract Freudenthal Construction
 
