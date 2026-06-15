@@ -65,6 +65,16 @@ def test_multi_filtration_index_respects_search_bound():
         filtration.index(d.Simplex([1]), 3)
 
 
+def test_multi_filtration_checked_lookup_rejects_missing_predecessor():
+    filtration = d.MultiFiltration([d.Simplex([1], 0.0)])
+
+    with pytest.raises(RuntimeError, match="Trying to access non-existent cell"):
+        filtration.index(d.Simplex([0]), 0)
+
+    with pytest.raises(RuntimeError, match="Trying to access non-existent cell"):
+        d.MultiFiltration().index(d.Simplex([0]))
+
+
 def test_multi_filtration_boundary_lookup_uses_latest_duplicate_before_cell():
     filtration = d.MultiFiltration([
         d.Simplex([0], 0.0),
@@ -122,6 +132,34 @@ def test_linked_multi_filtration_preserves_duplicate_simplices():
 
     filtration.sort(reverse=True)
     assert simplex_summary(filtration) == [([0], 1.0), ([0], 0.0)]
+
+
+def test_linked_multi_filtration_default_index_uses_duplicate_lookup():
+    filtration = d.LinkedMultiFiltration([
+        (d.Simplex([0], 0.0), 0),
+        (d.Simplex([0], 1.0), 1),
+    ])
+
+    assert filtration.index(d.Simplex([0], 99.0)) == 1
+
+
+def test_linked_multi_filtration_falls_back_when_link_does_not_match():
+    filtration = d.LinkedMultiFiltration([
+        (d.Simplex([0], 0.0), 0),
+        (d.Simplex([1], 1.0), 1),
+    ])
+
+    assert filtration.index(d.Simplex([0], 99.0), 1) == 0
+
+
+def test_linked_multi_filtration_checked_lookup_rejects_missing_predecessor():
+    filtration = d.LinkedMultiFiltration([(d.Simplex([1], 0.0), 0)])
+
+    with pytest.raises(RuntimeError, match="Trying to access non-existent cell"):
+        filtration.index(d.Simplex([0]), 0)
+
+    with pytest.raises(RuntimeError, match="Trying to access non-existent cell"):
+        d.LinkedMultiFiltration().index(d.Simplex([0]))
 
 
 def test_linked_multi_filtration_boundary_lookup_uses_latest_duplicate_before_cell():

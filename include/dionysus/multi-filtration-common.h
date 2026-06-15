@@ -74,14 +74,16 @@ template<class Complex, class IndexedCell>
 typename Complex::const_iterator preceding_indexed_cell(const Complex& complex, const IndexedCell& query)
 {
     auto it = complex.upper_bound(query);
+    if (it == complex.begin())
+        return complex.end();
     --it;
     return it;
 }
 
-template<bool checked_index, class IndexedCell, class Cell>
-void validate_indexed_cell_lookup(const IndexedCell& candidate, const Cell& cell, size_t index)
+template<bool checked_index, class Iterator, class Cell>
+void validate_indexed_cell_lookup(Iterator candidate, Iterator end, const Cell& cell, size_t index)
 {
-    if (checked_index && candidate != cell)
+    if (checked_index && (candidate == end || !(*candidate == cell)))
     {
         std::ostringstream oss;
         oss << "Trying to access non-existent cell: " << cell << ' ' << index;

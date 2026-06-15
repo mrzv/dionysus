@@ -129,7 +129,7 @@ dionysus::MultiFiltration<C,checked_index>::
 index(const Cell& s, size_t i) const
 {
     auto it = detail::preceding_indexed_cell(get_complex(), CellWithIndex(s,i));
-    detail::validate_indexed_cell_lookup<checked_index>(*it, s, i);
+    detail::validate_indexed_cell_lookup<checked_index>(it, get_complex().end(), s, i);
 
     return project_order(it) - get_order().begin();
 }

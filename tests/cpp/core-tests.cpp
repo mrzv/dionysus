@@ -31,6 +31,20 @@ void require(bool condition, const std::string& message)
         throw std::runtime_error(message);
 }
 
+template<class Function>
+bool throws_runtime_error(Function function)
+{
+    try
+    {
+        function();
+    }
+    catch (const std::runtime_error&)
+    {
+        return true;
+    }
+    return false;
+}
+
 std::string str(const Simplex& simplex)
 {
     std::ostringstream out;
@@ -133,6 +147,25 @@ void test_multi_filtration_duplicate_lookup()
             "multi-filtration boundary lookup should use latest duplicate before the coface");
 }
 
+void test_duplicate_filtration_checked_lookup_edges()
+{
+    MultiFiltration multi({Simplex({1}, 0.0f)});
+    require(throws_runtime_error([&]() { (void) multi.index(Simplex({0}, 0.0f), 0); }),
+            "multi-filtration should reject missing cells before the first predecessor");
+
+    MultiFiltration empty_multi;
+    require(throws_runtime_error([&]() { (void) empty_multi.index(Simplex({0}, 0.0f), 0); }),
+            "empty multi-filtration should reject missing cells");
+
+    LinkedMultiFiltration linked({Simplex({1}, 0.0f)});
+    require(throws_runtime_error([&]() { (void) linked.index(Simplex({0}, 0.0f), 0); }),
+            "linked multi-filtration should reject missing cells before the first predecessor");
+
+    LinkedMultiFiltration empty_linked;
+    require(throws_runtime_error([&]() { (void) empty_linked.index(Simplex({0}, 0.0f), 0); }),
+            "empty linked multi-filtration should reject missing cells");
+}
+
 void test_linked_multi_filtration_linked_lookup_and_rearrange()
 {
     LinkedMultiFiltration filtration({Simplex({0}, 0.0f), Simplex({0}, 1.0f), Simplex({1}, 0.0f), Simplex({0, 1}, 2.0f)});
@@ -140,6 +173,8 @@ void test_linked_multi_filtration_linked_lookup_and_rearrange()
     require(filtration.size() == 4, "linked multi-filtration should preserve duplicate simplices");
     require(filtration.index(Simplex({0}, 99.0f), 1) == 1,
             "linked lookup should use the stored linked index when it matches");
+    require(filtration.index(Simplex({0}, 99.0f), filtration.size()) == 1,
+            "default linked lookup should fall back to duplicate-preserving lookup");
 
     std::vector<size_t> boundary_indices;
     size_t edge_index = 3;
@@ -152,6 +187,16 @@ void test_linked_multi_filtration_linked_lookup_and_rearrange()
     filtration.rearrange({3, 0, 1, 2});
     require(str(filtration[0]) == "<0,1>", "linked rearrange should move the edge first");
     require(filtration.index(Simplex({0, 1}), 0) == 0, "linked rearrange should update cell indices");
+}
+
+void test_linked_multi_filtration_fallback_when_link_misses()
+{
+    LinkedMultiFiltration filtration;
+    filtration.push_back(Simplex({0}, 0.0f), 0);
+    filtration.push_back(Simplex({1}, 1.0f), 1);
+
+    require(filtration.index(Simplex({0}, 99.0f), 1) == 0,
+            "linked lookup should fall back to duplicate-preserving lookup when linked cell mismatches");
 }
 
 void test_linked_multi_filtration_sort_updates_linked_indices()
@@ -212,7 +257,9 @@ int main()
     test_filtration_unique_lookup_and_rearrange();
     test_checked_filtration_rejects_missing_cell();
     test_multi_filtration_duplicate_lookup();
+    test_duplicate_filtration_checked_lookup_edges();
     test_linked_multi_filtration_linked_lookup_and_rearrange();
+    test_linked_multi_filtration_fallback_when_link_misses();
     test_linked_multi_filtration_sort_updates_linked_indices();
     test_standard_reduction_edge_filtration();
     test_row_reduction_edge_filtration();

@@ -131,14 +131,16 @@ size_t
 dionysus::LinkedMultiFiltration<C,checked_index>::
 index(const Cell& s, size_t i) const
 {
-    size_t l = get_order()[i].linked;
-    auto& cl = (*this)[l];
-    if (cl == s)
-        return l;
+    if (i < size())
+    {
+        size_t l = get_order()[i].linked;
+        if (l < size() && (*this)[l] == s)
+            return l;
+    }
 
     // linked = 0 because linked is not used in complex order
     auto it = detail::preceding_indexed_cell(get_complex(), LinkedCellWithIndex(s,i,0));
-    detail::validate_indexed_cell_lookup<checked_index>(*it, s, i);
+    detail::validate_indexed_cell_lookup<checked_index>(it, get_complex().end(), s, i);
 
     return project_order(it) - get_order().begin();
 }
