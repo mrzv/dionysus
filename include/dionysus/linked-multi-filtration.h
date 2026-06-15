@@ -2,7 +2,6 @@
 #define DIONYSUS_LINKED_MULTI_FILTRATION_H
 
 #include <vector>
-#include <sstream>
 
 #include <boost/multi_index_container.hpp>
 #include <boost/multi_index/ordered_index.hpp>
@@ -138,15 +137,8 @@ index(const Cell& s, size_t i) const
         return l;
 
     // linked = 0 because linked is not used in complex order
-    auto it = get_complex().upper_bound(LinkedCellWithIndex(s,i,0));
-    --it;
-
-    if (checked_index && *it != s)
-    {
-        std::ostringstream oss;
-        oss << "Trying to access non-existent cell: " << s << ' ' << i;
-        throw std::runtime_error(oss.str());
-    }
+    auto it = detail::preceding_indexed_cell(get_complex(), LinkedCellWithIndex(s,i,0));
+    detail::validate_indexed_cell_lookup<checked_index>(*it, s, i);
 
     return project_order(it) - get_order().begin();
 }

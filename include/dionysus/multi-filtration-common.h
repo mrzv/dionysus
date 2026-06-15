@@ -3,6 +3,8 @@
 
 #include <cstddef>
 #include <functional>
+#include <sstream>
+#include <stdexcept>
 #include <vector>
 
 namespace dionysus
@@ -65,6 +67,25 @@ void update_order_indices(Order& order, Complex& complex, ProjectComplex project
         auto cit = project_complex(it);
         complex.modify(cit, [i,&update_cell](typename Order::value_type& c) { update_cell(c, i); });
         ++i;
+    }
+}
+
+template<class Complex, class IndexedCell>
+typename Complex::const_iterator preceding_indexed_cell(const Complex& complex, const IndexedCell& query)
+{
+    auto it = complex.upper_bound(query);
+    --it;
+    return it;
+}
+
+template<bool checked_index, class IndexedCell, class Cell>
+void validate_indexed_cell_lookup(const IndexedCell& candidate, const Cell& cell, size_t index)
+{
+    if (checked_index && candidate != cell)
+    {
+        std::ostringstream oss;
+        oss << "Trying to access non-existent cell: " << cell << ' ' << index;
+        throw std::runtime_error(oss.str());
     }
 }
 
