@@ -2,6 +2,15 @@
 
 This plan prioritizes stabilization, build hygiene, and clearer boundaries between the C++ core and Python bindings. The goal is to improve maintainability without changing the public Python API unless explicitly planned and tested.
 
+## Current Status
+
+- Completed: correctness and packaging drift fixes.
+- Completed: target-scoped CMake modernization and C++ install/export support.
+- Completed: extraction of reusable boundary, Freudenthal, zigzag, and vineyard helpers from Python binding files.
+- Completed: low-risk filtration container consolidation behind shared duplicate-preserving helpers and added Python/C++ coverage for current behavior.
+- Completed: mutation cleanup, numeric precision documentation, pytest hygiene, broader Python coverage, and CTest-based C++ coverage.
+- Deferred: a deeper storage-policy rewrite unifying `Filtration`, `MultiFiltration`, and `LinkedMultiFiltration` internals. The safer helper-level consolidation is done; a full rewrite should be treated as a separate design task.
+
 ## Guiding Principles
 
 - Preserve existing behavior first; refactor behind tests.
