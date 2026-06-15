@@ -10,6 +10,7 @@
 namespace py = pybind11;
 
 #include <dionysus/boundary-matrix.h>
+#include <dionysus/vineyard-linear-homotopy.h>
 #include <dionysus/vineyard.h>
 
 #include "field.h"
@@ -66,15 +67,7 @@ struct VineyardLinearHomotopyResult
     std::vector<Index>                 final_order;
 };
 
-struct LinearHomotopyData
-{
-    Chains                  boundary;
-    std::vector<Index>      stable_to_input;
-    std::vector<Index>      input_to_stable;
-    std::vector<double>     values0;
-    std::vector<double>     values1;
-    std::vector<unsigned>   dimensions;
-};
+using LinearHomotopyData = dionysus::VineyardLinearHomotopyData<Chains>;
 
 struct CrossingCandidate
 {
@@ -118,16 +111,6 @@ struct ClosedVine
 
 using ActiveVines = std::map<Feature, ActiveVine>;
 
-double value_at(const std::vector<double>& values0, const std::vector<double>& values1, Index cell, double t)
-{
-    return values0[cell] + t * (values1[cell] - values0[cell]);
-}
-
-double slope(const std::vector<double>& values0, const std::vector<double>& values1, Index cell)
-{
-    return values1[cell] - values0[cell];
-}
-
 template<class Vineyard>
 std::vector<Index> current_order(const Vineyard& vineyard)
 {
@@ -136,83 +119,6 @@ std::vector<Index> current_order(const Vineyard& vineyard)
     for (Index p = 0; p < vineyard.size(); ++p)
         order.push_back(vineyard.cell_at(p));
     return order;
-}
-
-bool filtration_less(const PyFiltration& filtration,
-                     const std::vector<double>& values,
-                     Index x,
-                     Index y)
-{
-    if (values[x] != values[y])
-        return values[x] < values[y];
-    return filtration[x] < filtration[y];
-}
-
-void sort_chain(Chain& column)
-{
-    std::sort(column.begin(), column.end(), [](const PyVineyardMatrix::Entry& x, const PyVineyardMatrix::Entry& y)
-              { return x.index() < y.index(); });
-}
-
-void validate_endpoint_filtration(const PyFiltration& filtration, const std::vector<double>& values)
-{
-    for (Index i = 0; i < filtration.size(); ++i)
-        for (auto it = filtration[i].boundary_begin(); it != filtration[i].boundary_end(); ++it)
-        {
-            Index face = filtration.index(*it, filtration.size());
-            if (values[face] > values[i] + epsilon)
-                throw std::invalid_argument("linear homotopy values are not a filtration on the complex");
-        }
-}
-
-LinearHomotopyData prepare_linear_homotopy_data(const PyFiltration& filtration,
-                                                const std::vector<double>& input_values0,
-                                                const std::vector<double>& input_values1,
-                                                const PyZpField& field)
-{
-    if (input_values0.size() != filtration.size() || input_values1.size() != filtration.size())
-        throw std::invalid_argument("linear homotopy value vectors must match filtration size");
-
-    validate_endpoint_filtration(filtration, input_values0);
-    validate_endpoint_filtration(filtration, input_values1);
-
-    LinearHomotopyData data;
-    data.stable_to_input.resize(filtration.size());
-    data.input_to_stable.resize(filtration.size());
-    for (Index i = 0; i < filtration.size(); ++i)
-        data.stable_to_input[i] = i;
-
-    std::sort(data.stable_to_input.begin(), data.stable_to_input.end(),
-              [&filtration, &input_values0](Index x, Index y)
-              { return filtration_less(filtration, input_values0, x, y); });
-
-    for (Index stable = 0; stable < data.stable_to_input.size(); ++stable)
-        data.input_to_stable[data.stable_to_input[stable]] = stable;
-
-    data.values0.resize(filtration.size());
-    data.values1.resize(filtration.size());
-    data.dimensions.resize(filtration.size());
-    data.boundary.resize(filtration.size());
-
-    for (Index stable = 0; stable < data.stable_to_input.size(); ++stable)
-    {
-        Index input = data.stable_to_input[stable];
-        const PySimplex& simplex = filtration[input];
-        data.values0[stable] = input_values0[input];
-        data.values1[stable] = input_values1[input];
-        data.dimensions[stable] = simplex.dimension();
-
-        Chain column;
-        for (auto it = simplex.boundary_begin(field); it != simplex.boundary_end(field); ++it)
-        {
-            Index face_input = filtration.index(it->index(), filtration.size());
-            column.emplace_back(it->element(), data.input_to_stable[face_input]);
-        }
-        sort_chain(column);
-        data.boundary[stable] = std::move(column);
-    }
-
-    return data;
 }
 
 template<class Vineyard>
@@ -283,10 +189,10 @@ void add_segment(VineyardLinearHomotopyResult& result,
     result.vines[active.vine_index].segments.push_back(VineyardSegment {
         active.t0,
         t1,
-        value_at(values0, values1, active.birth, active.t0),
-        value_at(values0, values1, active.birth, t1),
-        active.death == PyVineyardMatrix::unpaired() ? inf : value_at(values0, values1, active.death, active.t0),
-        active.death == PyVineyardMatrix::unpaired() ? inf : value_at(values0, values1, active.death, t1),
+        dionysus::vineyard_linear_value_at(values0, values1, active.birth, active.t0),
+        dionysus::vineyard_linear_value_at(values0, values1, active.birth, t1),
+        active.death == PyVineyardMatrix::unpaired() ? inf : dionysus::vineyard_linear_value_at(values0, values1, active.death, active.t0),
+        active.death == PyVineyardMatrix::unpaired() ? inf : dionysus::vineyard_linear_value_at(values0, values1, active.death, t1),
         active.birth,
         active.death,
         active.event0,
@@ -352,7 +258,7 @@ double death_value_at(const std::vector<double>& values0,
     Index death = std::get<1>(feature);
     if (death == PyVineyardMatrix::unpaired())
         return std::numeric_limits<double>::infinity();
-    return value_at(values0, values1, death, t);
+    return dionysus::vineyard_linear_value_at(values0, values1, death, t);
 }
 
 bool same_persistence_point(const ClosedVine& closed,
@@ -361,7 +267,7 @@ bool same_persistence_point(const ClosedVine& closed,
                             const std::vector<double>& values1,
                             double t)
 {
-    double birth = value_at(values0, values1, std::get<0>(feature), t);
+    double birth = dionysus::vineyard_linear_value_at(values0, values1, std::get<0>(feature), t);
     double death = death_value_at(values0, values1, feature, t);
 
     bool same_death = std::isinf(closed.death) && std::isinf(death);
@@ -387,7 +293,7 @@ void close_and_reopen_features(VineyardLinearHomotopyResult& result,
         ActiveVine active = close_feature(result, active_vines, feature, values0, values1, t, event);
         closed.push_back(ClosedVine {
             active.vine_index,
-            value_at(values0, values1, std::get<0>(feature), t),
+            dionysus::vineyard_linear_value_at(values0, values1, std::get<0>(feature), t),
             death_value_at(values0, values1, feature, t)
         });
     }
@@ -510,8 +416,8 @@ void push_candidate_neighborhood(EventQueue& queue,
 
 bool tie_less(const LinearHomotopyData& data, Index x, Index y)
 {
-    double sx = slope(data.values0, data.values1, x);
-    double sy = slope(data.values0, data.values1, y);
+    double sx = dionysus::vineyard_linear_slope(data.values0, data.values1, x);
+    double sy = dionysus::vineyard_linear_slope(data.values0, data.values1, y);
     if (std::abs(sx - sy) > epsilon)
         return sx < sy;
     if (data.dimensions[x] != data.dimensions[y])
@@ -521,8 +427,8 @@ bool tie_less(const LinearHomotopyData& data, Index x, Index y)
 
 bool adjacent_inverted_at(const LinearHomotopyData& data, Index left, Index right, double t)
 {
-    double left_value = value_at(data.values0, data.values1, left, t);
-    double right_value = value_at(data.values0, data.values1, right, t);
+    double left_value = dionysus::vineyard_linear_value_at(data.values0, data.values1, left, t);
+    double right_value = dionysus::vineyard_linear_value_at(data.values0, data.values1, right, t);
     if (left_value > right_value + epsilon)
         return true;
     if (std::abs(left_value - right_value) <= epsilon)
@@ -538,8 +444,8 @@ double crossing_time(const Vineyard& vineyard,
 {
     Index a = vineyard.cell_at(position);
     Index b = vineyard.cell_at(position + 1);
-    double d = value_at(data.values0, data.values1, b, current_t) - value_at(data.values0, data.values1, a, current_t);
-    double sd = slope(data.values0, data.values1, b) - slope(data.values0, data.values1, a);
+    double d = dionysus::vineyard_linear_value_at(data.values0, data.values1, b, current_t) - dionysus::vineyard_linear_value_at(data.values0, data.values1, a, current_t);
+    double sd = dionysus::vineyard_linear_slope(data.values0, data.values1, b) - dionysus::vineyard_linear_slope(data.values0, data.values1, a);
     if (d > epsilon && sd < -epsilon)
     {
         double t = current_t - d / sd;
@@ -583,7 +489,7 @@ void push_candidate(EventQueue& queue,
             t,
             left,
             right,
-            slope(data.values0, data.values1, right),
+            dionysus::vineyard_linear_slope(data.values0, data.values1, right),
             data.dimensions[right],
             right
         });
@@ -625,7 +531,7 @@ VineyardLinearHomotopyResult run_linear_homotopy(const PyFiltration& filtration,
                                                  const std::vector<double>& values1,
                                                  const PyZpField& field)
 {
-    LinearHomotopyData data = prepare_linear_homotopy_data(filtration, values0, values1, field);
+    LinearHomotopyData data = dionysus::prepare_vineyard_linear_homotopy_data<Chains>(filtration, values0, values1, field);
     auto* vineyard = new Vineyard(field, data.boundary);
 
     VineyardLinearHomotopyResult result;
