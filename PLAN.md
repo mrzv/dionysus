@@ -222,9 +222,15 @@ Completed in the first filtration consolidation batch:
 
 ### Remove Unsafe Data Mutation Patterns
 
-- Avoid `const_cast` in `bindings/python/rips.cpp` and `bindings/python/freudenthal.cpp`.
-- Prefer constructing simplices with final filtration values before insertion.
+- Done: avoid `const_cast` in `bindings/python/rips.cpp` and `bindings/python/freudenthal.cpp`.
+- Done: prefer constructing simplices with final filtration values before insertion.
 - If post-insertion data updates are truly required, add a narrow, explicit API for updating simplex data safely.
+
+Completed in the Rips mutation cleanup batch:
+
+- Updated `bindings/python/rips.cpp` so generated Rips simplices receive their final filtration value before insertion.
+- Preserved point-cloud radius checks with squared distances while storing public simplex data as unsquared distances.
+- Added Python regression coverage for point-cloud Rips, explicit-distance Rips, and unsupported dtype errors.
 
 ### Clarify Numeric Policy
 
