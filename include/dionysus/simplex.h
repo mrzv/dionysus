@@ -41,30 +41,30 @@ class Simplex
 
                         Simplex(const std::initializer_list<Vertex>& vertices,
                                 Data&& d = Data()):
-                            Simplex(vertices.size() - 1, vertices.begin(), vertices.end(), std::move(d))
-                                                                                                {}
+                            Simplex(dimension_from_size(vertices.size()), vertices.begin(), vertices.end(), std::move(d))
+                                                                                                 {}
 
                         Simplex(const std::initializer_list<Vertex>& vertices,
                                 const Data& d):
-                            Simplex(vertices.size() - 1, vertices.begin(), vertices.end(), d)   {}
+                            Simplex(dimension_from_size(vertices.size()), vertices.begin(), vertices.end(), d)   {}
 
-                        Simplex(short unsigned dim, Vertices&& vertices, Data&& data = Data()):
+                        Simplex(short dim, Vertices&& vertices, Data&& data = Data()):
                             dim_(dim), vertices_(std::move(vertices)), data_(std::move(data))   { std::sort(begin(), end()); }
 
         template<class VertexRange>
                         Simplex(const VertexRange& vertices,
                                 Data&& d = Data()):
-                            Simplex(vertices.size() - 1, vertices.begin(), vertices.end(), std::move(d))
-                                                                                                {}
+                            Simplex(dimension_from_size(vertices.size()), vertices.begin(), vertices.end(), std::move(d))
+                                                                                                 {}
 
         template<class VertexRange>
                         Simplex(const VertexRange& vertices,
                                 const Data& d):
-                            Simplex(vertices.size() - 1, vertices.begin(), vertices.end(), d)   {}
+                            Simplex(dimension_from_size(vertices.size()), vertices.begin(), vertices.end(), d)   {}
 
                         Simplex(const Simplex& other):
                             Simplex(other.dim_, other.begin(), other.end(), other.data_)        {}
-        Simplex&        operator=(const Simplex& other)             { dim_ = other.dim_; vertices_ = Vertices(new Vertex[dim_+1]); std::copy(other.begin(), other.end(), begin()); data_ = other.data_; return *this; }
+        Simplex&        operator=(const Simplex& other)             { dim_ = other.dim_; vertices_ = Vertices(new Vertex[size()]); std::copy(other.begin(), other.end(), begin()); data_ = other.data_; return *this; }
 
                         Simplex(Simplex&& other) noexcept:
                             dim_(other.dim_),
@@ -73,22 +73,22 @@ class Simplex
         Simplex&        operator=(Simplex&& other)                  = default;
 
         template<class Iterator>
-                        Simplex(short unsigned dim,
+                        Simplex(short dim,
                                 Iterator b, Iterator e,
                                 Data&& d = Data()):
                             dim_(dim),
-                            vertices_(new Vertex[dim_+1]),
+                            vertices_(new Vertex[size()]),
                             data_(std::move(d))                     { std::copy(b, e, begin()); std::sort(begin(), end()); }
 
         template<class Iterator>
-                        Simplex(short unsigned dim,
+                        Simplex(short dim,
                                 Iterator b, Iterator e,
                                 const Data& d):
                             dim_(dim),
-                            vertices_(new Vertex[dim_+1]),
+                            vertices_(new Vertex[size()]),
                             data_(d)                                { std::copy(b, e, begin()); std::sort(begin(), end()); }
 
-        short unsigned  dimension() const                           { return dim_; }
+        short           dimension() const                           { return dim_; }
 
         BoundaryRange    boundary() const                           { return BoundaryRange(boundary_begin(), boundary_end()); }
         BoundaryIterator boundary_begin() const;
@@ -106,13 +106,13 @@ class Simplex
                         boundary_end(const Field& field) const;
 
         const Vertex*   begin() const                               { return vertices_.get(); }
-        const Vertex*   end() const                                 { return begin() + dim_ + 1; }
-        size_t          size() const                                { return dim_ + 1; }
+        const Vertex*   end() const                                 { return begin() + size(); }
+        size_t          size() const                                { return dim_ < 0 ? 0 : static_cast<size_t>(dim_) + 1; }
 
         std::pair<const Vertex*, const Vertex*>
                         range() const                               { return std::make_pair(begin(), end()); }
 
-        Simplex         join(const Vertex& v) const                 { Vertices vertices(new Vertex[dim_+2]); std::copy(begin(), end(), vertices.get()); vertices[dim_+1] = v; return Simplex(dim_ + 1, std::move(vertices), Data(data_)); }
+        Simplex         join(const Vertex& v) const                 { Vertices vertices(new Vertex[size()+1]); std::copy(begin(), end(), vertices.get()); vertices[size()] = v; return Simplex(dim_ + 1, std::move(vertices), Data(data_)); }
         bool            contains(const Vertex& v) const             { return std::find(begin(), end(), v) != end(); }
 
         bool            operator==(const Simplex& other) const      { return dim_ == other.dim_ && std::equal(begin(), end(), other.begin()); }
@@ -126,14 +126,16 @@ class Simplex
 
         friend
         std::ostream&   operator<<(std::ostream& out, const Simplex& s)
-        { out << '<' << *s.begin(); for (auto it = s.begin() + 1; it != s.end(); ++it) out << ',' << *it; out << '>'; return out; }
+        { out << '<'; if (s.size()) { out << *s.begin(); for (auto it = s.begin() + 1; it != s.end(); ++it) out << ',' << *it; } out << '>'; return out; }
 
     private:
         Vertex*         begin()                                     { return vertices_.get(); }
-        Vertex*         end()                                       { return begin() + dim_ + 1; }
+        Vertex*         end()                                       { return begin() + size(); }
+
+        static short    dimension_from_size(size_t size)            { return size == 0 ? -1 : static_cast<short>(size - 1); }
 
     private:
-        short unsigned      dim_;
+        short               dim_;
         //boost::compressed_pair<Vertices, Data>      vertices_data_;
         Vertices            vertices_;
         Data                data_;          // TODO: optimize
@@ -162,7 +164,7 @@ struct Simplex<V,D>::BoundaryIterator:
                                             Value>                          Parent;
 
                     BoundaryIterator()                                      {}
-        explicit    BoundaryIterator(short unsigned dim, Iterator iter, Iterator bg, Iterator end):
+        explicit    BoundaryIterator(short dim, Iterator iter, Iterator bg, Iterator end):
                         Parent(iter), dim_(dim), bg_(bg), end_(end)         {}
 
         Iterator    begin() const                                           { return bg_; }
@@ -179,7 +181,7 @@ struct Simplex<V,D>::BoundaryIterator:
                                 boost::make_filter_iterator(std::bind(NotEqualVertex(), _1, *(this->base())), end_, end_));
         }
 
-        short unsigned  dim_;
+        short           dim_;
         Iterator        bg_;
         Iterator        end_;
 };

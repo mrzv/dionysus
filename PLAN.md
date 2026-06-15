@@ -268,7 +268,7 @@ Completed in the shared fixture batch:
 
 Add tests for:
 
-- `Simplex`
+- Done: `Simplex`
 - `Filtration`
 - `MultiFiltration`
 - `LinkedMultiFiltration`
@@ -290,6 +290,10 @@ Completed in the persistence variant coverage batch:
 - Added cohomology persistence coverage that compares pairs and diagrams against ordinary homology persistence on a small filtration.
 - Added cocycle access coverage for alive cohomology representatives when `keep_cocycles=True`.
 - Added omnifield persistence coverage for basic prime-specific columns and diagram initialization.
+
+Completed in the simplex coverage batch:
+
+- Added focused `Simplex` coverage for construction, sorted vertex iteration, sequence access, containment, boundary order, joining, mutable data, identity semantics, hashing, and index errors.
 
 ### Add C++ Tests
 

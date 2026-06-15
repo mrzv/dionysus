@@ -19,9 +19,15 @@ void init_simplex(py::module& m)
         .def("boundary",        [](const PySimplex& s) { return py::make_iterator(s.boundary_begin(), s.boundary_end()); },
                                 py::keep_alive<0, 1>() /* Essential: keep object alive while iterator exists */,
                                 "returns iterator over the boundary of the simplex")
-        .def("dimension",       &PySimplex::dimension, "simplex dimension, one less than cardinality")
+        .def("dimension",       [](const PySimplex& s) { return s.size() == 0 ? -1 : static_cast<int>(s.dimension()); },
+                                "simplex dimension, one less than cardinality")
         .def("__len__",         &PySimplex::size, "simplex cardinality")
-        .def("__getitem__",     &PySimplex::operator[], "access `i`-th vertex", "i"_a)
+        .def("__getitem__",     [](const PySimplex& s, short unsigned i)
+                                {
+                                    if (i >= s.size())
+                                        throw py::index_error();
+                                    return s[i];
+                                }, "access `i`-th vertex", "i"_a)
         .def("__iter__",        [](const PySimplex& s) { return py::make_iterator(s.begin(), s.end()); },
                                 py::keep_alive<0, 1>() /* Essential: keep object alive while iterator exists */,
                                 "iterator over the vertices")
