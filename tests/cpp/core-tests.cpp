@@ -4,8 +4,12 @@
 #include <vector>
 
 #include <dionysus/filtration.h>
+#include <dionysus/fields/zp.h>
 #include <dionysus/multi-filtration.h>
+#include <dionysus/ordinary-persistence.h>
+#include <dionysus/row-reduction.h>
 #include <dionysus/simplex.h>
+#include <dionysus/standard-reduction.h>
 
 namespace
 {
@@ -16,6 +20,8 @@ using CheckedFiltration = dionysus::Filtration<Simplex,
                                                boost::multi_index::hashed_unique<boost::multi_index::identity<Simplex>>,
                                                true>;
 using MultiFiltration = dionysus::MultiFiltration<Simplex, true>;
+using Field = dionysus::ZpField<>;
+using Persistence = dionysus::OrdinaryPersistence<Field>;
 
 void require(bool condition, const std::string& message)
 {
@@ -125,6 +131,40 @@ void test_multi_filtration_duplicate_lookup()
             "multi-filtration boundary lookup should use latest duplicate before the coface");
 }
 
+Filtration edge_filtration()
+{
+    return Filtration({Simplex({0}, 0.0f), Simplex({1}, 1.0f), Simplex({0, 1}, 2.0f)});
+}
+
+void require_edge_pairs(const Persistence& persistence, const std::string& label)
+{
+    require(persistence.size() == 3, label + " should produce three reduced columns");
+    require(persistence.pair(0) == Persistence::unpaired(), label + " should leave vertex 0 unpaired");
+    require(persistence.pair(1) == 2, label + " should pair vertex 1 with the edge");
+    require(persistence.pair(2) == 1, label + " should pair the edge with vertex 1");
+}
+
+void test_standard_reduction_edge_filtration()
+{
+    Field field(5);
+    Persistence persistence(field);
+    dionysus::StandardReduction<Persistence> reduce(persistence);
+
+    reduce(edge_filtration());
+
+    require_edge_pairs(persistence, "standard reduction");
+}
+
+void test_row_reduction_edge_filtration()
+{
+    Field field(5);
+    dionysus::RowReduction<Field> reduce(field);
+
+    reduce(edge_filtration());
+
+    require_edge_pairs(reduce.persistence(), "row reduction");
+}
+
 } // namespace
 
 int main()
@@ -134,5 +174,7 @@ int main()
     test_filtration_unique_lookup_and_rearrange();
     test_checked_filtration_rejects_missing_cell();
     test_multi_filtration_duplicate_lookup();
+    test_standard_reduction_edge_filtration();
+    test_row_reduction_edge_filtration();
     return 0;
 }

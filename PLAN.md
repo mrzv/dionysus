@@ -298,7 +298,7 @@ Completed in the simplex coverage batch:
 ### Add C++ Tests
 
 - Done: add CTest integration.
-- In progress: add small C++ tests for core headers and reduction algorithms.
+- Done: add small C++ tests for core headers and reduction algorithms.
 - Use these tests to protect refactors that move algorithmic code out of bindings.
 
 Completed in the first C++ test batch:
@@ -307,6 +307,11 @@ Completed in the first C++ test batch:
 - Added a no-framework `dionysus-core-tests` executable linked against the public `dionysus` interface target.
 - Added C++ coverage for empty and non-empty `Simplex` behavior, boundary ordering, joining, data-independent identity, `Filtration` sorting/rearranging/indexing, checked missing-cell lookup, and `MultiFiltration` duplicate boundary lookup.
 - Fixed the public C++ range constructors for `MultiFiltration` and `LinkedMultiFiltration` so they use their indexed `push_back()` wrappers instead of pushing raw cells into the underlying container.
+
+Completed in the C++ reduction smoke batch:
+
+- Added C++ coverage for `StandardReduction<OrdinaryPersistence<ZpField<>>>` and `RowReduction<ZpField<>>` on a small edge filtration.
+- Asserted the expected unpaired vertex and edge/vertex persistence pair directly through the C++ `ReducedMatrix` API.
 
 ## Suggested Execution Order
 
