@@ -2,6 +2,7 @@ cmake_minimum_required      (VERSION 3.20)
 project                     (Dionysus VERSION 2.2.2)
 
 include                     (CMakePackageConfigHelpers)
+include                     (CTest)
 include                     (GNUInstallDirs)
 
 # Default to Release
@@ -92,3 +93,7 @@ endif                       (build_examples)
 if                          (build_python_bindings)
     add_subdirectory        (bindings/python)
 endif                       (build_python_bindings)
+
+if                          (BUILD_TESTING)
+    add_subdirectory        (tests/cpp)
+endif                       (BUILD_TESTING)

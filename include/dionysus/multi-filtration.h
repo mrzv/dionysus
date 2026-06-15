@@ -70,7 +70,7 @@ class MultiFiltration
                                 MultiFiltration(std::begin(cells), std::end(cells))  {}
 
         template<class Iterator>
-                            MultiFiltration(Iterator bg, Iterator end)               { for (auto it = bg; it != end; ++it) cells_.push_back(*it); }
+                            MultiFiltration(Iterator bg, Iterator end)               { for (auto it = bg; it != end; ++it) push_back(*it); }
 
         template<class CellRange>
                             MultiFiltration(const CellRange& cells):
