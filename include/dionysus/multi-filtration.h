@@ -147,12 +147,7 @@ void
 dionysus::MultiFiltration<C,checked_index>::
 rearrange(const std::vector<size_t>& indices)
 {
-    std::vector<std::reference_wrapper<const CellWithIndex>> references; references.reserve(indices.size());
-    for (size_t i : indices)
-    {
-        auto& c = get_order()[i];
-        references.push_back(std::cref(c));
-    }
+    auto references = detail::rearrangement_references(get_order(), indices);
     get_order().rearrange(references.begin());
 
     update_indices();

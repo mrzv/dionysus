@@ -156,15 +156,8 @@ void
 dionysus::LinkedMultiFiltration<C,checked_index>::
 rearrange(const std::vector<size_t>& indices)
 {
-    std::vector<std::reference_wrapper<const LinkedCellWithIndex>> references; references.reserve(indices.size());
-    std::vector<size_t> reverse_indices(indices.size());
-    size_t i = 0;
-    for (size_t idx : indices)
-    {
-        reverse_indices[idx] = i++;
-        auto& c = get_order()[idx];
-        references.push_back(std::cref(c));
-    }
+    auto references = detail::rearrangement_references(get_order(), indices);
+    auto reverse_indices = detail::reverse_rearrangement_indices(indices);
     get_order().rearrange(references.begin());
 
     update_indices(reverse_indices);

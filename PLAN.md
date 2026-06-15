@@ -214,6 +214,7 @@ Completed in the first filtration consolidation batch:
 - Added `include/dionysus/multi-filtration-common.h` for shared duplicate-preserving filtration internals.
 - Reused shared indexed-cell ordering in `MultiFiltration` and `LinkedMultiFiltration`.
 - Reused a shared cell projection functor for order iterators in both duplicate-preserving filtration containers.
+- Reused shared rearrangement reference and reverse-index helpers for duplicate-preserving filtration reordering.
 - Kept storage, linked-index maintenance, and public lookup behavior unchanged for later, more invasive consolidation steps.
 
 ## Phase 5: Improve Mutation And Numeric Boundaries
