@@ -3,12 +3,6 @@
 
 #include <vector>
 
-#include <boost/multi_index_container.hpp>
-#include <boost/multi_index/ordered_index.hpp>
-#include <boost/multi_index/random_access_index.hpp>
-
-#include <boost/iterator/transform_iterator.hpp>
-
 #include "multi-filtration-common.h"
 
 namespace b   = boost;
@@ -17,48 +11,31 @@ namespace bmi = boost::multi_index;
 namespace dionysus
 {
 
-// MultiFiltration stores a filtered cell complex as boost::multi_index_container<...>.
-// It allows for bidirectional translation between a cell and its index.
+// MultiFiltration stores a filtered cell complex with duplicate-preserving lookup.
+// It allows for bidirectional translation between a cell and its ordered index.
 template<class Cell_,
          bool  checked_index = false>
-class MultiFiltration
+class MultiFiltration:
+    private detail::DuplicateFiltrationStorage<detail::DuplicateCellWithIndex<Cell_>, checked_index>
 {
+    private:
+        using Storage = detail::DuplicateFiltrationStorage<detail::DuplicateCellWithIndex<Cell_>, checked_index>;
+
     public:
-        struct order {};
+        using               order = typename Storage::order;
 
         typedef             Cell_                                               Cell;
+        using               CellWithIndex = detail::DuplicateCellWithIndex<Cell>;
+        using               CellLookupIndex = typename Storage::CellLookupIndex;
+        using               Container = typename Storage::Container;
+        typedef             typename Storage::value_type                        value_type;
 
-        struct CellWithIndex: Cell
-        {
-            using Cell = Cell_;
+        typedef             typename Storage::Complex                           Complex;
+        typedef             typename Storage::Order                             Order;
 
-                        CellWithIndex(const Cell& c_, size_t i_):
-                            Cell(c_), i(i_)             {}
-                        CellWithIndex(Cell&& c_, size_t i_):
-                            Cell(c_), i(i_)             {}
-
-            size_t  i;
-
-            friend bool operator<(const CellWithIndex& c, const CellWithIndex& other)
-            {
-                return detail::indexed_cell_less(static_cast<const Cell&>(c), c.i,
-                                                 static_cast<const Cell&>(other), other.i);
-            }
-        };
-        // non-unique to avoid modification conflicts in update_indices()
-        using CellLookupIndex = bmi::ordered_non_unique<bmi::identity<CellWithIndex>>;
-        using Container = b::multi_index_container<CellWithIndex, bmi::indexed_by<CellLookupIndex,
-                                                                                   bmi::random_access<bmi::tag<order>>
-                                                                                  >>;
-        typedef             typename Container::value_type                      value_type;
-
-        typedef             typename Container::template nth_index<0>::type     Complex;
-        typedef             typename Container::template nth_index<1>::type     Order;
-
-        using OrderCell = detail::CellWithoutIndex<CellWithIndex>;
-        using OrderConstIterator = b::transform_iterator<OrderCell, typename Order::const_iterator>;
-        using OrderIterator = b::transform_iterator<OrderCell, typename Order::iterator>;
-
+        using               OrderCell = typename Storage::OrderCell;
+        using               OrderConstIterator = typename Storage::OrderConstIterator;
+        using               OrderIterator = typename Storage::OrderIterator;
 
     public:
                             MultiFiltration()                                        = default;
@@ -76,83 +53,34 @@ class MultiFiltration
                                 MultiFiltration(std::begin(cells), std::end(cells))  {}
 
         // Lookup
-        const Cell&         operator[](size_t i) const                          { return get_order()[i]; }
-        size_t              index(const Cell& s, size_t i) const;
-        bool                contains(const Cell& s) const                       { return get_complex().contains(s, std::less<Cell>()); }
+        const Cell&         operator[](size_t i) const                                { return Storage::operator[](i); }
+        size_t              index(const Cell& s, size_t i) const                     { return this->preceding_index(s, i); }
+        bool                contains(const Cell& s) const                            { return Storage::contains(s); }
 
-        void                push_back(const Cell& s)                            { get_order().push_back( CellWithIndex(s, cells_.size()) ); }
-        void                push_back(Cell&& s)                                 { get_order().push_back( CellWithIndex(s, cells_.size()) ); }
+        void                push_back(const Cell& s)                                 { this->push_indexed(CellWithIndex(s, this->next_index())); }
+        void                push_back(Cell&& s)                                      { this->push_indexed(CellWithIndex(std::move(s), this->next_index())); }
 
-        void                replace(size_t i, const Cell& s)                    { get_order().replace(get_order().begin() + i, CellWithIndex(s, i)); }
+        void                replace(size_t i, const Cell& s)                         { this->replace_indexed(i, CellWithIndex(s, i)); }
 
         template<class... Args>
-        void                emplace_back(Args&&... args)                        { get_order().emplace_back( CellWithIndex(Cell(std::forward<Args>(args)...), cells_.size()) ); }
+        void                emplace_back(Args&&... args)                             { this->push_indexed(CellWithIndex(Cell(std::forward<Args>(args)...), this->next_index())); }
 
         template<class Cmp = std::less<Cell>>
-        void                sort(const Cmp& cmp = Cmp())                        { get_order().sort(cmp); update_indices(); }
+        void                sort(const Cmp& cmp = Cmp())                             { this->sort_with_updates(cmp, [](CellWithIndex& c, size_t i) { c.i = i; }); }
 
-        void                rearrange(const std::vector<size_t>& indices);
+        void                rearrange(const std::vector<size_t>& indices)            { this->rearrange_with_updates(indices, [](CellWithIndex& c, size_t i) { c.i = i; }); }
 
-        OrderConstIterator  begin() const                                       { return OrderConstIterator(get_order().begin()); }
-        OrderConstIterator  end() const                                         { return OrderConstIterator(get_order().end()); }
-        OrderIterator       begin()                                             { return OrderIterator(get_order().begin()); }
-        OrderIterator       end()                                               { return OrderIterator(get_order().end()); }
-        size_t              size() const                                        { return cells_.size(); }
-        void                clear()                                             { return Container().swap(cells_); }
+        OrderConstIterator  begin() const                                            { return Storage::begin(); }
+        OrderConstIterator  end() const                                              { return Storage::end(); }
+        OrderIterator       begin()                                                  { return Storage::begin(); }
+        OrderIterator       end()                                                    { return Storage::end(); }
+        size_t              size() const                                             { return Storage::size(); }
+        void                clear()                                                  { Storage::clear(); }
 
-        Cell&               back()                                              { return const_cast<Cell&>(get_order().back()); }
-        const Cell&         back() const                                        { return get_order().back(); }
-
-    private:
-        const Complex&      get_complex() const                                 { return cells_.template get<0>(); }
-        Complex&            get_complex()                                       { return cells_.template get<0>(); }
-        const Order&        get_order() const                                   { return cells_.template get<order>(); }
-        Order&              get_order()                                         { return cells_.template get<order>(); }
-
-        template<class Iterator>
-        typename Order::const_iterator
-                            project_order(Iterator it) const                    { return cells_.template project<order>(it); }
-        template<class Iterator>
-        typename Complex::iterator
-                            project_complex(Iterator it)                        { return cells_.template project<0>(it); }
-
-        void                update_indices();
-
-        Container           cells_;
+        Cell&               back()                                                   { return Storage::back(); }
+        const Cell&         back() const                                             { return Storage::back(); }
 };
 
-}
-
-template<class C, bool checked_index>
-size_t
-dionysus::MultiFiltration<C,checked_index>::
-index(const Cell& s, size_t i) const
-{
-    auto it = detail::preceding_indexed_cell(get_complex(), CellWithIndex(s,i));
-    detail::validate_indexed_cell_lookup<checked_index>(it, get_complex().end(), s, i);
-
-    return project_order(it) - get_order().begin();
-}
-
-template<class C, bool checked_index>
-void
-dionysus::MultiFiltration<C,checked_index>::
-rearrange(const std::vector<size_t>& indices)
-{
-    auto references = detail::rearrangement_references(get_order(), indices);
-    get_order().rearrange(references.begin());
-
-    update_indices();
-}
-
-template<class C, bool checked_index>
-void
-dionysus::MultiFiltration<C,checked_index>::
-update_indices()
-{
-    detail::update_order_indices(get_order(), get_complex(),
-                                 [this](typename Order::iterator it) { return project_complex(it); },
-                                 [](CellWithIndex& c, size_t i) { c.i = i; });
 }
 
 #endif
