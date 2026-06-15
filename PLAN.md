@@ -202,6 +202,13 @@ Refactor toward shared internal storage policies for:
 
 Do this after tests cover the public behavior of all three containers.
 
+Completed in the filtration coverage batch:
+
+- Added Python regression coverage for `Filtration`, `MultiFiltration`, and `LinkedMultiFiltration` construction, sorting, rearranging, indexing, and containment behavior.
+- Documented current duplicate handling behavior: `Filtration` keeps unique simplices, while `MultiFiltration` and `LinkedMultiFiltration` preserve duplicate simplex vertex sets.
+- Captured the current duplicate lookup contract where `index(simplex, bound)` returns the duplicate at or before the search bound and simplex `data` is not part of lookup identity.
+- Added boundary-face lookup coverage for duplicate-preserving filtrations to ensure simplex boundary searches select the latest matching duplicate before the coface.
+
 ## Phase 5: Improve Mutation And Numeric Boundaries
 
 ### Remove Unsafe Data Mutation Patterns
