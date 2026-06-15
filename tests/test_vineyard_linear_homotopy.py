@@ -302,21 +302,13 @@ def test_linear_homotopy_supports_matrix_u():
     assert result.vineyard.position(1) < result.vineyard.position(2)
 
 
-def test_linear_homotopy_final_pairs_match_matrix_v_recomputation():
-    filtration = d.Filtration([[0], [1], [2], [0, 1], [1, 2], [0, 2]])
-    values0 = [0.0, 1.0, 2.0, 2.0, 3.0, 3.0]
-    values1 = [2.0, 0.0, 1.0, 2.0, 1.0, 3.0]
-
-    assert_final_pairs_match_recomputation(filtration, values0, values1)
-
-
-def test_linear_homotopy_final_pairs_match_matrix_u_recomputation():
+def test_linear_homotopy_final_pairs_match_recomputation(reduction_method):
     filtration = d.Filtration([[0], [1], [2], [0, 1], [1, 2], [0, 2]])
     values0 = [0.0, 1.0, 2.0, 2.0, 3.0, 3.0]
     values1 = [2.0, 0.0, 1.0, 2.0, 1.0, 3.0]
 
     assert_final_pairs_match_recomputation(
-        filtration, values0, values1, method="matrix_u"
+        filtration, values0, values1, method=reduction_method
     )
 
 

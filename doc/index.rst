@@ -23,7 +23,7 @@ persistent homology. As before, it's written in C++, with Python bindings.
 The second version is re-written from scratch, which helps it accomplish a few goals:
 
   * `Modified BSD license <https://github.com/mrzv/dionysus/blob/master/LICENSE.txt>`_ (because GPL causes too many problems in academic software).
-  * No dependency on Boost.Python; Dionysus 2 uses (and includes) `PyBind11 <https://github.com/pybind/pybind11>`_ instead, which greatly simplifies installation.
+  * No dependency on Boost.Python; Dionysus 2 uses `PyBind11 <https://github.com/pybind/pybind11>`_ instead, which greatly simplifies installation.
   * Cleaner, more consistent internal design (for example, all algorithms support arbitrary fields).
   * Some new algorithms, e.g., :ref:`omni-field` and Wasserstein and bottleneck :ref:`distance computation <diagram-distances>` from `Hera <https://bitbucket.org/grey_narn/hera>`_.
   * A few :ref:`plotting` routines, based on `Matplotlib <https://matplotlib.org/>`_.

@@ -1,6 +1,5 @@
 imports:
     hera: ./ext/hera
-    pybind11: ./bindings/python/pybind11
 
 git module hera:
     url: gh:anigmetov/hera
@@ -14,9 +13,3 @@ git module hera:
         - wasserstein/tests
         - include/hera/matching
     rev: 71858a2890905f1ca3156950cca6452bb6b700a9
-
-git module pybind11:
-    url: gh:pybind/pybind11
-    rev: 23c59b6e3d3535949bcb30b24de4fefdcded44d9
-    drop:
-        - tests

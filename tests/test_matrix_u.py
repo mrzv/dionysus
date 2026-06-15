@@ -1,3 +1,5 @@
+import pickle
+
 import dionysus as d
 
 
@@ -42,8 +44,7 @@ def matrix_filtration(prime=5):
     return d.MatrixFiltration(matrix, [0, 0, 1, 1], [0, 1, 2, 3])
 
 
-def test_matrix_u_reconstructs_boundary_matrix():
-    prime = 5
+def test_matrix_u_reconstructs_boundary_matrix(prime):
     expected_boundary = [[], [], [(1, 0), (1, 1)], [(1, 0), (2, 1)]]
 
     reduced, trails = d.homology_persistence(matrix_filtration(prime), prime=prime, method="matrix_u")
@@ -51,18 +52,14 @@ def test_matrix_u_reconstructs_boundary_matrix():
     assert multiply_reduced_by_trails(reduced, trails, prime) == expected_boundary
 
 
-def test_matrix_u_is_inverse_of_matrix_v():
-    prime = 5
-
+def test_matrix_u_is_inverse_of_matrix_v(prime):
     _, chains = d.homology_persistence(matrix_filtration(prime), prime=prime, method="matrix_v")
     _, trails = d.homology_persistence(matrix_filtration(prime), prime=prime, method="matrix_u")
 
     assert multiply_reduced_by_trails(chains, trails, prime) == identity_matrix(len(chains))
 
 
-def test_matrix_u_matches_column_reduction():
-    prime = 5
-
+def test_matrix_u_matches_column_reduction(prime):
     reduced, _ = d.homology_persistence(matrix_filtration(prime), prime=prime, method="matrix_u")
     column_reduced = d.homology_persistence(matrix_filtration(prime), prime=prime, method="column")
 
@@ -70,9 +67,7 @@ def test_matrix_u_matches_column_reduction():
     assert matrix_pairs(reduced) == matrix_pairs(column_reduced)
 
 
-def test_matrix_u_no_negative_matches_column_no_negative():
-    prime = 5
-
+def test_matrix_u_no_negative_matches_column_no_negative(prime):
     reduced, trails = d.homology_persistence(matrix_filtration(prime), prime=prime, method="matrix_u_no_negative")
     column_reduced = d.homology_persistence(matrix_filtration(prime), prime=prime, method="column_no_negative")
 
@@ -92,3 +87,13 @@ def test_matrix_u_skipped_columns_match_matrix_v():
     assert chain_entries(trails[0]) == []
     assert chain_entries(chains[1]) == [(1, 1)]
     assert chain_entries(trails[1]) == [(1, 1)]
+
+
+def test_reduced_matrix_pickle_roundtrip(prime):
+    reduced, _ = d.homology_persistence(matrix_filtration(prime), prime=prime, method="matrix_u")
+
+    restored = pickle.loads(pickle.dumps(reduced))
+
+    assert restored.field().prime() == prime
+    assert matrix_columns(restored) == matrix_columns(reduced)
+    assert matrix_pairs(restored) == matrix_pairs(reduced)

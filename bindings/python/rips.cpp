@@ -75,7 +75,7 @@ struct PairwiseDistances
 };
 
 template<class Distances>
-PyFiltration fill_rips_(py::array a, unsigned k, double r)
+PyFiltration fill_rips_(py::array a, unsigned k, double r, bool sqrt_data = false)
 {
     PyFiltration filtration;
 
@@ -83,16 +83,12 @@ PyFiltration fill_rips_(py::array a, unsigned k, double r)
     Distances distances(a);
     Rips      rips(distances);
 
-    rips.generate(k, r, [&filtration](PySimplex&& s) { filtration.push_back(std::move(s)); });
-
     typename Rips::Evaluator eval(distances);
-    for (const PySimplex& s : filtration)
-    {
-        // in general, this is very unsafe, but we are only modifying simplex
-        // data, which is not used in simplex hash, so it should be Ok overall
-        PySimplex& s_ = const_cast<PySimplex&>(s);
-        s_.data() = eval(s);
-    }
+    rips.generate(k, r, [&filtration,&eval,sqrt_data](PySimplex&& s)
+                  {
+                      auto value = eval(s);
+                      filtration.emplace_back(s, sqrt_data ? std::sqrt(value) : value);
+                  });
     filtration.sort(DataDimCmp());
 
     return filtration;
@@ -103,24 +99,12 @@ PyFiltration fill_rips(py::array a, unsigned k, double r)
     if (a.ndim() == 2)
     {
         // PairwiseDistances returns squared distances, so we use r*r
-        PyFiltration f;
         if (a.dtype().is(py::dtype::of<float>()))
-            f = fill_rips_<PairwiseDistances<float>>(a,k,r*r);
+            return fill_rips_<PairwiseDistances<float>>(a,k,r*r, true);
         else if (a.dtype().is(py::dtype::of<double>()))
-            f = fill_rips_<PairwiseDistances<double>>(a,k,r*r);
+            return fill_rips_<PairwiseDistances<double>>(a,k,r*r, true);
         else
             throw std::runtime_error("Unknown array dtype");
-
-        // take square roots from simplex data
-        // in general, this is very unsafe, but we are only modifying simplex
-        // data, which is not used in simplex hash, so it should be Ok overall
-        for (const PySimplex& s : f)
-        {
-            PySimplex& s_ = const_cast<PySimplex&>(s);
-            s_.data() = std::sqrt(s_.data());
-        }
-
-        return f;
     } else if (a.ndim() == 1)
     {
         if (a.dtype().is(py::dtype::of<float>()))
@@ -140,4 +124,3 @@ void init_rips(py::module& m)
           "data"_a, "k"_a, "r"_a,
           "returns (sorted) filtration filled with the k-skeleton of the clique complex built on the points at distance at most r from each other");
 }
-

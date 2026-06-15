@@ -207,7 +207,7 @@ void export_reduced_matrix(py::module& m, std::string name)
             },
             [](py::tuple t)                     // __setstate__
             {
-                if (t.size() != 1)
+                if (t.size() != 4)
                     throw std::runtime_error("Invalid state!");
 
                 auto prime = t[0].cast<typename PyReducedMatrix::FieldElement>();

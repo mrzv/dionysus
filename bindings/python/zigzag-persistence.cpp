@@ -13,6 +13,7 @@ namespace py = pybind11;
 #include <dionysus/row-reduction.h>
 #include <dionysus/ordinary-persistence.h>
 #include <dionysus/standard-reduction.h>
+#include <dionysus/zigzag-cone.h>
 
 #include "filtration.h"
 #include "persistence.h"                // to get access to PyReducedMatrix::Chain
@@ -217,107 +218,14 @@ PyLinkedMultiFiltration
 fast_zigzag(const PyFiltration&     f,
             const Times&            times)
 {
-    int w = -1;
-    float inf = std::numeric_limits<float>::infinity();
-    PyLinkedMultiFiltration combined;
-    combined.push_back(PySimplex({ w }, -inf), 0);
-
-    for (size_t i = 0; i < f.size(); ++i)
-    {
-        size_t j = 0;
-        for (; j < times[i].size(); ++j)
-        {
-            if (j % 2 == 0)
-                combined.push_back(PySimplex(f[i], times[i][j]), combined.size());
-            else
-                combined.push_back(PySimplex(f[i], times[i][j]).join(w), combined.size() - 1);        // link to the previous appearance
-        }
-
-        // if a simplex doesn't get removed, remove it at infinity
-        if (j % 2 != 0)
-            combined.push_back(PySimplex(f[i], inf).join(w), combined.size() - 1);        // link to the previous appearance
-    }
-
-    DataDimCmp base_cmp;
-    DataDimCmp cone_cmp(true);
-    combined.sort([w,base_cmp,cone_cmp](const PySimplex& x, const PySimplex& y)
-                  {
-                      bool x_cone = x.contains(w);
-                      bool y_cone = y.contains(w);
-
-                      if (x_cone && x.dimension() == 0)
-                          return true;
-                      if (y_cone && y.dimension() == 0)
-                          return false;
-
-                      if (!x_cone && y_cone) return true;
-                      if (x_cone && !y_cone) return false;
-
-                      if (!x_cone)
-                          return base_cmp(x,y);
-                      else
-                          return cone_cmp(x,y);
-                  });
-
-    return combined;
+    return dionysus::make_zigzag_cone<PyLinkedMultiFiltration>(f, times, DataDimCmp(), DataDimCmp(true));
 }
 
 template<class PyReducedMatrix, class Filtration>
 std::vector<std::map<std::string, PyDiagram>>
 init_zigzag_diagrams(const PyReducedMatrix& r, const Filtration& f, bool diagonal)
 {
-    using Index = typename PyReducedMatrix::Index;
-
-    int w = -1;
-
-    std::vector<std::map<std::string, PyDiagram>> result;
-    auto result_append = [&result](int dim, std::string type, PySimplex::Data birth, PySimplex::Data death, Index i)
-    {
-        while (dim >= result.size())
-            result.emplace_back();
-
-        result[dim][type].emplace_back(birth,death,i);
-    };
-
-    for (Index i = 1; i < r.size(); ++i)
-    {
-        Index j = r.pair(i);
-        if (j < i) continue;        // skip negative
-
-        assert(j != r.unpaired());
-
-        auto i_data = f[i].data();
-        auto j_data = f[j].data();
-
-        if (!diagonal && i_data == j_data) continue;
-
-        bool i_cone = f[i].contains(w);
-        bool j_cone = f[j].contains(w);
-
-        if (!i_cone && !j_cone)
-        {
-            // ordinary (closed-open)
-            result_append(f[i].dimension(), "co", i_data, j_data, i);
-        } else if (i_cone && j_cone)
-        {
-            // relative (open-closed)
-            result_append(f[i].dimension() - 1, "oc", j_data, i_data, i);
-        } else
-        {
-            assert(!i_cone && j_cone);
-            if (i_data > j_data)        // TODO: can we check this non-numerically
-            {
-                // extended (open-open)
-                result_append(f[i].dimension() - 1, "oo", j_data, i_data, i);
-            } else
-            {
-                // extended (closed-closed)
-                result_append(f[i].dimension(), "cc", i_data, j_data, i);
-            }
-        }
-    }
-
-    return result;
+    return dionysus::init_zigzag_diagrams<PyReducedMatrix, Filtration, PyDiagram>(r, f, diagonal);
 }
 
 #include "chain.h"

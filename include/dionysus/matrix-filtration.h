@@ -28,7 +28,7 @@ class MatrixFiltration
                 MatrixFiltration(Matrix m, Dimensions dimensions, Values values):
                     m_(std::move(m)),
                     dimensions_(dimensions),
-                    values_(values)                     { assert(m_->size() == dimensions_.size()); assert(m_->size() == values_.size()); }
+                    values_(values)                     { assert(m_.size() == dimensions_.size()); assert(m_.size() == values_.size()); }
 
         Cell            operator[](size_t i) const      { return Cell(this, i); }
         size_t          size() const                    { return m_.size(); }

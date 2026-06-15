@@ -2,13 +2,14 @@
 #define DIONYSUS_MULTI_FILTRATION_H
 
 #include <vector>
-#include <sstream>
 
 #include <boost/multi_index_container.hpp>
 #include <boost/multi_index/ordered_index.hpp>
 #include <boost/multi_index/random_access_index.hpp>
 
 #include <boost/iterator/transform_iterator.hpp>
+
+#include "multi-filtration-common.h"
 
 namespace b   = boost;
 namespace bmi = boost::multi_index;
@@ -29,6 +30,8 @@ class MultiFiltration
 
         struct CellWithIndex: Cell
         {
+            using Cell = Cell_;
+
                         CellWithIndex(const Cell& c_, size_t i_):
                             Cell(c_), i(i_)             {}
                         CellWithIndex(Cell&& c_, size_t i_):
@@ -38,15 +41,9 @@ class MultiFiltration
 
             friend bool operator<(const CellWithIndex& c, const CellWithIndex& other)
             {
-                const Cell& cc = c;
-                const Cell& oc = other;
-                return cc < oc || (cc == oc && c.i < other.i);
+                return detail::indexed_cell_less(static_cast<const Cell&>(c), c.i,
+                                                 static_cast<const Cell&>(other), other.i);
             }
-        };
-        struct CellWithoutIndex
-        {
-            Cell&           operator()(CellWithIndex& c) const            { return c; }
-            const Cell&     operator()(const CellWithIndex& c) const      { return c; }
         };
         // non-unique to avoid modification conflicts in update_indices()
         using CellLookupIndex = bmi::ordered_non_unique<bmi::identity<CellWithIndex>>;
@@ -58,8 +55,9 @@ class MultiFiltration
         typedef             typename Container::template nth_index<0>::type     Complex;
         typedef             typename Container::template nth_index<1>::type     Order;
 
-        using OrderConstIterator = b::transform_iterator<CellWithoutIndex, typename Order::const_iterator>;
-        using OrderIterator = b::transform_iterator<CellWithoutIndex, typename Order::iterator>;
+        using OrderCell = detail::CellWithoutIndex<CellWithIndex>;
+        using OrderConstIterator = b::transform_iterator<OrderCell, typename Order::const_iterator>;
+        using OrderIterator = b::transform_iterator<OrderCell, typename Order::iterator>;
 
 
     public:
@@ -71,7 +69,7 @@ class MultiFiltration
                                 MultiFiltration(std::begin(cells), std::end(cells))  {}
 
         template<class Iterator>
-                            MultiFiltration(Iterator bg, Iterator end)               { for (auto it = bg; it != end; ++it) cells_.push_back(*it); }
+                            MultiFiltration(Iterator bg, Iterator end)               { for (auto it = bg; it != end; ++it) push_back(*it); }
 
         template<class CellRange>
                             MultiFiltration(const CellRange& cells):
@@ -130,15 +128,8 @@ size_t
 dionysus::MultiFiltration<C,checked_index>::
 index(const Cell& s, size_t i) const
 {
-    auto it = get_complex().upper_bound(CellWithIndex(s,i));
-    --it;
-
-    if (checked_index && *it != s)
-    {
-        std::ostringstream oss;
-        oss << "Trying to access non-existent cell: " << s << ' ' << i;
-        throw std::runtime_error(oss.str());
-    }
+    auto it = detail::preceding_indexed_cell(get_complex(), CellWithIndex(s,i));
+    detail::validate_indexed_cell_lookup<checked_index>(*it, s, i);
 
     return project_order(it) - get_order().begin();
 }
@@ -148,12 +139,7 @@ void
 dionysus::MultiFiltration<C,checked_index>::
 rearrange(const std::vector<size_t>& indices)
 {
-    std::vector<std::reference_wrapper<const CellWithIndex>> references; references.reserve(indices.size());
-    for (size_t i : indices)
-    {
-        auto& c = get_order()[i];
-        references.push_back(std::cref(c));
-    }
+    auto references = detail::rearrangement_references(get_order(), indices);
     get_order().rearrange(references.begin());
 
     update_indices();
@@ -164,13 +150,9 @@ void
 dionysus::MultiFiltration<C,checked_index>::
 update_indices()
 {
-    size_t i = 0;
-    for(auto it = get_order().begin(); it != get_order().end(); ++it)
-    {
-        auto cit = project_complex(it);       // complex iterator
-        get_complex().modify(cit, [i](CellWithIndex& c) { c.i = i; });
-        ++i;
-    }
+    detail::update_order_indices(get_order(), get_complex(),
+                                 [this](typename Order::iterator it) { return project_complex(it); },
+                                 [](CellWithIndex& c, size_t i) { c.i = i; });
 }
 
 #endif

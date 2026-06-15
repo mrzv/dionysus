@@ -2,13 +2,14 @@
 #define DIONYSUS_LINKED_MULTI_FILTRATION_H
 
 #include <vector>
-#include <sstream>
 
 #include <boost/multi_index_container.hpp>
 #include <boost/multi_index/ordered_index.hpp>
 #include <boost/multi_index/random_access_index.hpp>
 
 #include <boost/iterator/transform_iterator.hpp>
+
+#include "multi-filtration-common.h"
 
 namespace b   = boost;
 namespace bmi = boost::multi_index;
@@ -29,6 +30,8 @@ class LinkedMultiFiltration
 
         struct LinkedCellWithIndex: Cell
         {
+            using Cell = Cell_;
+
                         LinkedCellWithIndex(const Cell& c_, size_t i_, size_t l_):
                             Cell(c_), i(i_), linked(l_)             {}
                         LinkedCellWithIndex(Cell&& c_, size_t i_, size_t l_):
@@ -39,15 +42,9 @@ class LinkedMultiFiltration
 
             friend bool operator<(const LinkedCellWithIndex& c, const LinkedCellWithIndex& other)
             {
-                const Cell& cc = c;
-                const Cell& oc = other;
-                return cc < oc || (cc == oc && c.i < other.i);
+                return detail::indexed_cell_less(static_cast<const Cell&>(c), c.i,
+                                                 static_cast<const Cell&>(other), other.i);
             }
-        };
-        struct CellWithoutIndex
-        {
-            Cell&           operator()(LinkedCellWithIndex& c) const            { return c; }
-            const Cell&     operator()(const LinkedCellWithIndex& c) const      { return c; }
         };
         // non-unique to avoid modification conflicts in update_indices()
         using CellLookupIndex = bmi::ordered_non_unique<bmi::identity<LinkedCellWithIndex>>;
@@ -60,8 +57,9 @@ class LinkedMultiFiltration
         typedef             typename Container::template nth_index<0>::type     Complex;
         typedef             typename Container::template nth_index<1>::type     Order;
 
-        using OrderConstIterator = b::transform_iterator<CellWithoutIndex, typename Order::const_iterator>;
-        using OrderIterator = b::transform_iterator<CellWithoutIndex, typename Order::iterator>;
+        using OrderCell = detail::CellWithoutIndex<LinkedCellWithIndex>;
+        using OrderConstIterator = b::transform_iterator<OrderCell, typename Order::const_iterator>;
+        using OrderIterator = b::transform_iterator<OrderCell, typename Order::iterator>;
 
 
     public:
@@ -74,7 +72,7 @@ class LinkedMultiFiltration
                                 LinkedMultiFiltration(std::begin(cells), std::end(cells))  {}
 
         template<class Iterator>
-                            LinkedMultiFiltration(Iterator bg, Iterator end)               { for (auto it = bg; it != end; ++it) cells_.push_back(*it); }
+                            LinkedMultiFiltration(Iterator bg, Iterator end)               { for (auto it = bg; it != end; ++it) push_back(*it, cells_.size()); }
 
         template<class CellRange>
                             LinkedMultiFiltration(const CellRange& cells):
@@ -139,15 +137,8 @@ index(const Cell& s, size_t i) const
         return l;
 
     // linked = 0 because linked is not used in complex order
-    auto it = get_complex().upper_bound(LinkedCellWithIndex(s,i,0));
-    --it;
-
-    if (checked_index && *it != s)
-    {
-        std::ostringstream oss;
-        oss << "Trying to access non-existent cell: " << s << ' ' << i;
-        throw std::runtime_error(oss.str());
-    }
+    auto it = detail::preceding_indexed_cell(get_complex(), LinkedCellWithIndex(s,i,0));
+    detail::validate_indexed_cell_lookup<checked_index>(*it, s, i);
 
     return project_order(it) - get_order().begin();
 }
@@ -157,15 +148,8 @@ void
 dionysus::LinkedMultiFiltration<C,checked_index>::
 rearrange(const std::vector<size_t>& indices)
 {
-    std::vector<std::reference_wrapper<const LinkedCellWithIndex>> references; references.reserve(indices.size());
-    std::vector<size_t> reverse_indices(indices.size());
-    size_t i = 0;
-    for (size_t idx : indices)
-    {
-        reverse_indices[idx] = i++;
-        auto& c = get_order()[idx];
-        references.push_back(std::cref(c));
-    }
+    auto references = detail::rearrangement_references(get_order(), indices);
+    auto reverse_indices = detail::reverse_rearrangement_indices(indices);
     get_order().rearrange(references.begin());
 
     update_indices(reverse_indices);
@@ -180,10 +164,7 @@ sort(const Cmp& cmp)
     get_order().sort(cmp);
 
     // record where the old cells landed
-    size_t i = 0;
-    std::vector<size_t> indices(size());
-    for (auto& c : get_order())
-        indices[c.i] = i++;
+    auto indices = detail::current_to_sorted_indices(get_order(), size());
 
     update_indices(indices);
 }
@@ -193,13 +174,9 @@ void
 dionysus::LinkedMultiFiltration<C,checked_index>::
 update_indices(const std::vector<size_t>& indices)
 {
-    size_t i = 0;
-    for(auto it = get_order().begin(); it != get_order().end(); ++it)
-    {
-        auto cit = project_complex(it);       // complex iterator
-        get_complex().modify(cit, [i,&indices](LinkedCellWithIndex& c) { c.i = i; c.linked = indices[c.linked]; });
-        ++i;
-    }
+    detail::update_order_indices(get_order(), get_complex(),
+                                 [this](typename Order::iterator it) { return project_complex(it); },
+                                 [&indices](LinkedCellWithIndex& c, size_t i) { c.i = i; c.linked = indices[c.linked]; });
 }
 
 #endif
