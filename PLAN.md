@@ -215,6 +215,7 @@ Completed in the first filtration consolidation batch:
 - Reused shared indexed-cell ordering in `MultiFiltration` and `LinkedMultiFiltration`.
 - Reused a shared cell projection functor for order iterators in both duplicate-preserving filtration containers.
 - Reused shared rearrangement reference and reverse-index helpers for duplicate-preserving filtration reordering.
+- Reused shared old-to-new index mapping and update traversal helpers while keeping plain and linked index mutations container-specific.
 - Kept storage, linked-index maintenance, and public lookup behavior unchanged for later, more invasive consolidation steps.
 
 ## Phase 5: Improve Mutation And Numeric Boundaries

@@ -46,6 +46,28 @@ inline std::vector<size_t> reverse_rearrangement_indices(const std::vector<size_
     return reverse_indices;
 }
 
+template<class Order>
+std::vector<size_t> current_to_sorted_indices(const Order& order, size_t size)
+{
+    size_t i = 0;
+    std::vector<size_t> indices(size);
+    for (auto& c : order)
+        indices[c.i] = i++;
+    return indices;
+}
+
+template<class Order, class Complex, class ProjectComplex, class UpdateCell>
+void update_order_indices(Order& order, Complex& complex, ProjectComplex project_complex, UpdateCell update_cell)
+{
+    size_t i = 0;
+    for(auto it = order.begin(); it != order.end(); ++it)
+    {
+        auto cit = project_complex(it);
+        complex.modify(cit, [i,&update_cell](typename Order::value_type& c) { update_cell(c, i); });
+        ++i;
+    }
+}
+
 }
 
 }

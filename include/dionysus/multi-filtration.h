@@ -158,13 +158,9 @@ void
 dionysus::MultiFiltration<C,checked_index>::
 update_indices()
 {
-    size_t i = 0;
-    for(auto it = get_order().begin(); it != get_order().end(); ++it)
-    {
-        auto cit = project_complex(it);       // complex iterator
-        get_complex().modify(cit, [i](CellWithIndex& c) { c.i = i; });
-        ++i;
-    }
+    detail::update_order_indices(get_order(), get_complex(),
+                                 [this](typename Order::iterator it) { return project_complex(it); },
+                                 [](CellWithIndex& c, size_t i) { c.i = i; });
 }
 
 #endif

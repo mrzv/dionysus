@@ -172,10 +172,7 @@ sort(const Cmp& cmp)
     get_order().sort(cmp);
 
     // record where the old cells landed
-    size_t i = 0;
-    std::vector<size_t> indices(size());
-    for (auto& c : get_order())
-        indices[c.i] = i++;
+    auto indices = detail::current_to_sorted_indices(get_order(), size());
 
     update_indices(indices);
 }
@@ -185,13 +182,9 @@ void
 dionysus::LinkedMultiFiltration<C,checked_index>::
 update_indices(const std::vector<size_t>& indices)
 {
-    size_t i = 0;
-    for(auto it = get_order().begin(); it != get_order().end(); ++it)
-    {
-        auto cit = project_complex(it);       // complex iterator
-        get_complex().modify(cit, [i,&indices](LinkedCellWithIndex& c) { c.i = i; c.linked = indices[c.linked]; });
-        ++i;
-    }
+    detail::update_order_indices(get_order(), get_complex(),
+                                 [this](typename Order::iterator it) { return project_complex(it); },
+                                 [&indices](LinkedCellWithIndex& c, size_t i) { c.i = i; c.linked = indices[c.linked]; });
 }
 
 #endif
