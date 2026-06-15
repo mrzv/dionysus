@@ -128,7 +128,7 @@ Completed in the vineyard boundary-chain reuse batch:
 
 ### Extract Vineyard Linear Homotopy
 
-- In progress: move algorithmic logic and result structs from `bindings/python/vineyard.cpp` into core headers or a small C++ source module.
+- Done: move algorithmic logic and result structs from `bindings/python/vineyard.cpp` into core headers or a small C++ source module.
 - Keep `bindings/python/vineyard.cpp` focused on:
   - pybind class/function exports
   - Python object ownership
@@ -146,6 +146,12 @@ Completed in the vineyard scheduler extraction batch:
 - Consolidated vineyard linear-homotopy tolerance on `dionysus::vineyard_linear_homotopy_epsilon`.
 - Moved crossing candidate ordering, adjacent inversion checks, crossing-time calculation, event queue construction, neighborhood updates, and stale candidate popping into `include/dionysus/vineyard-linear-homotopy.h`.
 - Reduced `bindings/python/vineyard.cpp` to call the reusable scheduler helpers while keeping event recording and Python result ownership in the binding layer.
+
+Completed in the vineyard result extraction batch:
+
+- Moved linear-homotopy event, segment, vine, active-vine, and closed-vine structs into `include/dionysus/vineyard-linear-homotopy.h`.
+- Moved feature discovery, segment open/close/reopen bookkeeping, persistence-point matching, transposition validation, and transposition event recording into reusable helpers.
+- Kept the Python-visible `VineyardLinearHomotopyResult` wrapper in `bindings/python/vineyard.cpp` because it owns the pybind-managed vineyard object.
 
 ### Extract Freudenthal Construction
 
