@@ -236,8 +236,13 @@ Completed in the Rips mutation cleanup batch:
 
 - Python-facing simplex data currently uses `float` via `bindings/python/simplex.h`.
 - Diagrams use the same type via `bindings/python/diagram.h`.
-- Decide whether to keep `float` for compatibility or migrate to `double` for precision.
-- If migrating, add tests and document the compatibility impact.
+- Done: keep `float` for compatibility and document the current precision policy.
+- Done: add tests that pin simplex data and diagram coordinates to the current single-precision behavior.
+
+Completed in the numeric policy batch:
+
+- Documented in `doc/API.rst` that Python-facing simplex data and diagram coordinates use C++ `float` precision.
+- Added regression coverage for float32 rounding of simplex data and persistence diagram coordinates.
 
 ## Phase 6: Test Improvements
 

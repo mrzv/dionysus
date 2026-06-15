@@ -3,6 +3,14 @@ API
 
 The following classes and functions live in the ``dionysus`` module.
 
+Numeric Precision
+-----------------
+
+Python-facing simplex filtration values are stored as C++ ``float`` values.
+Persistence diagram coordinates use the same value type, so values supplied as
+Python ``float`` or NumPy ``double`` inputs are rounded to single precision when
+they become simplex data or diagram coordinates.
+
 Filtration
 ----------
 
