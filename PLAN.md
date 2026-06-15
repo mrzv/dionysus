@@ -269,15 +269,15 @@ Completed in the shared fixture batch:
 Add tests for:
 
 - Done: `Simplex`
-- `Filtration`
-- `MultiFiltration`
-- `LinkedMultiFiltration`
-- `fill_rips`
-- `fill_freudenthal`
+- Done: `Filtration`
+- Done: `MultiFiltration`
+- Done: `LinkedMultiFiltration`
+- Done: `fill_rips`
+- Done: `fill_freudenthal`
 - Done: cohomology persistence
 - Done: omnifield persistence
-- zigzag helpers
-- reduced-matrix pickling
+- Done: zigzag helpers
+- Done: reduced-matrix pickling
 - Done: package import from an installed wheel
 
 Completed in the installed-wheel import batch:
@@ -294,6 +294,11 @@ Completed in the persistence variant coverage batch:
 Completed in the simplex coverage batch:
 
 - Added focused `Simplex` coverage for construction, sorted vertex iteration, sequence access, containment, boundary order, joining, mutable data, identity semantics, hashing, and index errors.
+
+Completed before this section was reconciled:
+
+- Added filtration container coverage for `Filtration`, `MultiFiltration`, and `LinkedMultiFiltration` in `tests/test_filtration.py`.
+- Added `fill_rips`, `fill_freudenthal`, zigzag helper, and reduced-matrix pickling coverage in focused regression tests.
 
 ### Add C++ Tests
 
@@ -312,6 +317,10 @@ Completed in the C++ reduction smoke batch:
 
 - Added C++ coverage for `StandardReduction<OrdinaryPersistence<ZpField<>>>` and `RowReduction<ZpField<>>` on a small edge filtration.
 - Asserted the expected unpaired vertex and edge/vertex persistence pair directly through the C++ `ReducedMatrix` API.
+
+Completed in the linked C++ coverage batch:
+
+- Added direct C++ coverage for `LinkedMultiFiltration` duplicate preservation, linked lookup, boundary-face lookup, and index updates after rearrangement.
 
 ## Suggested Execution Order
 

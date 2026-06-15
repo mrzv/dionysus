@@ -5,6 +5,7 @@
 
 #include <dionysus/filtration.h>
 #include <dionysus/fields/zp.h>
+#include <dionysus/linked-multi-filtration.h>
 #include <dionysus/multi-filtration.h>
 #include <dionysus/ordinary-persistence.h>
 #include <dionysus/row-reduction.h>
@@ -20,6 +21,7 @@ using CheckedFiltration = dionysus::Filtration<Simplex,
                                                boost::multi_index::hashed_unique<boost::multi_index::identity<Simplex>>,
                                                true>;
 using MultiFiltration = dionysus::MultiFiltration<Simplex, true>;
+using LinkedMultiFiltration = dionysus::LinkedMultiFiltration<Simplex, true>;
 using Field = dionysus::ZpField<>;
 using Persistence = dionysus::OrdinaryPersistence<Field>;
 
@@ -131,6 +133,31 @@ void test_multi_filtration_duplicate_lookup()
             "multi-filtration boundary lookup should use latest duplicate before the coface");
 }
 
+void test_linked_multi_filtration_linked_lookup_and_rearrange()
+{
+    LinkedMultiFiltration filtration;
+    filtration.push_back(Simplex({0}, 0.0f), 0);
+    filtration.push_back(Simplex({0}, 1.0f), 1);
+    filtration.push_back(Simplex({1}, 0.0f), 2);
+    filtration.push_back(Simplex({0, 1}, 2.0f), 3);
+
+    require(filtration.size() == 4, "linked multi-filtration should preserve duplicate simplices");
+    require(filtration.index(Simplex({0}, 99.0f), 1) == 1,
+            "linked lookup should use the stored linked index when it matches");
+
+    std::vector<size_t> boundary_indices;
+    size_t edge_index = 3;
+    for (const auto& face : filtration[edge_index].boundary())
+        boundary_indices.push_back(filtration.index(face, edge_index));
+
+    require(boundary_indices == std::vector<size_t>({2, 1}),
+            "linked multi-filtration boundary lookup should use latest duplicate before the coface");
+
+    filtration.rearrange({3, 0, 1, 2});
+    require(str(filtration[0]) == "<0,1>", "linked rearrange should move the edge first");
+    require(filtration.index(Simplex({0, 1}), 0) == 0, "linked rearrange should update cell indices");
+}
+
 Filtration edge_filtration()
 {
     return Filtration({Simplex({0}, 0.0f), Simplex({1}, 1.0f), Simplex({0, 1}, 2.0f)});
@@ -174,6 +201,7 @@ int main()
     test_filtration_unique_lookup_and_rearrange();
     test_checked_filtration_rejects_missing_cell();
     test_multi_filtration_duplicate_lookup();
+    test_linked_multi_filtration_linked_lookup_and_rearrange();
     test_standard_reduction_edge_filtration();
     test_row_reduction_edge_filtration();
     return 0;
