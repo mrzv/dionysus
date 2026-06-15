@@ -323,6 +323,7 @@ Completed in the linked C++ coverage batch:
 
 - Added direct C++ coverage for `LinkedMultiFiltration` duplicate preservation, linked lookup, boundary-face lookup, and index updates after rearrangement.
 - Fixed and covered the public C++ `LinkedMultiFiltration` range/initializer constructors so they assign identity linked indices instead of calling a non-existent one-argument `push_back()` overload.
+- Added C++ coverage for `LinkedMultiFiltration::sort()` updating linked indices.
 
 ## Suggested Execution Order
 

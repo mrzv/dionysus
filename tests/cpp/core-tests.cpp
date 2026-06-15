@@ -154,6 +154,21 @@ void test_linked_multi_filtration_linked_lookup_and_rearrange()
     require(filtration.index(Simplex({0, 1}), 0) == 0, "linked rearrange should update cell indices");
 }
 
+void test_linked_multi_filtration_sort_updates_linked_indices()
+{
+    LinkedMultiFiltration filtration;
+    filtration.push_back(Simplex({0, 1}, 2.0f), 0);
+    filtration.push_back(Simplex({0}, 0.0f), 1);
+    filtration.push_back(Simplex({1}, 1.0f), 2);
+
+    filtration.sort();
+
+    require(str(filtration[0]) == "<0>", "linked sort should place vertex 0 first");
+    require(str(filtration[1]) == "<1>", "linked sort should place vertex 1 second");
+    require(str(filtration[2]) == "<0,1>", "linked sort should place edge last");
+    require(filtration.index(Simplex({0, 1}), 2) == 2, "linked sort should update the edge linked index");
+}
+
 Filtration edge_filtration()
 {
     return Filtration({Simplex({0}, 0.0f), Simplex({1}, 1.0f), Simplex({0, 1}, 2.0f)});
@@ -198,6 +213,7 @@ int main()
     test_checked_filtration_rejects_missing_cell();
     test_multi_filtration_duplicate_lookup();
     test_linked_multi_filtration_linked_lookup_and_rearrange();
+    test_linked_multi_filtration_sort_updates_linked_indices();
     test_standard_reduction_edge_filtration();
     test_row_reduction_edge_filtration();
     return 0;
