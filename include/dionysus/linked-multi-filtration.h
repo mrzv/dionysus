@@ -72,7 +72,7 @@ class LinkedMultiFiltration
                                 LinkedMultiFiltration(std::begin(cells), std::end(cells))  {}
 
         template<class Iterator>
-                            LinkedMultiFiltration(Iterator bg, Iterator end)               { for (auto it = bg; it != end; ++it) push_back(*it); }
+                            LinkedMultiFiltration(Iterator bg, Iterator end)               { for (auto it = bg; it != end; ++it) push_back(*it, cells_.size()); }
 
         template<class CellRange>
                             LinkedMultiFiltration(const CellRange& cells):

@@ -135,11 +135,7 @@ void test_multi_filtration_duplicate_lookup()
 
 void test_linked_multi_filtration_linked_lookup_and_rearrange()
 {
-    LinkedMultiFiltration filtration;
-    filtration.push_back(Simplex({0}, 0.0f), 0);
-    filtration.push_back(Simplex({0}, 1.0f), 1);
-    filtration.push_back(Simplex({1}, 0.0f), 2);
-    filtration.push_back(Simplex({0, 1}, 2.0f), 3);
+    LinkedMultiFiltration filtration({Simplex({0}, 0.0f), Simplex({0}, 1.0f), Simplex({1}, 0.0f), Simplex({0, 1}, 2.0f)});
 
     require(filtration.size() == 4, "linked multi-filtration should preserve duplicate simplices");
     require(filtration.index(Simplex({0}, 99.0f), 1) == 1,
