@@ -64,3 +64,6 @@ test = [
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+markers = [
+    "packaging: tests that build and install distribution artifacts",
+]

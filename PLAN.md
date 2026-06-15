@@ -278,7 +278,12 @@ Add tests for:
 - omnifield persistence
 - zigzag helpers
 - reduced-matrix pickling
-- package import from an installed wheel
+- Done: package import from an installed wheel
+
+Completed in the installed-wheel import batch:
+
+- Added an opt-in packaging regression that builds a wheel, installs it into an isolated virtualenv, and imports `dionysus` from outside the source tree.
+- Registered the `packaging` pytest marker and kept the installed-wheel test skipped by default unless `DIONYSUS_RUN_PACKAGING_TESTS=1` is set.
 
 ### Add C++ Tests
 
