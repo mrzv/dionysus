@@ -274,8 +274,8 @@ Add tests for:
 - `LinkedMultiFiltration`
 - `fill_rips`
 - `fill_freudenthal`
-- cohomology persistence
-- omnifield persistence
+- Done: cohomology persistence
+- Done: omnifield persistence
 - zigzag helpers
 - reduced-matrix pickling
 - Done: package import from an installed wheel
@@ -284,6 +284,12 @@ Completed in the installed-wheel import batch:
 
 - Added an opt-in packaging regression that builds a wheel, installs it into an isolated virtualenv, and imports `dionysus` from outside the source tree.
 - Registered the `packaging` pytest marker and kept the installed-wheel test skipped by default unless `DIONYSUS_RUN_PACKAGING_TESTS=1` is set.
+
+Completed in the persistence variant coverage batch:
+
+- Added cohomology persistence coverage that compares pairs and diagrams against ordinary homology persistence on a small filtration.
+- Added cocycle access coverage for alive cohomology representatives when `keep_cocycles=True`.
+- Added omnifield persistence coverage for basic prime-specific columns and diagram initialization.
 
 ### Add C++ Tests
 
