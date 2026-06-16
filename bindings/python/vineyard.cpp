@@ -47,7 +47,6 @@ using EventQueue = std::priority_queue<CrossingCandidate>;
 using Feature = std::tuple<Index, Index>;
 
 using ActiveVine = dionysus::VineyardLinearActiveVine<Index>;
-using ClosedVine = dionysus::VineyardLinearClosedVine<Index>;
 
 using ActiveVines = std::map<Feature, ActiveVine>;
 
@@ -83,7 +82,7 @@ VineyardLinearHomotopyResult run_linear_homotopy(const PyFiltration& filtration,
         Index first = vineyard->cell_at(position);
         Index second = vineyard->cell_at(position + 1);
         dionysus::validate_vineyard_linear_transposition(data.boundary, first, second);
-        dionysus::record_vineyard_linear_transposition<VineyardLinearHomotopyResult, ActiveVines, Vineyard, LinearHomotopyData, Feature, ClosedVine>(result, active_vines, *vineyard, data, current_t, position);
+        dionysus::record_vineyard_linear_transposition<VineyardLinearHomotopyResult, ActiveVines, Vineyard, LinearHomotopyData, Feature>(result, active_vines, *vineyard, data, current_t, position);
         dionysus::push_vineyard_linear_candidate_neighborhood(event_queue, *vineyard, data, current_t, position);
     }
 

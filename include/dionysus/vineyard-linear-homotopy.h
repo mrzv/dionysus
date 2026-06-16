@@ -58,14 +58,6 @@ struct VineyardLinearActiveVine
     Index   death;
 };
 
-template<class Index>
-struct VineyardLinearClosedVine
-{
-    size_t  vine_index;
-    double  birth;
-    double  death;
-};
-
 template<class Chains>
 struct VineyardLinearHomotopyData
 {
@@ -266,77 +258,77 @@ typename ActiveVines::mapped_type close_vineyard_linear_feature(Result& result,
 }
 
 template<class Feature, class Index>
-double vineyard_linear_death_value_at(const std::vector<double>& values0,
-                                      const std::vector<double>& values1,
-                                      const Feature& feature,
-                                      double t,
-                                      Index unpaired)
+Feature transpose_vineyard_linear_feature(const Feature& feature, Index first, Index second)
 {
-    auto death = std::get<1>(feature);
-    if (death == unpaired)
-        return std::numeric_limits<double>::infinity();
-    return vineyard_linear_value_at(values0, values1, death, t);
+    auto transpose_cell = [first, second](Index cell)
+    {
+        if (cell == first)
+            return second;
+        if (cell == second)
+            return first;
+        return cell;
+    };
+
+    return std::make_tuple(transpose_cell(std::get<0>(feature)), transpose_cell(std::get<1>(feature)));
 }
 
-template<class ClosedVine, class Feature, class Index>
-bool same_vineyard_linear_persistence_point(const ClosedVine& closed,
-                                            const Feature& feature,
-                                            const std::vector<double>& values0,
-                                            const std::vector<double>& values1,
-                                            double t,
-                                            Index unpaired)
+template<class Feature>
+bool contains_vineyard_linear_feature(const std::vector<Feature>& features, const Feature& feature)
 {
-    double birth = vineyard_linear_value_at(values0, values1, std::get<0>(feature), t);
-    double death = vineyard_linear_death_value_at(values0, values1, feature, t, unpaired);
-
-    bool same_death = std::isinf(closed.death) && std::isinf(death);
-    if (!same_death)
-        same_death = std::abs(closed.death - death) <= vineyard_linear_homotopy_epsilon;
-
-    return std::abs(closed.birth - birth) <= vineyard_linear_homotopy_epsilon && same_death;
+    return std::binary_search(features.begin(), features.end(), feature);
 }
 
-template<class Result, class ActiveVines, class Feature, class ClosedVine, class Index>
-void close_and_reopen_vineyard_linear_features(Result& result,
-                                               ActiveVines& active_vines,
-                                               const std::vector<Feature>& before,
-                                               const std::vector<Feature>& after,
-                                               const std::vector<double>& values0,
-                                               const std::vector<double>& values1,
-                                               double t,
-                                               int event,
-                                               Index unpaired)
+template<class Result, class ActiveVines, class Feature, class Index>
+void continue_vineyard_linear_features(Result& result,
+                                       ActiveVines& active_vines,
+                                       const std::vector<Feature>& before,
+                                       const std::vector<Feature>& after,
+                                       const std::vector<double>& values0,
+                                       const std::vector<double>& values1,
+                                       double t,
+                                       int event,
+                                       Index first,
+                                       Index second,
+                                       bool pairing_switched,
+                                       Index unpaired)
 {
-    std::vector<ClosedVine> closed;
-    closed.reserve(before.size());
+    using ActiveVine = typename ActiveVines::mapped_type;
+    using Continuation = std::pair<Feature, ActiveVine>;
+
+    std::vector<Feature> continued;
+    std::vector<Continuation> reopen;
+    continued.reserve(before.size());
+    reopen.reserve(before.size());
+
     for (const auto& feature : before)
     {
+        Feature target = pairing_switched ? transpose_vineyard_linear_feature(feature, first, second) : feature;
+        if (!contains_vineyard_linear_feature(after, target))
+        {
+            close_vineyard_linear_feature(result, active_vines, feature, values0, values1, t, event, unpaired);
+            continue;
+        }
+
+        continued.push_back(target);
+        if (target == feature)
+            continue;
+
         auto active = close_vineyard_linear_feature(result, active_vines, feature, values0, values1, t, event, unpaired);
-        closed.push_back({
-            active.vine_index,
-            vineyard_linear_value_at(values0, values1, std::get<0>(feature), t),
-            vineyard_linear_death_value_at(values0, values1, feature, t, unpaired)
-        });
+        reopen.emplace_back(target, active);
     }
 
-    std::vector<bool> used(closed.size(), false);
-    for (const auto& feature : after)
+    for (const auto& continuation : reopen)
     {
-        auto it = std::find_if(closed.begin(), closed.end(),
-                               [&](const ClosedVine& c)
-                               {
-                                   size_t index = static_cast<size_t>(&c - closed.data());
-                                   return !used[index] && same_vineyard_linear_persistence_point(c, feature, values0, values1, t, unpaired);
-                               });
-        if (it == closed.end())
-            open_vineyard_linear_feature(result, active_vines, feature, t, event);
-        else
-        {
-            size_t index = static_cast<size_t>(&*it - closed.data());
-            used[index] = true;
-            reopen_vineyard_linear_feature(active_vines, feature, it->vine_index, t, event);
-        }
+        if (active_vines.find(continuation.first) != active_vines.end())
+            throw std::logic_error("vineyard linear homotopy feature continuation collision");
+        reopen_vineyard_linear_feature(active_vines, continuation.first, continuation.second.vine_index, t, event);
     }
+
+    std::sort(continued.begin(), continued.end());
+    continued.erase(std::unique(continued.begin(), continued.end()), continued.end());
+    for (const auto& feature : after)
+        if (!contains_vineyard_linear_feature(continued, feature))
+            open_vineyard_linear_feature(result, active_vines, feature, t, event);
 }
 
 template<class Result, class ActiveVines, class Index>
@@ -375,7 +367,7 @@ void validate_vineyard_linear_transposition(const Chains& boundary, Index first,
 #endif
 }
 
-template<class Result, class ActiveVines, class Vineyard, class Data, class Feature, class ClosedVine>
+template<class Result, class ActiveVines, class Vineyard, class Data, class Feature>
 void record_vineyard_linear_transposition(Result& result,
                                           ActiveVines& active_vines,
                                           Vineyard& vineyard,
@@ -425,8 +417,9 @@ void record_vineyard_linear_transposition(Result& result,
         second_pair_after,
         pairing_switched
     });
-    close_and_reopen_vineyard_linear_features<Result, ActiveVines, Feature, ClosedVine>(result, active_vines, before_features, after_features,
-                                                                                       data.values0, data.values1, t, event, Vineyard::unpaired());
+    continue_vineyard_linear_features<Result, ActiveVines, Feature>(result, active_vines, before_features, after_features,
+                                                                    data.values0, data.values1, t, event, first, second,
+                                                                    pairing_switched, Vineyard::unpaired());
 }
 
 template<class Data>
