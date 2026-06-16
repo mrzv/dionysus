@@ -306,6 +306,17 @@ def test_linear_homotopy_processes_initial_equal_value_inversions():
     assert result.final_order == [2, 1, 0]
 
 
+def test_linear_homotopy_keeps_equal_slope_ties_stationary():
+    filtration = d.Filtration([[0], [1]])
+
+    result = d.vineyard_linear_homotopy(
+        filtration, [0.0, 0.0], [1.0, 1.0], field=d.Zp(PRIME)
+    )
+
+    assert result.events == []
+    assert result.final_order == [0, 1]
+
+
 def test_linear_homotopy_preserves_filtration_order_with_dimension_ties():
     filtration = d.Filtration([[0], [1], [0, 1]])
 
@@ -407,6 +418,28 @@ def test_linear_homotopy_rejects_non_filtration_endpoint_values():
     with pytest.raises(ValueError, match="not a filtration"):
         d.vineyard_linear_homotopy(
             filtration, [0.0, 0.0, 1.0], [0.0, 1.0, 0.5], field=d.Zp(PRIME)
+        )
+
+
+def test_linear_homotopy_endpoint_tolerance_keeps_faces_before_cofaces():
+    filtration = d.Filtration([[0], [1], [0, 1]])
+
+    result = d.vineyard_linear_homotopy(
+        filtration, [0.0, 0.0, -5e-11], [0.0, 0.0, -5e-11], field=d.Zp(PRIME)
+    )
+
+    assert result.events == []
+    assert result.final_order == [0, 1, 2]
+    assert result.vineyard.position(0) < result.vineyard.position(2)
+    assert result.vineyard.position(1) < result.vineyard.position(2)
+
+
+def test_linear_homotopy_rejects_endpoint_values_beyond_tolerance():
+    filtration = d.Filtration([[0], [1], [0, 1]])
+
+    with pytest.raises(ValueError, match="not a filtration"):
+        d.vineyard_linear_homotopy(
+            filtration, [0.0, 0.0, -2e-10], [0.0, 0.0, 1.0], field=d.Zp(PRIME)
         )
 
 

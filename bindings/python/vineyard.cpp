@@ -310,6 +310,6 @@ void init_vineyard(py::module& m)
               if (method == "matrix_u")
                   return run_linear_homotopy<PyVineyardU>(filtration, values0, values1, field);
               throw py::value_error("unknown vineyard method: " + method);
-          }, "filtration"_a, "values0"_a, "values1"_a, "field"_a = PyZpField(2), "method"_a = "matrix_v",
-          "compute a vineyard linear homotopy between two filtration functions");
+           }, "filtration"_a, "values0"_a, "values1"_a, "field"_a = PyZpField(2), "method"_a = "matrix_v",
+           "compute a vineyard linear homotopy between two filtration functions, preserving vine identity combinatorially and treating endpoint face/coface values within tolerance as ties");
 }

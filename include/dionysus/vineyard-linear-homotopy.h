@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <cmath>
 #include <limits>
+#include <queue>
 #include <stdexcept>
 #include <tuple>
 #include <vector>
@@ -571,14 +572,48 @@ bool pop_next_vineyard_linear_candidate(EventQueue& queue,
 }
 
 template<class Filtration>
-bool vineyard_linear_filtration_less(const Filtration& filtration,
-                                     const std::vector<double>& values,
-                                     size_t x,
-                                     size_t y)
+std::vector<size_t> vineyard_linear_endpoint_order(const Filtration& filtration,
+                                                   const std::vector<double>& values)
 {
-    if (values[x] != values[y])
-        return values[x] < values[y];
-    return filtration[x] < filtration[y];
+    auto later = [&filtration, &values](size_t x, size_t y)
+    {
+        if (values[x] != values[y])
+            return values[x] > values[y];
+        return filtration[y] < filtration[x];
+    };
+
+    std::vector<size_t> pending_faces(filtration.size(), 0);
+    std::vector<std::vector<size_t>> cofaces(filtration.size());
+    for (size_t i = 0; i < filtration.size(); ++i)
+        for (auto it = filtration[i].boundary_begin(); it != filtration[i].boundary_end(); ++it)
+        {
+            size_t face = filtration.index(*it, filtration.size());
+            if (face >= filtration.size())
+                throw std::invalid_argument("linear homotopy filtration is missing a boundary face");
+            cofaces[face].push_back(i);
+            ++pending_faces[i];
+        }
+
+    std::priority_queue<size_t, std::vector<size_t>, decltype(later)> ready(later);
+    for (size_t i = 0; i < filtration.size(); ++i)
+        if (pending_faces[i] == 0)
+            ready.push(i);
+
+    std::vector<size_t> order;
+    order.reserve(filtration.size());
+    while (!ready.empty())
+    {
+        size_t cell = ready.top();
+        ready.pop();
+        order.push_back(cell);
+        for (auto coface : cofaces[cell])
+            if (--pending_faces[coface] == 0)
+                ready.push(coface);
+    }
+
+    if (order.size() != filtration.size())
+        throw std::invalid_argument("linear homotopy filtration boundary graph is cyclic");
+    return order;
 }
 
 template<class Filtration>
@@ -615,12 +650,9 @@ VineyardLinearHomotopyData<Chains> prepare_vineyard_linear_homotopy_data(const F
     Data data;
     data.stable_to_input.resize(filtration.size());
     data.input_to_stable.resize(filtration.size());
-    for (Index i = 0; i < filtration.size(); ++i)
-        data.stable_to_input[i] = i;
-
-    std::sort(data.stable_to_input.begin(), data.stable_to_input.end(),
-              [&filtration, &input_values0](Index x, Index y)
-              { return vineyard_linear_filtration_less(filtration, input_values0, x, y); });
+    auto initial_order = vineyard_linear_endpoint_order(filtration, input_values0);
+    for (Index stable = 0; stable < initial_order.size(); ++stable)
+        data.stable_to_input[stable] = initial_order[stable];
 
     for (Index stable = 0; stable < data.stable_to_input.size(); ++stable)
         data.input_to_stable[data.stable_to_input[stable]] = stable;
