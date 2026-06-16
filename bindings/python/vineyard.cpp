@@ -137,6 +137,7 @@ void init_vineyard(py::module& m)
         .def_readonly("second_pair_before", &VineyardLinearHomotopyEvent::second_pair_before)
         .def_readonly("first_pair_after",   &VineyardLinearHomotopyEvent::first_pair_after)
         .def_readonly("second_pair_after",  &VineyardLinearHomotopyEvent::second_pair_after)
+        .def_readonly("pairing_switched",   &VineyardLinearHomotopyEvent::pairing_switched)
     ;
 
     py::class_<VineyardSegment>(m, "VineyardSegment", "one linear segment of a persistence vine")
@@ -221,7 +222,7 @@ void init_vineyard(py::module& m)
         .def("pivot",        &PyVineyardV::pivot,     "column id with the given low cell id")
         .def("pair",         &PyVineyardV::pair,      "persistence pair of the given cell id")
         .def("transpose", &PyVineyardV::transpose, "position"_a,
-                                                              "repair the vineyard state after transposing adjacent filtration positions")
+                                                               "repair the vineyard state after transposing adjacent filtration positions and return the swapped stable cell ids plus whether the pairing switched")
         .def("reduced_column", [make_column](const PyVineyardV& v, Index column)
                                  {
                                      return make_column(v.reduced_column(column));
@@ -259,7 +260,7 @@ void init_vineyard(py::module& m)
         .def("pivot",        &PyVineyardU::pivot,     "column id with the given low cell id")
         .def("pair",         &PyVineyardU::pair,      "persistence pair of the given cell id")
         .def("transpose", &PyVineyardU::transpose, "position"_a,
-                                                              "repair the vineyard state after transposing adjacent filtration positions")
+                                                               "repair the vineyard state after transposing adjacent filtration positions and return the swapped stable cell ids plus whether the pairing switched")
         .def("reduced_column", [make_column](const PyVineyardU& v, Index column)
                                  {
                                      return make_column(v.reduced_column(column));

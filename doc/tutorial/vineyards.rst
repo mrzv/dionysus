@@ -59,7 +59,7 @@ cached persistence pairing:
 .. doctest::
 
     >>> v.transpose(0)
-    (0, 1)
+    (0, 1, True)
     >>> [v.cell_at(i) for i in range(len(v))]
     [1, 0, 2]
 

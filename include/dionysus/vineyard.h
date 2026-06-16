@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <limits>
 #include <stdexcept>
+#include <tuple>
 #include <utility>
 #include <vector>
 
@@ -228,7 +229,7 @@ class Vineyard
 
         Index           pair(Index i) const                      { return pairs_.at(i); }
 
-        std::pair<Index, Index> transpose(Index p)
+        std::tuple<Index, Index, bool> transpose(Index p)
         {
             if (p + 1 >= size())
                 throw std::out_of_range("vineyard transposition position out of range");
@@ -242,13 +243,13 @@ class Vineyard
             Index pivot_a = reduced_.pivot(a);
             Index pivot_b = reduced_.pivot(b);
             bool r_pivot_b_contains_a = pivot_b != unpaired() && contains(reduced_.columns_[pivot_b], a);
+            bool pairing_switched = false;
 
             bool cancelled = clear_transposition_entry(b, a, Decomposition());
             auto swapped = reduced_.transpose(p);
 
             if (a_positive && b_positive)
             {
-                bool pairing_switched = false;
                 if (r_pivot_b_contains_a)
                 {
                     if (pivot_a == unpaired())
@@ -289,6 +290,7 @@ class Vineyard
                     reduced_.set_low_unchecked(b, low_a);
                     pair_cells(a, low_b);
                     pair_cells(b, low_a);
+                    pairing_switched = true;
                     if (lazy_)
                     {
                         // Earlier transpositions can leave multiple crossing deaths in the affected basis column.
@@ -315,12 +317,13 @@ class Vineyard
                         pair_cells(a, pivot_b);
                     else
                         clear_pair(a);
+                    pairing_switched = true;
                     if (lazy_)
                         clear_lazy_birth_entries(a, Decomposition());
                 }
             }
 
-            return swapped;
+            return std::make_tuple(swapped.first, swapped.second, pairing_switched);
         }
 
         static Index    unpaired()                              { return Matrix::unpaired(); }

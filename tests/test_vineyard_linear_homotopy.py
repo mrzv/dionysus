@@ -198,6 +198,7 @@ def test_linear_homotopy_records_single_crossing_and_vines():
     assert result.events[0].second_pair_before == result.vineyard.unpaired
     assert result.events[0].first_pair_after == result.vineyard.unpaired
     assert result.events[0].second_pair_after == result.vineyard.unpaired
+    assert result.events[0].pairing_switched is False
     assert result.final_order == [1, 0]
 
     segments = [segment for vine in result.vines for segment in vine.segments]
@@ -217,6 +218,7 @@ def test_linear_homotopy_continues_vines_through_pairing_switch():
     )
 
     assert len(result.events) == 1
+    assert result.events[0].pairing_switched is True
     assert len(result.vines) == 2
     assert [len(vine.segments) for vine in result.vines] == [2, 2]
 

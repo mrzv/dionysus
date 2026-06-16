@@ -24,6 +24,7 @@ struct VineyardLinearHomotopyEvent
     Index   second_pair_before;
     Index   first_pair_after;
     Index   second_pair_after;
+    bool    pairing_switched;
 };
 
 template<class Index>
@@ -399,6 +400,7 @@ void record_vineyard_linear_transposition(Result& result,
     auto before_features = local_vineyard_linear_features<Vineyard, Feature>(vineyard, local_before);
 
     auto swapped = vineyard.transpose(position);
+    bool pairing_switched = std::get<2>(swapped);
     Index first_pair_after = vineyard.pair(first);
     Index second_pair_after = vineyard.pair(second);
 
@@ -415,12 +417,13 @@ void record_vineyard_linear_transposition(Result& result,
     result.events.push_back({
         t,
         position,
-        swapped.first,
-        swapped.second,
+        std::get<0>(swapped),
+        std::get<1>(swapped),
         first_pair_before,
         second_pair_before,
         first_pair_after,
-        second_pair_after
+        second_pair_after,
+        pairing_switched
     });
     close_and_reopen_vineyard_linear_features<Result, ActiveVines, Feature, ClosedVine>(result, active_vines, before_features, after_features,
                                                                                        data.values0, data.values1, t, event, Vineyard::unpaired());
