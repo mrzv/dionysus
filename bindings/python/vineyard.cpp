@@ -26,8 +26,6 @@ using Index = PyVineyardMatrix::Index;
 using Chain = PyVineyardMatrix::Chain;
 using Chains = PyVineyardMatrix::Chains;
 
-constexpr double epsilon = dionysus::vineyard_linear_homotopy_epsilon;
-
 using VineyardLinearHomotopyEvent = dionysus::VineyardLinearHomotopyEvent<Index>;
 using VineyardSegment = dionysus::VineyardLinearSegment<Index>;
 using VineyardVine = dionysus::VineyardLinearVine<Index>;
@@ -67,11 +65,12 @@ VineyardLinearHomotopyResult run_linear_homotopy(const PyFiltration& filtration,
     double current_t = 0.0;
     EventQueue event_queue = dionysus::build_vineyard_linear_event_queue<EventQueue>(*vineyard, data, current_t);
 
-    while (current_t < 1.0 - epsilon)
+    while (current_t < 1.0)
     {
         CrossingCandidate candidate;
         Index position = 0;
-        if (!dionysus::pop_next_vineyard_linear_candidate(event_queue, *vineyard, data, current_t, candidate, position) || candidate.time > 1.0 - epsilon)
+        if (!dionysus::pop_next_vineyard_linear_candidate(event_queue, *vineyard, data, current_t, candidate, position) ||
+            candidate.time >= 1.0)
         {
             dionysus::close_all_vineyard_linear_features(result, active_vines, data.values0, data.values1, 1.0, -1, Vineyard::unpaired());
             current_t = 1.0;

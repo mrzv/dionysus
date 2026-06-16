@@ -282,6 +282,19 @@ def test_linear_homotopy_processes_disjoint_simultaneous_crossings():
     assert result.final_order == [1, 0, 3, 2]
 
 
+def test_linear_homotopy_processes_crossing_below_old_epsilon_scale():
+    filtration = d.Filtration([[0], [1]])
+
+    result = d.vineyard_linear_homotopy(
+        filtration, [0.0, 1e-12], [1e-12, 0.0], field=d.Zp(PRIME)
+    )
+
+    assert len(result.events) == 1
+    assert result.events[0].time == pytest.approx(0.5)
+    assert (result.events[0].first, result.events[0].second) == (0, 1)
+    assert result.final_order == [1, 0]
+
+
 def test_linear_homotopy_processes_initial_equal_value_inversions():
     filtration = d.Filtration([[0], [1], [2]])
 
