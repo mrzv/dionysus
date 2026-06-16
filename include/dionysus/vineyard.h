@@ -342,14 +342,18 @@ class Vineyard
         {
             if (cell == unpaired())
                 return;
+#ifdef DEBUG
             validate_index(cell);
+#endif
 
             Index partner = pairs_[cell];
             if (partner != unpaired())
             {
+#ifdef DEBUG
                 validate_index(partner);
                 if (pairs_[partner] != cell)
                     throw std::logic_error("vineyard pair map is inconsistent");
+#endif
                 pairs_[partner] = unpaired();
             }
             pairs_[cell] = unpaired();
@@ -357,12 +361,14 @@ class Vineyard
 
         void pair_cells(Index x, Index y)
         {
+#ifdef DEBUG
             if (x == unpaired() || y == unpaired())
                 throw std::logic_error("vineyard cannot pair an unpaired cell");
             if (x == y)
                 throw std::logic_error("vineyard cannot pair a cell with itself");
             validate_index(x);
             validate_index(y);
+#endif
 
             clear_pair(x);
             clear_pair(y);

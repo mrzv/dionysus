@@ -364,8 +364,14 @@ bool vineyard_linear_boundary_contains(const Chain& column, Index row)
 template<class Chains, class Index>
 void validate_vineyard_linear_transposition(const Chains& boundary, Index first, Index second)
 {
+#ifdef DEBUG
     if (vineyard_linear_boundary_contains(boundary[second], first))
         throw std::logic_error("vineyard linear homotopy transposition produced a non-filtration order");
+#else
+    (void) boundary;
+    (void) first;
+    (void) second;
+#endif
 }
 
 template<class Result, class ActiveVines, class Vineyard, class Data, class Feature, class ClosedVine>
