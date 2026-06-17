@@ -59,7 +59,7 @@ cached persistence pairing:
 .. doctest::
 
     >>> v.transpose(0)
-    (0, 1)
+    (0, 1, True)
     >>> [v.cell_at(i) for i in range(len(v))]
     [1, 0, 2]
 
@@ -81,9 +81,11 @@ performs the adjacent transpositions where neighboring simplices exchange
 order, and records both the events and the persistence vines.
 
 Both endpoint functions must be valid filtrations: every simplex must have a
-value at least as large as the values of its faces. When multiple simplices have
-the same value, Dionysus breaks ties by dimension and then lexicographically so
-each intermediate order remains a filtration.
+value at least as large as the values of its faces. This validation is strict.
+When multiple simplices have the same value, Dionysus breaks ties by dimension
+and then lexicographically so each endpoint order remains a filtration. During
+event scheduling, proposed adjacent swaps that would put a coface before one of
+its faces are ignored.
 
 .. doctest::
 
@@ -92,8 +94,8 @@ each intermediate order remains a filtration.
     ...                                     [0.0, 1.0, 2.0],
     ...                                     [1.0, 0.0, 2.0],
     ...                                     field=d.Zp(2))
-    >>> [(round(e.time, 1), e.first, e.second) for e in result.events]
-    [(0.5, 0, 1)]
+    >>> [(round(e.time, 1), e.first, e.second, e.pairing_switched) for e in result.events]
+    [(0.5, 0, 1, True)]
     >>> result.final_order
     [1, 0, 2]
 
@@ -101,10 +103,12 @@ The result stores:
 
 * ``vineyard``: the final ``VineyardV`` or ``VineyardU`` state.
 * ``events``: adjacent transpositions with local pairing information before and
-  after the swap.
+  after the swap, plus ``pairing_switched`` to indicate whether the persistence
+  pairing changed.
 * ``vines``: piecewise-linear persistence vines. Each vine contains segments
   with endpoint times, birth/death values, birth/death cell ids, and the events
-  that opened or closed the segment.
+  that opened or closed the segment. ``no_vineyard_linear_event`` marks a
+  segment endpoint that was not created by a recorded transposition.
 * ``final_order``: stable cell ids in the final filtration order.
 
 Use ``method='matrix_u'`` to run the same linear homotopy with a MatrixU-backed
@@ -123,6 +127,13 @@ vineyard state:
 The vines are stored as piecewise-linear segments. Each segment records its time
 interval, birth and death values at the interval endpoints, and the stable cell
 ids that define the feature:
+
+Vine identity is continued combinatorially. If an adjacent transposition does
+not change the persistence pairing, existing vine segments remain open and the
+event does not split them. If the pairing switches, affected feature keys are
+migrated by swapping the two transposed stable cell ids, preserving the vine id.
+This also treats contact with the diagonal as continuation of the same vine;
+segments are only split when the defining birth/death cells change.
 
 .. doctest::
 

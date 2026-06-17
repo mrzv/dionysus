@@ -2,11 +2,10 @@
 #include <pybind11/stl.h>
 #include <cmath>
 #include <limits>
-#include <map>
-#include <queue>
 #include <sstream>
 #include <string>
 #include <tuple>
+#include <utility>
 namespace py = pybind11;
 
 #include <dionysus/boundary-matrix.h>
@@ -26,8 +25,6 @@ using Index = PyVineyardMatrix::Index;
 using Chain = PyVineyardMatrix::Chain;
 using Chains = PyVineyardMatrix::Chains;
 
-constexpr double epsilon = dionysus::vineyard_linear_homotopy_epsilon;
-
 using VineyardLinearHomotopyEvent = dionysus::VineyardLinearHomotopyEvent<Index>;
 using VineyardSegment = dionysus::VineyardLinearSegment<Index>;
 using VineyardVine = dionysus::VineyardLinearVine<Index>;
@@ -40,55 +37,18 @@ struct VineyardLinearHomotopyResult
     std::vector<Index>                 final_order;
 };
 
-using LinearHomotopyData = dionysus::VineyardLinearHomotopyData<Chains>;
-
-using CrossingCandidate = dionysus::VineyardLinearCrossingCandidate<Index>;
-using EventQueue = std::priority_queue<CrossingCandidate>;
-using Feature = std::tuple<Index, Index>;
-
-using ActiveVine = dionysus::VineyardLinearActiveVine<Index>;
-using ClosedVine = dionysus::VineyardLinearClosedVine<Index>;
-
-using ActiveVines = std::map<Feature, ActiveVine>;
-
 template<class Vineyard>
 VineyardLinearHomotopyResult run_linear_homotopy(const PyFiltration& filtration,
                                                  const std::vector<double>& values0,
                                                  const std::vector<double>& values1,
                                                  const PyZpField& field)
 {
-    LinearHomotopyData data = dionysus::prepare_vineyard_linear_homotopy_data<Chains>(filtration, values0, values1, field);
-    auto* vineyard = new Vineyard(field, data.boundary);
-
+    auto cxx_result = dionysus::run_vineyard_linear_homotopy<Vineyard, Chains>(filtration, values0, values1, field);
     VineyardLinearHomotopyResult result;
-    ActiveVines active_vines;
-    for (const auto& feature : dionysus::vineyard_linear_features<Vineyard, Feature>(*vineyard))
-        dionysus::open_vineyard_linear_feature(result, active_vines, feature, 0.0, -1);
-
-    double current_t = 0.0;
-    EventQueue event_queue = dionysus::build_vineyard_linear_event_queue<EventQueue>(*vineyard, data, current_t);
-
-    while (current_t < 1.0 - epsilon)
-    {
-        CrossingCandidate candidate;
-        Index position = 0;
-        if (!dionysus::pop_next_vineyard_linear_candidate(event_queue, *vineyard, data, current_t, candidate, position) || candidate.time > 1.0 - epsilon)
-        {
-            dionysus::close_all_vineyard_linear_features(result, active_vines, data.values0, data.values1, 1.0, -1, Vineyard::unpaired());
-            current_t = 1.0;
-            break;
-        }
-
-        current_t = candidate.time;
-        Index first = vineyard->cell_at(position);
-        Index second = vineyard->cell_at(position + 1);
-        dionysus::validate_vineyard_linear_transposition(data.boundary, first, second);
-        dionysus::record_vineyard_linear_transposition<VineyardLinearHomotopyResult, ActiveVines, Vineyard, LinearHomotopyData, Feature, ClosedVine>(result, active_vines, *vineyard, data, current_t, position);
-        dionysus::push_vineyard_linear_candidate_neighborhood(event_queue, *vineyard, data, current_t, position);
-    }
-
-    result.final_order = dionysus::current_vineyard_linear_order(*vineyard);
-    result.vineyard = py::cast(vineyard, py::return_value_policy::take_ownership);
+    result.events = std::move(cxx_result.events);
+    result.vines = std::move(cxx_result.vines);
+    result.final_order = std::move(cxx_result.final_order);
+    result.vineyard = py::cast(cxx_result.vineyard.release(), py::return_value_policy::take_ownership);
     return result;
 }
 
@@ -100,6 +60,8 @@ void init_vineyard(py::module& m)
     using Column = std::vector<std::tuple<PyVineyardMatrix::FieldElement, PyVineyardMatrix::Index>>;
     using Columns = std::vector<Column>;
     using Index = PyVineyardMatrix::Index;
+
+    m.attr("no_vineyard_linear_event") = dionysus::no_vineyard_linear_event;
 
     auto make_chain = [](Column entries)
     {
@@ -137,6 +99,7 @@ void init_vineyard(py::module& m)
         .def_readonly("second_pair_before", &VineyardLinearHomotopyEvent::second_pair_before)
         .def_readonly("first_pair_after",   &VineyardLinearHomotopyEvent::first_pair_after)
         .def_readonly("second_pair_after",  &VineyardLinearHomotopyEvent::second_pair_after)
+        .def_readonly("pairing_switched",   &VineyardLinearHomotopyEvent::pairing_switched)
     ;
 
     py::class_<VineyardSegment>(m, "VineyardSegment", "one linear segment of a persistence vine")
@@ -221,7 +184,7 @@ void init_vineyard(py::module& m)
         .def("pivot",        &PyVineyardV::pivot,     "column id with the given low cell id")
         .def("pair",         &PyVineyardV::pair,      "persistence pair of the given cell id")
         .def("transpose", &PyVineyardV::transpose, "position"_a,
-                                                              "repair the vineyard state after transposing adjacent filtration positions")
+                                                               "repair the vineyard state after transposing adjacent filtration positions and return the swapped stable cell ids plus whether the pairing switched")
         .def("reduced_column", [make_column](const PyVineyardV& v, Index column)
                                  {
                                      return make_column(v.reduced_column(column));
@@ -259,7 +222,7 @@ void init_vineyard(py::module& m)
         .def("pivot",        &PyVineyardU::pivot,     "column id with the given low cell id")
         .def("pair",         &PyVineyardU::pair,      "persistence pair of the given cell id")
         .def("transpose", &PyVineyardU::transpose, "position"_a,
-                                                              "repair the vineyard state after transposing adjacent filtration positions")
+                                                               "repair the vineyard state after transposing adjacent filtration positions and return the swapped stable cell ids plus whether the pairing switched")
         .def("reduced_column", [make_column](const PyVineyardU& v, Index column)
                                  {
                                      return make_column(v.reduced_column(column));
@@ -311,6 +274,6 @@ void init_vineyard(py::module& m)
               if (method == "matrix_u")
                   return run_linear_homotopy<PyVineyardU>(filtration, values0, values1, field);
               throw py::value_error("unknown vineyard method: " + method);
-          }, "filtration"_a, "values0"_a, "values1"_a, "field"_a = PyZpField(2), "method"_a = "matrix_v",
-          "compute a vineyard linear homotopy between two filtration functions");
+           }, "filtration"_a, "values0"_a, "values1"_a, "field"_a = PyZpField(2), "method"_a = "matrix_v",
+           "compute a vineyard linear homotopy between two strict filtration functions while preserving vine identity combinatorially");
 }

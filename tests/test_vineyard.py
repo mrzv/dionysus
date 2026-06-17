@@ -205,7 +205,7 @@ def test_vineyard_initializes_from_matrix_v_reduction():
 def test_vineyard_transpose_repairs_duplicate_low():
     vineyard = d.VineyardV(BOUNDARY, field=d.Zp(PRIME))
 
-    assert vineyard.transpose(0) == (0, 1)
+    assert vineyard.transpose(0) == (0, 1, True)
 
     assert order(vineyard) == [1, 0, 2, 3]
     assert_matches_recomputation(vineyard)
