@@ -4,13 +4,21 @@
 #include <algorithm>
 #include <cmath>
 #include <limits>
+#include <map>
+#include <memory>
 #include <queue>
 #include <stdexcept>
 #include <tuple>
+#include <utility>
 #include <vector>
 
 namespace dionysus
 {
+
+// Public result types
+
+constexpr int no_vineyard_linear_event = -1;
+
 template<class Index>
 struct VineyardLinearHomotopyEvent
 {
@@ -47,6 +55,30 @@ struct VineyardLinearVine
 };
 
 template<class Index>
+struct VineyardLinearFeature
+{
+    Index birth;
+    Index death;
+
+    bool operator<(const VineyardLinearFeature& other) const
+    {
+        if (birth != other.birth)
+            return birth < other.birth;
+        return death < other.death;
+    }
+
+    bool operator==(const VineyardLinearFeature& other) const
+    {
+        return birth == other.birth && death == other.death;
+    }
+
+    bool operator!=(const VineyardLinearFeature& other) const
+    {
+        return !(*this == other);
+    }
+};
+
+template<class Index>
 struct VineyardLinearActiveVine
 {
     size_t  vine_index;
@@ -67,6 +99,17 @@ struct VineyardLinearHomotopyData
     std::vector<double>     values0;
     std::vector<double>     values1;
     std::vector<unsigned>   dimensions;
+};
+
+template<class Vineyard>
+struct VineyardLinearHomotopyResult
+{
+    using Index = typename Vineyard::Index;
+
+    std::unique_ptr<Vineyard>                       vineyard;
+    std::vector<VineyardLinearHomotopyEvent<Index>> events;
+    std::vector<VineyardLinearVine<Index>>          vines;
+    std::vector<Index>                              final_order;
 };
 
 template<class Index>
@@ -91,6 +134,8 @@ struct VineyardLinearCrossingCandidate
     }
 };
 
+// Order and feature helpers
+
 template<class Vineyard>
 std::vector<typename Vineyard::Index> current_vineyard_linear_order(const Vineyard& vineyard)
 {
@@ -103,8 +148,10 @@ std::vector<typename Vineyard::Index> current_vineyard_linear_order(const Vineya
     return order;
 }
 
-template<class Vineyard, class Feature>
-bool vineyard_linear_feature_for_cell(const Vineyard& vineyard, typename Vineyard::Index cell, Feature& feature)
+template<class Vineyard>
+bool vineyard_linear_feature_for_cell(const Vineyard& vineyard,
+                                      typename Vineyard::Index cell,
+                                      VineyardLinearFeature<typename Vineyard::Index>& feature)
 {
     if (cell == Vineyard::unpaired())
         return false;
@@ -114,23 +161,24 @@ bool vineyard_linear_feature_for_cell(const Vineyard& vineyard, typename Vineyar
     {
         if (vineyard.low(cell) == Vineyard::unpaired())
         {
-            feature = std::make_tuple(cell, Vineyard::unpaired());
+            feature = { cell, Vineyard::unpaired() };
             return true;
         }
         return false;
     }
 
     if (vineyard.position(cell) < vineyard.position(pair))
-        feature = std::make_tuple(cell, pair);
+        feature = { cell, pair };
     else
-        feature = std::make_tuple(pair, cell);
+        feature = { pair, cell };
     return true;
 }
 
-template<class Vineyard, class Feature>
-std::vector<Feature> vineyard_linear_features(const Vineyard& vineyard)
+template<class Vineyard>
+std::vector<VineyardLinearFeature<typename Vineyard::Index>> vineyard_linear_features(const Vineyard& vineyard)
 {
     using Index = typename Vineyard::Index;
+    using Feature = VineyardLinearFeature<Index>;
 
     std::vector<Feature> result;
     for (Index cell = 0; cell < vineyard.size(); ++cell)
@@ -144,9 +192,12 @@ std::vector<Feature> vineyard_linear_features(const Vineyard& vineyard)
     return result;
 }
 
-template<class Vineyard, class Feature>
-std::vector<Feature> local_vineyard_linear_features(const Vineyard& vineyard, const std::vector<typename Vineyard::Index>& cells)
+template<class Vineyard>
+std::vector<VineyardLinearFeature<typename Vineyard::Index>> local_vineyard_linear_features(const Vineyard& vineyard,
+                                                                                           const std::vector<typename Vineyard::Index>& cells)
 {
+    using Feature = VineyardLinearFeature<typename Vineyard::Index>;
+
     std::vector<Feature> result;
     for (auto cell : cells)
     {
@@ -158,6 +209,8 @@ std::vector<Feature> local_vineyard_linear_features(const Vineyard& vineyard, co
     result.erase(std::unique(result.begin(), result.end()), result.end());
     return result;
 }
+
+// Scalar interpolation helpers
 
 inline double vineyard_linear_value_at(const std::vector<double>& values0,
                                        const std::vector<double>& values1,
@@ -173,6 +226,8 @@ inline double vineyard_linear_slope(const std::vector<double>& values0,
 {
     return values1[cell] - values0[cell];
 }
+
+// Vine lifecycle helpers
 
 template<class Result, class ActiveVine, class Index>
 void add_vineyard_linear_segment(Result& result,
@@ -214,8 +269,8 @@ void open_vineyard_linear_feature(Result& result,
         vine_index,
         t0,
         event0,
-        std::get<0>(feature),
-        std::get<1>(feature)
+        feature.birth,
+        feature.death
     };
 }
 
@@ -230,8 +285,8 @@ void reopen_vineyard_linear_feature(ActiveVines& active_vines,
         vine_index,
         t0,
         event0,
-        std::get<0>(feature),
-        std::get<1>(feature)
+        feature.birth,
+        feature.death
     };
 }
 
@@ -267,7 +322,7 @@ Feature transpose_vineyard_linear_feature(const Feature& feature, Index first, I
         return cell;
     };
 
-    return std::make_tuple(transpose_cell(std::get<0>(feature)), transpose_cell(std::get<1>(feature)));
+    return { transpose_cell(feature.birth), transpose_cell(feature.death) };
 }
 
 template<class Feature>
@@ -343,6 +398,8 @@ void close_all_vineyard_linear_features(Result& result,
     active_vines.clear();
 }
 
+// Filtration-order guards
+
 template<class Chain, class Index>
 bool vineyard_linear_boundary_contains(const Chain& column, Index row)
 {
@@ -365,7 +422,9 @@ void validate_vineyard_linear_transposition(const Chains& boundary, Index first,
         throw std::logic_error("vineyard linear homotopy transposition produced a non-filtration order");
 }
 
-template<class Result, class ActiveVines, class Vineyard, class Data, class Feature>
+// Transposition recording and endpoint completion
+
+template<class Result, class ActiveVines, class Vineyard, class Data>
 void record_vineyard_linear_transposition(Result& result,
                                           ActiveVines& active_vines,
                                           Vineyard& vineyard,
@@ -374,6 +433,7 @@ void record_vineyard_linear_transposition(Result& result,
                                           typename Data::Index position)
 {
     using Index = typename Data::Index;
+    using Feature = VineyardLinearFeature<Index>;
 
     Index first = vineyard.cell_at(position);
     Index second = vineyard.cell_at(position + 1);
@@ -387,7 +447,7 @@ void record_vineyard_linear_transposition(Result& result,
         local_before.push_back(first_pair_before);
     if (second_pair_before != Vineyard::unpaired())
         local_before.push_back(second_pair_before);
-    auto before_features = local_vineyard_linear_features<Vineyard, Feature>(vineyard, local_before);
+    auto before_features = local_vineyard_linear_features(vineyard, local_before);
 
     auto swapped = vineyard.transpose(position);
     bool pairing_switched = std::get<2>(swapped);
@@ -401,7 +461,7 @@ void record_vineyard_linear_transposition(Result& result,
         local_after.push_back(first_pair_after);
     if (second_pair_after != Vineyard::unpaired())
         local_after.push_back(second_pair_after);
-    auto after_features = local_vineyard_linear_features<Vineyard, Feature>(vineyard, local_after);
+    auto after_features = local_vineyard_linear_features(vineyard, local_after);
 
     int event = static_cast<int>(result.events.size());
     result.events.push_back({
@@ -416,11 +476,11 @@ void record_vineyard_linear_transposition(Result& result,
         pairing_switched
     });
     continue_vineyard_linear_features<Result, ActiveVines, Feature>(result, active_vines, before_features, after_features,
-                                                                     data.values0, data.values1, t, event, first, second,
-                                                                     pairing_switched, Vineyard::unpaired());
+                                                                      data.values0, data.values1, t, event, first, second,
+                                                                      pairing_switched, Vineyard::unpaired());
 }
 
-template<class Result, class ActiveVines, class Vineyard, class Data, class Feature>
+template<class Result, class ActiveVines, class Vineyard, class Data>
 void complete_vineyard_linear_endpoint_order(Result& result,
                                              ActiveVines& active_vines,
                                              Vineyard& vineyard,
@@ -443,11 +503,13 @@ void complete_vineyard_linear_endpoint_order(Result& result,
             Index second = vineyard.cell_at(position);
             if (!vineyard_linear_transposition_preserves_filtration(data.boundary, first, second))
                 throw std::logic_error("vineyard linear homotopy cannot reach endpoint order without violating the filtration");
-            record_vineyard_linear_transposition<Result, ActiveVines, Vineyard, Data, Feature>(result, active_vines, vineyard, data, t, position - 1);
+            record_vineyard_linear_transposition<Result, ActiveVines, Vineyard, Data>(result, active_vines, vineyard, data, t, position - 1);
             --position;
         }
     }
 }
+
+// Event scheduling
 
 template<class Data>
 bool vineyard_linear_tie_less(const Data& data, typename Data::Index x, typename Data::Index y)
@@ -597,6 +659,8 @@ bool pop_next_vineyard_linear_candidate(EventQueue& queue,
     return false;
 }
 
+// Endpoint order and data preparation
+
 template<class Filtration>
 std::vector<size_t> vineyard_linear_endpoint_order(const Filtration& filtration,
                                                    const std::vector<double>& values)
@@ -657,8 +721,8 @@ void validate_vineyard_linear_endpoint(const Filtration& filtration,
 
 template<class Chains, class Filtration, class Field>
 VineyardLinearHomotopyData<Chains> prepare_vineyard_linear_homotopy_data(const Filtration& filtration,
-                                                                         const std::vector<double>& input_values0,
-                                                                         const std::vector<double>& input_values1,
+                                                                          const std::vector<double>& input_values0,
+                                                                          const std::vector<double>& input_values1,
                                                                          const Field& field)
 {
     using Data = VineyardLinearHomotopyData<Chains>;
@@ -708,6 +772,64 @@ VineyardLinearHomotopyData<Chains> prepare_vineyard_linear_homotopy_data(const F
     }
 
     return data;
+}
+
+// Top-level linear homotopy runner
+
+template<class Vineyard, class Chains, class Filtration, class Field>
+VineyardLinearHomotopyResult<Vineyard> run_vineyard_linear_homotopy(const Filtration& filtration,
+                                                                    const std::vector<double>& values0,
+                                                                    const std::vector<double>& values1,
+                                                                    const Field& field)
+{
+    using Data = VineyardLinearHomotopyData<Chains>;
+    using Index = typename Data::Index;
+    using Feature = VineyardLinearFeature<Index>;
+    using ActiveVine = VineyardLinearActiveVine<Index>;
+    using ActiveVines = std::map<Feature, ActiveVine>;
+    using EventQueue = std::priority_queue<VineyardLinearCrossingCandidate<Index>>;
+    using Result = VineyardLinearHomotopyResult<Vineyard>;
+
+    Data data = prepare_vineyard_linear_homotopy_data<Chains>(filtration, values0, values1, field);
+    std::unique_ptr<Vineyard> vineyard(new Vineyard(field, data.boundary));
+
+    Result result;
+    ActiveVines active_vines;
+    for (const auto& feature : vineyard_linear_features(*vineyard))
+        open_vineyard_linear_feature(result, active_vines, feature, 0.0, no_vineyard_linear_event);
+
+    double current_t = 0.0;
+    EventQueue event_queue = build_vineyard_linear_event_queue<EventQueue>(*vineyard, data, current_t);
+
+    while (current_t < 1.0)
+    {
+        VineyardLinearCrossingCandidate<Index> candidate;
+        Index position = 0;
+        if (!pop_next_vineyard_linear_candidate(event_queue, *vineyard, data, current_t, candidate, position) ||
+            candidate.time >= 1.0)
+        {
+            current_t = 1.0;
+            break;
+        }
+
+        current_t = candidate.time;
+        Index first = vineyard->cell_at(position);
+        Index second = vineyard->cell_at(position + 1);
+        validate_vineyard_linear_transposition(data.boundary, first, second);
+        record_vineyard_linear_transposition<Result, ActiveVines, Vineyard, Data>(result, active_vines, *vineyard, data, current_t, position);
+        push_vineyard_linear_candidate_neighborhood(event_queue, *vineyard, data, current_t, position);
+    }
+
+    std::vector<Index> expected_final_order;
+    expected_final_order.reserve(filtration.size());
+    for (auto input : vineyard_linear_endpoint_order(filtration, values1))
+        expected_final_order.push_back(data.input_to_stable[input]);
+
+    complete_vineyard_linear_endpoint_order<Result, ActiveVines, Vineyard, Data>(result, active_vines, *vineyard, data, expected_final_order, 1.0);
+    close_all_vineyard_linear_features(result, active_vines, data.values0, data.values1, 1.0, no_vineyard_linear_event, Vineyard::unpaired());
+    result.final_order = current_vineyard_linear_order(*vineyard);
+    result.vineyard = std::move(vineyard);
+    return result;
 }
 
 }

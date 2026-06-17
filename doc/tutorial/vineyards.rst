@@ -107,7 +107,8 @@ The result stores:
   pairing changed.
 * ``vines``: piecewise-linear persistence vines. Each vine contains segments
   with endpoint times, birth/death values, birth/death cell ids, and the events
-  that opened or closed the segment.
+  that opened or closed the segment. ``no_vineyard_linear_event`` marks a
+  segment endpoint that was not created by a recorded transposition.
 * ``final_order``: stable cell ids in the final filtration order.
 
 Use ``method='matrix_u'`` to run the same linear homotopy with a MatrixU-backed

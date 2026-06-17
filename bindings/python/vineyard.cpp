@@ -2,11 +2,10 @@
 #include <pybind11/stl.h>
 #include <cmath>
 #include <limits>
-#include <map>
-#include <queue>
 #include <sstream>
 #include <string>
 #include <tuple>
+#include <utility>
 namespace py = pybind11;
 
 #include <dionysus/boundary-matrix.h>
@@ -38,61 +37,18 @@ struct VineyardLinearHomotopyResult
     std::vector<Index>                 final_order;
 };
 
-using LinearHomotopyData = dionysus::VineyardLinearHomotopyData<Chains>;
-
-using CrossingCandidate = dionysus::VineyardLinearCrossingCandidate<Index>;
-using EventQueue = std::priority_queue<CrossingCandidate>;
-using Feature = std::tuple<Index, Index>;
-
-using ActiveVine = dionysus::VineyardLinearActiveVine<Index>;
-
-using ActiveVines = std::map<Feature, ActiveVine>;
-
 template<class Vineyard>
 VineyardLinearHomotopyResult run_linear_homotopy(const PyFiltration& filtration,
                                                  const std::vector<double>& values0,
                                                  const std::vector<double>& values1,
                                                  const PyZpField& field)
 {
-    LinearHomotopyData data = dionysus::prepare_vineyard_linear_homotopy_data<Chains>(filtration, values0, values1, field);
-    auto* vineyard = new Vineyard(field, data.boundary);
-
+    auto cxx_result = dionysus::run_vineyard_linear_homotopy<Vineyard, Chains>(filtration, values0, values1, field);
     VineyardLinearHomotopyResult result;
-    ActiveVines active_vines;
-    for (const auto& feature : dionysus::vineyard_linear_features<Vineyard, Feature>(*vineyard))
-        dionysus::open_vineyard_linear_feature(result, active_vines, feature, 0.0, -1);
-
-    double current_t = 0.0;
-    EventQueue event_queue = dionysus::build_vineyard_linear_event_queue<EventQueue>(*vineyard, data, current_t);
-
-    while (current_t < 1.0)
-    {
-        CrossingCandidate candidate;
-        Index position = 0;
-        if (!dionysus::pop_next_vineyard_linear_candidate(event_queue, *vineyard, data, current_t, candidate, position) ||
-            candidate.time >= 1.0)
-        {
-            current_t = 1.0;
-            break;
-        }
-
-        current_t = candidate.time;
-        Index first = vineyard->cell_at(position);
-        Index second = vineyard->cell_at(position + 1);
-        dionysus::validate_vineyard_linear_transposition(data.boundary, first, second);
-        dionysus::record_vineyard_linear_transposition<VineyardLinearHomotopyResult, ActiveVines, Vineyard, LinearHomotopyData, Feature>(result, active_vines, *vineyard, data, current_t, position);
-        dionysus::push_vineyard_linear_candidate_neighborhood(event_queue, *vineyard, data, current_t, position);
-    }
-
-    std::vector<Index> expected_final_order;
-    expected_final_order.reserve(filtration.size());
-    for (auto input : dionysus::vineyard_linear_endpoint_order(filtration, values1))
-        expected_final_order.push_back(data.input_to_stable[input]);
-
-    dionysus::complete_vineyard_linear_endpoint_order<VineyardLinearHomotopyResult, ActiveVines, Vineyard, LinearHomotopyData, Feature>(result, active_vines, *vineyard, data, expected_final_order, 1.0);
-    dionysus::close_all_vineyard_linear_features(result, active_vines, data.values0, data.values1, 1.0, -1, Vineyard::unpaired());
-    result.final_order = dionysus::current_vineyard_linear_order(*vineyard);
-    result.vineyard = py::cast(vineyard, py::return_value_policy::take_ownership);
+    result.events = std::move(cxx_result.events);
+    result.vines = std::move(cxx_result.vines);
+    result.final_order = std::move(cxx_result.final_order);
+    result.vineyard = py::cast(cxx_result.vineyard.release(), py::return_value_policy::take_ownership);
     return result;
 }
 
@@ -104,6 +60,8 @@ void init_vineyard(py::module& m)
     using Column = std::vector<std::tuple<PyVineyardMatrix::FieldElement, PyVineyardMatrix::Index>>;
     using Columns = std::vector<Column>;
     using Index = PyVineyardMatrix::Index;
+
+    m.attr("no_vineyard_linear_event") = dionysus::no_vineyard_linear_event;
 
     auto make_chain = [](Column entries)
     {

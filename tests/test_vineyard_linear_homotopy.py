@@ -1,3 +1,4 @@
+import heapq
 import math
 import random
 from itertools import combinations
@@ -14,25 +15,50 @@ def simplex_key(simplex):
 
 
 def stable_maps(filtration, values0):
-    stable_to_input = sorted(
-        range(len(filtration)),
-        key=lambda index: (values0[index], simplex_key(filtration[index])),
-    )
+    stable_to_input = topological_endpoint_order(filtration, values0)
     input_to_stable = {
         input_index: stable for stable, input_index in enumerate(stable_to_input)
     }
     return stable_to_input, input_to_stable
 
 
+def topological_endpoint_order(filtration, values):
+    pending_faces = [0] * len(filtration)
+    cofaces = [[] for _ in filtration]
+    for index, simplex in enumerate(filtration):
+        for face in simplex.boundary():
+            face_index = filtration.index(face)
+            cofaces[face_index].append(index)
+            pending_faces[index] += 1
+
+    ready = [
+        (values[index], simplex_key(filtration[index]), index)
+        for index, pending in enumerate(pending_faces)
+        if pending == 0
+    ]
+    heapq.heapify(ready)
+
+    order = []
+    while ready:
+        _, _, cell = heapq.heappop(ready)
+        order.append(cell)
+        for coface in cofaces[cell]:
+            pending_faces[coface] -= 1
+            if pending_faces[coface] == 0:
+                heapq.heappush(
+                    ready, (values[coface], simplex_key(filtration[coface]), coface)
+                )
+
+    assert len(order) == len(filtration)
+    return order
+
+
 def endpoint_order(filtration, values0, values1):
-    stable_to_input, _ = stable_maps(filtration, values0)
-    return sorted(
-        range(len(filtration)),
-        key=lambda stable: (
-            values1[stable_to_input[stable]],
-            simplex_key(filtration[stable_to_input[stable]]),
-        ),
-    )
+    _, input_to_stable = stable_maps(filtration, values0)
+    return [
+        input_to_stable[input_index]
+        for input_index in topological_endpoint_order(filtration, values1)
+    ]
 
 
 def endpoint_matrix_filtration(filtration, values0, values1):
@@ -205,7 +231,11 @@ def test_linear_homotopy_records_single_crossing_and_vines():
     assert len(result.vines) == 2
     assert [len(vine.segments) for vine in result.vines] == [1, 1]
     assert len(segments) == 2
-    assert all(segment.event0 == -1 and segment.event1 == -1 for segment in segments)
+    assert all(
+        segment.event0 == d.no_vineyard_linear_event
+        and segment.event1 == d.no_vineyard_linear_event
+        for segment in segments
+    )
     assert all(math.isinf(segment.death0) and math.isinf(segment.death1) for segment in segments)
 
 
@@ -248,7 +278,7 @@ def test_linear_homotopy_keeps_diagonal_contact_in_same_vine():
 
     finite = result.vines[1].segments[0]
     assert finite.event0 == 0
-    assert finite.event1 == -1
+    assert finite.event1 == d.no_vineyard_linear_event
     assert finite.birth0 == pytest.approx(finite.death0)
     assert finite.birth_cell == 0
     assert finite.death_cell == 2
@@ -306,6 +336,20 @@ def test_linear_homotopy_processes_endpoint_tie_order():
     assert result.events[0].time == pytest.approx(1.0)
     assert (result.events[0].first, result.events[0].second) == (0, 1)
     assert result.final_order == [1, 0]
+
+
+def test_linear_homotopy_processes_endpoint_pairing_switch():
+    filtration = d.Filtration([[1], [0], [0, 1]])
+
+    result = d.vineyard_linear_homotopy(
+        filtration, [0.0, 1.0, 2.0], [1.0, 1.0, 2.0], field=d.Zp(PRIME)
+    )
+
+    assert len(result.events) == 1
+    assert result.events[0].time == pytest.approx(1.0)
+    assert (result.events[0].first, result.events[0].second) == (0, 1)
+    assert result.events[0].pairing_switched is True
+    assert result.final_order == [1, 0, 2]
 
 
 def test_linear_homotopy_processes_initial_equal_value_inversions():
