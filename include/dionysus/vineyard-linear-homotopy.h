@@ -419,8 +419,37 @@ void record_vineyard_linear_transposition(Result& result,
         pairing_switched
     });
     continue_vineyard_linear_features<Result, ActiveVines, Feature>(result, active_vines, before_features, after_features,
-                                                                    data.values0, data.values1, t, event, first, second,
-                                                                    pairing_switched, Vineyard::unpaired());
+                                                                     data.values0, data.values1, t, event, first, second,
+                                                                     pairing_switched, Vineyard::unpaired());
+}
+
+template<class Result, class ActiveVines, class Vineyard, class Data, class Feature>
+void complete_vineyard_linear_endpoint_order(Result& result,
+                                             ActiveVines& active_vines,
+                                             Vineyard& vineyard,
+                                             const Data& data,
+                                             const std::vector<typename Data::Index>& expected_order,
+                                             double t)
+{
+    using Index = typename Data::Index;
+
+    if (expected_order.size() != vineyard.size())
+        throw std::logic_error("vineyard linear homotopy endpoint order has wrong size");
+
+    for (Index target_position = 0; target_position < expected_order.size(); ++target_position)
+    {
+        Index target = expected_order[target_position];
+        Index position = vineyard.position(target);
+        while (position > target_position)
+        {
+            Index first = vineyard.cell_at(position - 1);
+            Index second = vineyard.cell_at(position);
+            if (!vineyard_linear_transposition_preserves_filtration(data.boundary, first, second))
+                throw std::logic_error("vineyard linear homotopy cannot reach endpoint order without violating the filtration");
+            record_vineyard_linear_transposition<Result, ActiveVines, Vineyard, Data, Feature>(result, active_vines, vineyard, data, t, position - 1);
+            --position;
+        }
+    }
 }
 
 template<class Data>

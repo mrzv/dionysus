@@ -72,7 +72,6 @@ VineyardLinearHomotopyResult run_linear_homotopy(const PyFiltration& filtration,
         if (!dionysus::pop_next_vineyard_linear_candidate(event_queue, *vineyard, data, current_t, candidate, position) ||
             candidate.time >= 1.0)
         {
-            dionysus::close_all_vineyard_linear_features(result, active_vines, data.values0, data.values1, 1.0, -1, Vineyard::unpaired());
             current_t = 1.0;
             break;
         }
@@ -85,6 +84,13 @@ VineyardLinearHomotopyResult run_linear_homotopy(const PyFiltration& filtration,
         dionysus::push_vineyard_linear_candidate_neighborhood(event_queue, *vineyard, data, current_t, position);
     }
 
+    std::vector<Index> expected_final_order;
+    expected_final_order.reserve(filtration.size());
+    for (auto input : dionysus::vineyard_linear_endpoint_order(filtration, values1))
+        expected_final_order.push_back(data.input_to_stable[input]);
+
+    dionysus::complete_vineyard_linear_endpoint_order<VineyardLinearHomotopyResult, ActiveVines, Vineyard, LinearHomotopyData, Feature>(result, active_vines, *vineyard, data, expected_final_order, 1.0);
+    dionysus::close_all_vineyard_linear_features(result, active_vines, data.values0, data.values1, 1.0, -1, Vineyard::unpaired());
     result.final_order = dionysus::current_vineyard_linear_order(*vineyard);
     result.vineyard = py::cast(vineyard, py::return_value_policy::take_ownership);
     return result;
