@@ -11,9 +11,6 @@
 
 namespace dionysus
 {
-
-constexpr double vineyard_linear_homotopy_epsilon = 1e-10;
-
 template<class Index>
 struct VineyardLinearHomotopyEvent
 {
@@ -647,14 +644,13 @@ std::vector<size_t> vineyard_linear_endpoint_order(const Filtration& filtration,
 
 template<class Filtration>
 void validate_vineyard_linear_endpoint(const Filtration& filtration,
-                                       const std::vector<double>& values,
-                                       double epsilon = vineyard_linear_homotopy_epsilon)
+                                       const std::vector<double>& values)
 {
     for (size_t i = 0; i < filtration.size(); ++i)
         for (auto it = filtration[i].boundary_begin(); it != filtration[i].boundary_end(); ++it)
         {
             size_t face = filtration.index(*it, filtration.size());
-            if (values[face] > values[i] + epsilon)
+            if (values[face] > values[i])
                 throw std::invalid_argument("linear homotopy values are not a filtration on the complex");
         }
 }

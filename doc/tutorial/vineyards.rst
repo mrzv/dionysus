@@ -81,15 +81,11 @@ performs the adjacent transpositions where neighboring simplices exchange
 order, and records both the events and the persistence vines.
 
 Both endpoint functions must be valid filtrations: every simplex must have a
-value at least as large as the values of its faces. When multiple simplices have
-the same value, Dionysus breaks ties by dimension and then lexicographically so
-each intermediate order remains a filtration.
-
-Endpoint validation uses a small tolerance for nearly equal face/coface values.
-Values within that tolerance are treated as ties for endpoint ordering, with
-faces ordered before cofaces. Event scheduling itself does not use this
-tolerance; proposed adjacent swaps that would put a coface before one of its
-faces are ignored.
+value at least as large as the values of its faces. This validation is strict.
+When multiple simplices have the same value, Dionysus breaks ties by dimension
+and then lexicographically so each endpoint order remains a filtration. During
+event scheduling, proposed adjacent swaps that would put a coface before one of
+its faces are ignored.
 
 .. doctest::
 
