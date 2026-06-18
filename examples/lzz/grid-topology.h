@@ -120,7 +120,7 @@ neighborhood(Vertex v, const Function& f, bool lower, bool include) const
     VertexContainer current;
     if (include)
         current.push_back(v);
-    Rips::bron_kerbosch(current, vertices, std::prev(vertices.begin()), D,
+    Rips::bron_kerbosch(current, vertices, 0, D,
                         [this](Vertex u, Vertex v) { return neighbor_vertex(u,v); },
                         [this,&result](Simplex&& s) { result.emplace_back(s); });
 

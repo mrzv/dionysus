@@ -1,3 +1,5 @@
+#include <type_traits>
+
 template<class Chain_>
 bool chain_eq(const Chain_& c1, const Chain_& c2)
 {
@@ -18,6 +20,31 @@ bool chain_ne(const Chain_& c1, const Chain_& c2)
     return !chain_eq(c1, c2);
 }
 
+template<class Entry>
+void bind_entry_index(py::class_<Entry>& cls, std::true_type)
+{
+    cls.def_property_readonly("index",
+                              py::cpp_function([](const Entry& x) { return x.index(); }, py::keep_alive<0, 1>()),
+                              "index of the chain element");
+}
+
+template<class Entry>
+void bind_entry_index(py::class_<Entry>& cls, std::false_type)
+{
+    cls.def_property_readonly("index", [](const Entry& x) { return x.index(); },
+                              "index of the chain element");
+}
+
+template<class Chain_>
+const typename Chain_::value_type& chain_getitem(const Chain_& c, py::ssize_t i)
+{
+    if (i < 0)
+        i += static_cast<py::ssize_t>(c.size());
+    if (i < 0 || static_cast<size_t>(i) >= c.size())
+        throw py::index_error();
+    return c[static_cast<size_t>(i)];
+}
+
 template<class Chain_>
 void init_chain(py::module& m, std::string prefix = "")
 {
@@ -33,7 +60,9 @@ void init_chain(py::module& m, std::string prefix = "")
                           return c;
                       }))
         .def("__len__",     &Chain_::size,                                  "size of the chain")
-        .def("__getitem__", [](const Chain_& c, size_t i) { return c[i]; }, "access the entry at a given index")
+        .def("__getitem__", &chain_getitem<Chain_>,
+                            py::keep_alive<0, 1>(),
+                            "access the entry at a given index")
         .def("__iter__",    [](const Chain_& c) { return py::make_iterator(c.begin(), c.end()); },
                                 py::keep_alive<0, 1>() /* Essential: keep object alive while iterator exists */,
                                 "iterate over the entries of the chain")
@@ -52,12 +81,11 @@ void init_chain(py::module& m, std::string prefix = "")
                             })
     ;
 
-    py::class_<Entry>(m, (prefix + "ChainEntry").c_str(), "(coefficient, index) entry in a chain)")
+    auto entry_cls = py::class_<Entry>(m, (prefix + "ChainEntry").c_str(), "(coefficient, index) entry in a chain)")
         .def_property_readonly("element",   [](const Entry& x) { return x.element(); },
                                             "coefficient of the chain element")
-        .def_property_readonly("index",     [](const Entry& x) { return x.index(); },
-                                            "index of the chain element")
         .def("__repr__",                    [](const Entry& e)
                                             { std::ostringstream oss; oss << e.e << '*' << e.i; return oss.str(); })
     ;
+    bind_entry_index(entry_cls, std::is_class<typename Entry::Index>());
 }

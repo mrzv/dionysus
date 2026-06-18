@@ -44,7 +44,7 @@ inline std::vector<Simplex<std::vector<int>>> freudenthal_delta_simplices(size_t
     }
 
     std::vector<DeltaSimplex> delta_simplices;
-    Rips::bron_kerbosch(vertices, candidates, std::prev(candidates.begin()), dimension,
+    Rips::bron_kerbosch(vertices, candidates, 0, dimension,
                         [](const Delta& v1, const Delta& v2)
                         {
                             bool pos = false, neg = false;

@@ -1,5 +1,7 @@
 import pickle
+import gc
 
+import pytest
 import dionysus as d
 
 
@@ -97,3 +99,48 @@ def test_reduced_matrix_pickle_roundtrip(prime):
     assert restored.field().prime() == prime
     assert matrix_columns(restored) == matrix_columns(reduced)
     assert matrix_pairs(restored) == matrix_pairs(reduced)
+
+
+def test_matrix_filtration_validates_sizes():
+    matrix = d.ReducedMatrix(d.Zp(2), 1)
+
+    with pytest.raises(ValueError, match="dimensions and values"):
+        d.MatrixFiltration(matrix, [], [0])
+
+
+def test_matrix_filtration_cell_keeps_parent_alive():
+    cell = matrix_filtration()[2]
+    gc.collect()
+
+    assert cell.dimension() == 1
+    assert [(entry.element, entry.index.dimension()) for entry in cell.boundary()] == [(1, 0), (1, 0)]
+
+
+def test_matrix_filtration_boundary_keeps_parent_alive():
+    boundary = matrix_filtration()[2].boundary()
+    gc.collect()
+
+    assert [(entry.element, entry.index.dimension()) for entry in boundary] == [(1, 0), (1, 0)]
+
+
+def test_matrix_filtration_boundary_entry_index_keeps_parent_alive():
+    index = matrix_filtration()[2].boundary()[0].index
+    gc.collect()
+
+    assert index.dimension() == 0
+
+
+def test_python_sequence_bindings_raise_index_error():
+    filtration = d.Filtration([[0]])
+    diagram = d.Diagram([(0.0, 1.0)])
+    matrix = d.ReducedMatrix(d.Zp(2), 1)
+    mf = d.MatrixFiltration(matrix, [0], [0])
+
+    for sequence in (filtration, diagram, matrix, matrix[0], mf, mf[0].boundary()):
+        with pytest.raises(IndexError):
+            sequence[1]
+
+    assert list(filtration[-1]) == [0]
+    assert diagram[-1].birth == 0.0
+    assert matrix[-1] == matrix[0]
+    assert mf[-1].dimension() == 0

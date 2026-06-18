@@ -148,6 +148,26 @@ PYBIND11_MAKE_OPAQUE(PyReducedMatrix::Chain);      // we want to provide our own
 PYBIND11_MAKE_OPAQUE(PyMatrixFiltration::Cell::BoundaryChain<>);      // we want to provide our own binding for BoundaryChain
 
 template<class PyReducedMatrix>
+const typename PyReducedMatrix::Chain& reduced_matrix_getitem(const PyReducedMatrix& m, py::ssize_t i)
+{
+    if (i < 0)
+        i += static_cast<py::ssize_t>(m.size());
+    if (i < 0 || static_cast<size_t>(i) >= m.size())
+        throw py::index_error();
+    return m[static_cast<size_t>(i)];
+}
+
+template<class PyReducedMatrix, class Column_>
+void reduced_matrix_setitem(PyReducedMatrix& m, py::ssize_t i, Column_ c)
+{
+    if (i < 0)
+        i += static_cast<py::ssize_t>(m.size());
+    if (i < 0 || static_cast<size_t>(i) >= m.size())
+        throw py::index_error();
+    m.set(static_cast<size_t>(i), std::move(c));
+}
+
+template<class PyReducedMatrix>
 void export_reduced_matrix(py::module& m, std::string name)
 {
     using namespace pybind11::literals;
@@ -168,10 +188,10 @@ void export_reduced_matrix(py::module& m, std::string name)
                         return m;
                       }), "field"_a = PyZpField(2), "size"_a = 0)
         .def("__len__",     &PyReducedMatrix::size,         "size of the matrix")
-        .def("__getitem__", &PyReducedMatrix::operator[],   "access the column at a given index")
-        .def("__setitem__", [](PyReducedMatrix* m, Index i, Column c) { m->set(i,std::move(c)); },
+        .def("__getitem__", &reduced_matrix_getitem<PyReducedMatrix>,   "access the column at a given index")
+        .def("__setitem__", [](PyReducedMatrix& m, py::ssize_t i, Column c) { reduced_matrix_setitem(m, i, std::move(c)); },
                                                             "set the column at a given index")
-        .def("__setitem__", [](PyReducedMatrix* m, Index i, Chain c) { m->set(i,std::move(c)); },
+        .def("__setitem__", [](PyReducedMatrix& m, py::ssize_t i, Chain c) { reduced_matrix_setitem(m, i, std::move(c)); },
                                                             "set the column at a given index")
         .def("pair",        &PyReducedMatrix::pair,         "pair of the given index")
         .def_property_readonly("unpaired",      [](const PyReducedMatrix&) { return PyReducedMatrix::unpaired(); },
@@ -263,6 +283,7 @@ void init_persistence(py::module& m)
                             { std::ostringstream oss; oss << "Cell " << mfc.i(); return oss.str(); })
         .def("dimension",   &PyMatrixFiltration::Cell::dimension, "cell dimension")
         .def("boundary",    [](const PyMatrixFiltration::Cell& mfc) { return mfc.boundary(); },
+                            py::keep_alive<0, 1>(),
                             "boundary of the cell (the column in the matrix)")
     ;
 
@@ -275,11 +296,25 @@ void init_persistence(py::module& m)
     init_chain<typename PyReducedMatrix::Chain>(m);
 
     py::class_<PyMatrixFiltration>(m, "MatrixFiltration", "adapter to turn ReducedMatrix into something that looks and acts like a filtration")
-        .def(py::init<PyReducedMatrix, Dimensions, Values>())
+        .def(py::init([](PyReducedMatrix m, Dimensions dimensions, Values values)
+                      {
+                          if (m.size() != dimensions.size() || m.size() != values.size())
+                              throw py::value_error("dimensions and values must match matrix size");
+                          return new PyMatrixFiltration(std::move(m), std::move(dimensions), std::move(values));
+                      }))
         .def("dimensions",  &PyMatrixFiltration::dimensions,    "list of cell dimensions")
         .def("values",      &PyMatrixFiltration::values,        "list of cell values")
         .def("__len__",     &PyMatrixFiltration::size,          "size of the matrix")
-        .def("__getitem__", &PyMatrixFiltration::operator[],    "access the 'cell' (column) at a given index")
+        .def("__getitem__", [](const PyMatrixFiltration& mf, py::ssize_t i)
+                            {
+                                if (i < 0)
+                                    i += static_cast<py::ssize_t>(mf.size());
+                                if (i < 0 || static_cast<size_t>(i) >= mf.size())
+                                    throw py::index_error();
+                                return mf[static_cast<size_t>(i)];
+                            },
+                            py::keep_alive<0, 1>(),
+                            "access the 'cell' (column) at a given index")
         .def("__repr__",    [](const PyMatrixFiltration& mf)
                             { std::ostringstream oss; oss << "MatrixFiltration with " << mf.size() << " cells"; return oss.str(); })
     ;

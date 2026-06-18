@@ -17,6 +17,14 @@ void init_diagram(py::module& m)
     using namespace pybind11::literals;
 
     using PointsVector = std::vector<std::tuple<PyDiagram::Value, PyDiagram::Value, PyDiagram::Data>>;
+    auto diagram_getitem = [](const PyDiagram& dgm, py::ssize_t i) -> const PyDiagram::Point&
+    {
+        if (i < 0)
+            i += static_cast<py::ssize_t>(dgm.size());
+        if (i < 0 || static_cast<size_t>(i) >= dgm.size())
+            throw py::index_error();
+        return dgm[static_cast<size_t>(i)];
+    };
 
     py::class_<PyDiagram>(m, "Diagram", "persistence diagram")
         .def(py::init<>(),      "initialize empty diagram")
@@ -31,7 +39,7 @@ void init_diagram(py::module& m)
         .def("append",          [](PyDiagram& dgm, PyDiagram::Value birth, PyDiagram::Value death, PyDiagram::Data data) { dgm.emplace_back(birth, death, data); },
                                 "birth"_a, "death"_a, "data"_a = 0,
                                  "append point to the diagram")
-        .def("__getitem__",     &PyDiagram::operator[],         "access `i`-th point")
+        .def("__getitem__",     diagram_getitem,                "access `i`-th point")
         .def("__len__",         &PyDiagram::size,               "size of the diagram")
         .def("__iter__",        [](const PyDiagram& dgm) { return py::make_iterator(dgm.begin(), dgm.end()); },
                                 py::keep_alive<0, 1>() /* Essential: keep object alive while iterator exists */,
@@ -84,4 +92,3 @@ void init_diagram(py::module& m)
                     return result;
                  }, "dgm"_a, "take log of persistence diagram");
 }
-

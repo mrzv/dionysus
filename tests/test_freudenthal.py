@@ -1,4 +1,5 @@
 import numpy as np
+import pytest
 
 import dionysus as d
 
@@ -56,3 +57,10 @@ def test_fill_freudenthal_rejects_unknown_dtype():
         assert "Unknown array dtype" in str(e)
     else:
         raise AssertionError("expected RuntimeError")
+
+
+def test_fill_freudenthal_rejects_negative_strides():
+    data = np.array([1.0, 2.0, 3.0], dtype=np.float64)[::-1]
+
+    with pytest.raises(RuntimeError, match="negative array strides"):
+        d.fill_freudenthal(data)

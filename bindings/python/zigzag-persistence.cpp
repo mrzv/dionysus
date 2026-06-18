@@ -87,16 +87,26 @@ zigzag_homology_persistence(const PyFiltration&     f,
     using Index          = PyZigzagPersistence::Index;
     using CellChainEntry = dionysus::ChainEntry<PyZpField, PySimplex>;
     using ChainEntry     = dionysus::ChainEntry<PyZpField, Index>;
+    constexpr unsigned unassigned = std::numeric_limits<unsigned>::max();
+
+    if (times_.size() != f.size())
+        throw py::value_error("times length must match filtration length");
 
     std::vector<Time> times;
     for (size_t i = 0; i < times_.size(); ++i)
     {
         int dim = f[i].dimension();
         bool dir = true;
+        float previous = 0;
+        bool have_previous = false;
         for (float t : times_[i])
         {
+            if (have_previous && t <= previous)
+                throw py::value_error("times for each simplex must be in strictly increasing add/remove order");
             times.emplace_back(t, i, dim, dir);
             dir = !dir;
+            previous = t;
+            have_previous = true;
         }
     }
     std::stable_sort(times.begin(), times.end());
@@ -110,7 +120,7 @@ zigzag_homology_persistence(const PyFiltration&     f,
     PyZigzagPersistence persistence(field);
     unsigned op = 0;
     unsigned cell = 0;
-    std::vector<unsigned>   cells(f.size(), -1);
+    std::vector<unsigned>   cells(f.size(), unassigned);
     PyTimeIndexMap          cells_inv_;
     for (auto& tt : times)
     {
@@ -121,10 +131,18 @@ zigzag_homology_persistence(const PyFiltration&     f,
         auto& c = f[i];
         if (dir)
         {
+            auto boundary = c.boundary(persistence.field());
+            for (const auto& e : boundary)
+            {
+                auto idx = f.index(e.index(), i);
+                if (idx >= cells.size() || cells[idx] == unassigned)
+                    throw py::value_error("simplex boundary must be active before insertion");
+            }
+
             cells_inv_.set(cell, i);
             cells[i] = cell++;
 
-            Index pair = persistence.add(c.boundary(persistence.field()) |
+            Index pair = persistence.add(boundary |
                                                     ba::transformed([&](const CellChainEntry& e)
                                                     {
                                                         auto idx = f.index(e.index(),i);
@@ -146,9 +164,21 @@ zigzag_homology_persistence(const PyFiltration&     f,
             ++op;
         } else
         {
+            if (cells[i] == unassigned)
+                throw py::value_error("simplex removal encountered before insertion");
+
+            for (size_t j = 0; j < f.size(); ++j)
+            {
+                if (j == i || cells[j] == unassigned)
+                    continue;
+                for (const auto& face : f[j].boundary())
+                    if (f.index(face, j) == i)
+                        throw py::value_error("simplex cannot be removed while a coface is active");
+            }
+
             Index pair = persistence.remove(cells[i]);
             cells_inv_.remove(cells[i]);
-            cells[i] = -1;
+            cells[i] = unassigned;
             if (pair != persistence.unpaired())
             {
                 auto t_birth = times[pair].t;
@@ -275,7 +305,14 @@ void init_zigzag_persistence(py::module& m)
 
     py::class_<PyTimeIndexMap>(m, "TimeIndexMap", "map from the internal representation of zigzag persistence to filtration indices")
         .def("__len__",     &PyTimeIndexMap::size,                      "size of the map")
-        .def("__getitem__", [](const PyTimeIndexMap& m, size_t i) { return m[i]; }, "access the filtration index of the given internal index")
+        .def("__getitem__", [](const PyTimeIndexMap& m, size_t i)
+                            {
+                                auto it = m.begin();
+                                for (; it != m.end(); ++it)
+                                    if (it->first == i)
+                                        return it->second;
+                                throw py::key_error("internal zigzag index not found");
+                            }, "access the filtration index of the given internal index")
         .def("__iter__",    [](const PyTimeIndexMap& m) { return py::make_iterator(m.begin(), m.end()); },
                                 py::keep_alive<0, 1>() /* Essential: keep object alive while iterator exists */,
                                 "iterate over the entries of the map")

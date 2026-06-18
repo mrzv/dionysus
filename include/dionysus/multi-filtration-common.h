@@ -131,11 +131,14 @@ typename Complex::const_iterator preceding_indexed_cell(const Complex& complex, 
 template<bool checked_index, class Iterator, class Cell>
 void validate_indexed_cell_lookup(Iterator candidate, Iterator end, const Cell& cell, size_t index)
 {
-    if (checked_index && (candidate == end || !(*candidate == cell)))
+    if (candidate == end || !(*candidate == cell))
     {
-        std::ostringstream oss;
-        oss << "Trying to access non-existent cell: " << cell << ' ' << index;
-        throw std::runtime_error(oss.str());
+        if (checked_index)
+        {
+            std::ostringstream oss;
+            oss << "Trying to access non-existent cell: " << cell << ' ' << index;
+            throw std::runtime_error(oss.str());
+        }
     }
 }
 
@@ -194,6 +197,8 @@ class DuplicateFiltrationStorage
         {
             auto it = preceding_indexed_cell(get_complex(), IndexedCell(s, i));
             validate_indexed_cell_lookup<checked_index>(it, get_complex().end(), s, i);
+            if (it == get_complex().end() || !(*it == s))
+                return size();
             return project_order(it) - get_order().begin();
         }
 

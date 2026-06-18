@@ -92,6 +92,15 @@ class Rips
         template<class Functor, class NeighborTest>
         static void         bron_kerbosch(VertexContainer&                          current,
                                           const VertexContainer&                    candidates,
+                                          size_t                                    excluded,
+                                          Dimension                                 max_dim,
+                                          const NeighborTest&                       neighbor,
+                                          const Functor&                            functor,
+                                          bool                                      check_initial = true);
+
+        template<class Functor, class NeighborTest>
+        static void         bron_kerbosch(VertexContainer&                          current,
+                                          const VertexContainer&                    candidates,
                                           typename VertexContainer::const_iterator  excluded,
                                           Dimension                                 max_dim,
                                           const NeighborTest&                       neighbor,

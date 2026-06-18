@@ -9,13 +9,23 @@ namespace py = pybind11;
 #include "filtration.h"
 
 template<class PyFiltration>
+const typename PyFiltration::Cell& filtration_getitem(const PyFiltration& f, py::ssize_t i)
+{
+    if (i < 0)
+        i += static_cast<py::ssize_t>(f.size());
+    if (i < 0 || static_cast<size_t>(i) >= f.size())
+        throw py::index_error();
+    return f[static_cast<size_t>(i)];
+}
+
+template<class PyFiltration>
 void export_filtration(py::class_<PyFiltration>& cls)
 {
     using namespace pybind11::literals;
     cls
         .def(py::init<>(),      "initialize empty filtration")
         .def("__len__",         &PyFiltration::size,        "size of the filtration")
-        .def("__getitem__",     &PyFiltration::operator[],  "access the simplex at the given index")
+        .def("__getitem__",     &filtration_getitem<PyFiltration>, "access the simplex at the given index")
         .def("__setitem__",     &PyFiltration::replace,     "replace the simplex at the given index")
         .def("index",           [](PyFiltration* f, const PySimplex& s) { return f->index(s,f->size()); }, "s"_a, "find an ordered index of a simplex s in the filtration")
         .def("index",           &PyFiltration::index,       "s"_a, "i"_a, "find the ordered index of a simplex s (no later than i) in the filtration")

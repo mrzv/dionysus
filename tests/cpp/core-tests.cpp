@@ -8,6 +8,7 @@
 #include <dionysus/linked-multi-filtration.h>
 #include <dionysus/multi-filtration.h>
 #include <dionysus/ordinary-persistence.h>
+#include <dionysus/rips.h>
 #include <dionysus/row-reduction.h>
 #include <dionysus/simplex.h>
 #include <dionysus/standard-reduction.h>
@@ -21,6 +22,7 @@ using CheckedFiltration = dionysus::Filtration<Simplex,
                                                boost::multi_index::hashed_unique<boost::multi_index::identity<Simplex>>,
                                                true>;
 using MultiFiltration = dionysus::MultiFiltration<Simplex, true>;
+using UncheckedMultiFiltration = dionysus::MultiFiltration<Simplex, false>;
 using LinkedMultiFiltration = dionysus::LinkedMultiFiltration<Simplex, true>;
 using Field = dionysus::ZpField<>;
 using Persistence = dionysus::OrdinaryPersistence<Field>;
@@ -166,6 +168,14 @@ void test_duplicate_filtration_checked_lookup_edges()
             "empty linked multi-filtration should reject missing cells");
 }
 
+void test_unchecked_multi_filtration_missing_lookup_returns_size()
+{
+    UncheckedMultiFiltration filtration({Simplex({0}, 0.0f), Simplex({2}, 0.0f)});
+
+    require(filtration.index(Simplex({1}, 0.0f), filtration.size()) == filtration.size(),
+            "unchecked multi-filtration should not return predecessor for a missing simplex");
+}
+
 void test_linked_multi_filtration_linked_lookup_and_rearrange()
 {
     LinkedMultiFiltration filtration({Simplex({0}, 0.0f), Simplex({0}, 1.0f), Simplex({1}, 0.0f), Simplex({0, 1}, 2.0f)});
@@ -214,6 +224,42 @@ void test_linked_multi_filtration_sort_updates_linked_indices()
     require(filtration.index(Simplex({0, 1}), 2) == 2, "linked sort should update the edge linked index");
 }
 
+struct TestDistances
+{
+    using IndexType = size_t;
+    using DistanceType = float;
+
+    explicit TestDistances(size_t size): size_(size) {}
+
+    DistanceType operator()(IndexType a, IndexType b) const
+    {
+        return a == b ? 0.0f : 1.0f;
+    }
+
+    size_t size() const { return size_; }
+    IndexType begin() const { return 0; }
+    IndexType end() const { return size_; }
+
+    size_t size_;
+};
+
+void test_rips_cofaces_and_max_distance()
+{
+    TestDistances distances(3);
+    dionysus::Rips<TestDistances> rips(distances);
+    std::vector<std::string> cofaces;
+
+    rips.cofaces(dionysus::Simplex<size_t>({0}), 1, 1.0f,
+                 [&](const dionysus::Simplex<size_t>& simplex)
+                 {
+                     cofaces.push_back(str(Simplex(simplex.dimension(), simplex.begin(), simplex.end())));
+                 });
+
+    require(rips.max_distance() == 1.0f, "rips max distance should inspect all pairs");
+    require(cofaces == std::vector<std::string>({"<0,1>", "<0,2>"}),
+            "rips cofaces should generate incident edges");
+}
+
 Filtration edge_filtration()
 {
     return Filtration({Simplex({0}, 0.0f), Simplex({1}, 1.0f), Simplex({0, 1}, 2.0f)});
@@ -258,9 +304,11 @@ int main()
     test_checked_filtration_rejects_missing_cell();
     test_multi_filtration_duplicate_lookup();
     test_duplicate_filtration_checked_lookup_edges();
+    test_unchecked_multi_filtration_missing_lookup_returns_size();
     test_linked_multi_filtration_linked_lookup_and_rearrange();
     test_linked_multi_filtration_fallback_when_link_misses();
     test_linked_multi_filtration_sort_updates_linked_indices();
+    test_rips_cofaces_and_max_distance();
     test_standard_reduction_edge_filtration();
     test_row_reduction_edge_filtration();
     return 0;

@@ -3,9 +3,6 @@
 #include <algorithm>
 #include <functional>
 
-#include <boost/range/adaptor/filtered.hpp>
-#include <boost/range/algorithm/set_algorithm.hpp>
-
 template<class D, class S>
 template<class Functor, class Iterator>
 void
@@ -18,7 +15,7 @@ generate(Dimension k, DistanceType max, const Functor& f, Iterator bg, Iterator 
     // candidates   = everything
     VertexContainer current;
     VertexContainer candidates(bg, end);
-    bron_kerbosch(current, candidates, std::prev(candidates.begin()), k, neighbor, f);
+    bron_kerbosch(current, candidates, 0, k, neighbor, f);
 }
 
 template<class D, class S>
@@ -37,7 +34,7 @@ vertex_cofaces(IndexType v, Dimension k, DistanceType max, const Functor& f, Ite
         if (*cur != v && neighbor(v, *cur))
             candidates.push_back(*cur);
 
-    bron_kerbosch(current, candidates, std::prev(candidates.begin()), k, neighbor, f);
+    bron_kerbosch(current, candidates, 0, k, neighbor, f);
 }
 
 template<class D, class S>
@@ -57,7 +54,7 @@ edge_cofaces(IndexType u, IndexType v, Dimension k, DistanceType max, const Func
         if (*cur != u && *cur != v && neighbor(v,*cur) && neighbor(u,*cur))
             candidates.push_back(*cur);
 
-    bron_kerbosch(current, candidates, std::prev(candidates.begin()), k, neighbor, f);
+    bron_kerbosch(current, candidates, 0, k, neighbor, f);
 }
 
 template<class D, class S>
@@ -66,8 +63,6 @@ void
 dionysus::Rips<D,S>::
 cofaces(const Simplex& s, Dimension k, DistanceType max, const Functor& f, Iterator bg, Iterator end) const
 {
-    namespace ba = boost::adaptors;
-
     auto neighbor = [this, max](Vertex u, Vertex v) { return this->distances()(u,v) <= max; };
 
     // current      = s
@@ -75,16 +70,23 @@ cofaces(const Simplex& s, Dimension k, DistanceType max, const Functor& f, Itera
 
     // candidates   = everything - s     that is a neighbor of every vertex in the simplex
     VertexContainer candidates;
-    boost::set_difference(std::make_pair(bg, end) |
-                                ba::filtered([this,&s,&neighbor](Vertex cur)
-                                             { for (auto& v : s)
-                                                   if (!neighbor(v, cur))
-                                                       return false;
-                                             }),
-                          s,
-                          std::back_inserter(candidates));
+    for (auto cur = bg; cur != end; ++cur)
+    {
+        if (std::binary_search(s.begin(), s.end(), *cur))
+            continue;
 
-    bron_kerbosch(current, candidates, std::prev(candidates.begin()), k, neighbor, f, false);
+        bool is_neighbor = true;
+        for (auto& v : s)
+            if (!neighbor(v, *cur))
+            {
+                is_neighbor = false;
+                break;
+            }
+        if (is_neighbor)
+            candidates.push_back(*cur);
+    }
+
+    bron_kerbosch(current, candidates, 0, k, neighbor, f, false);
 }
 
 
@@ -100,14 +102,32 @@ bron_kerbosch(VertexContainer&                          current,
               const Functor&                            functor,
               bool                                      check_initial)
 {
+    bron_kerbosch(current, candidates,
+                  static_cast<size_t>(std::distance(candidates.begin(), std::next(excluded))),
+                  max_dim, neighbor, functor, check_initial);
+}
+
+template<class D, class S>
+template<class Functor, class NeighborTest>
+void
+dionysus::Rips<D,S>::
+bron_kerbosch(VertexContainer&                          current,
+              const VertexContainer&                    candidates,
+              size_t                                    excluded,
+              Dimension                                 max_dim,
+              const NeighborTest&                       neighbor,
+              const Functor&                            functor,
+              bool                                      check_initial)
+{
     if (check_initial && !current.empty())
         functor(Simplex(current));
 
     if (current.size() == static_cast<size_t>(max_dim) + 1)
         return;
 
-    for (auto cur = std::next(excluded); cur != candidates.end(); ++cur)
+    for (size_t cur_idx = excluded; cur_idx < candidates.size(); ++cur_idx)
     {
+        auto cur = candidates.begin() + cur_idx;
         current.push_back(*cur);
 
         VertexContainer new_candidates;
@@ -118,9 +138,7 @@ bron_kerbosch(VertexContainer&                          current,
         for (auto ccur = std::next(cur); ccur != candidates.end(); ++ccur)
             if (neighbor(*ccur, *cur))
                 new_candidates.push_back(*ccur);
-        excluded  = new_candidates.begin() + (ex - 1);
-
-        bron_kerbosch(current, new_candidates, excluded, max_dim, neighbor, functor);
+        bron_kerbosch(current, new_candidates, ex, max_dim, neighbor, functor);
         current.pop_back();
     }
 }
@@ -144,7 +162,7 @@ max_distance() const
 {
     DistanceType mx = 0;
     for (IndexType a = distances_.begin(); a != distances_.end(); ++a)
-        for (IndexType b = std::next(a); b != distances_.end(); ++b)
+        for (IndexType b = a + 1; b != distances_.end(); ++b)
             mx = std::max(mx, distances_(a,b));
     return mx;
 }

@@ -1,5 +1,6 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/numpy.h>
+#include <stdexcept>
 namespace py = pybind11;
 
 #include <dionysus/freudenthal.h>
@@ -13,7 +14,11 @@ PyFiltration fill_freudenthal_(py::array a, bool reverse)
     std::vector<size_t> strides;
     strides.reserve(a.ndim());
     for (size_t i = 0; i < a.ndim(); ++i)
+    {
+        if (a.strides(i) < 0)
+            throw std::runtime_error("negative array strides are not supported");
         strides.push_back(a.strides(i) / sizeof(T));
+    }
 
     const T* a_data = static_cast<const T*>(a.data(0));
     return dionysus::fill_freudenthal<PyFiltration>(shape, strides, a_data, reverse, DataDimCmp(reverse));
