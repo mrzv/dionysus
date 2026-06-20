@@ -78,7 +78,7 @@ class Simplex
                                 Data&& d = Data()):
                             dim_(dim),
                             vertices_(new Vertex[size()]),
-                            data_(std::move(d))                     { std::copy(b, e, begin()); std::sort(begin(), end()); }
+                            data_(std::move(d))                     { (void)e; std::copy_n(b, size(), begin()); std::sort(begin(), end()); }
 
         template<class Iterator>
                         Simplex(short dim,
@@ -86,7 +86,7 @@ class Simplex
                                 const Data& d):
                             dim_(dim),
                             vertices_(new Vertex[size()]),
-                            data_(d)                                { std::copy(b, e, begin()); std::sort(begin(), end()); }
+                            data_(d)                                { (void)e; std::copy_n(b, size(), begin()); std::sort(begin(), end()); }
 
         short           dimension() const                           { return dim_; }
 
