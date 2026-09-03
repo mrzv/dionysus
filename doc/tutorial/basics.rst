@@ -251,6 +251,20 @@ Diagram Distances
     >>> print("Bottleneck distance between 1-dimensional persistence diagrams:", bdist)
     Bottleneck distance between 1-dimensional persistence diagrams: 0.060736045241355896
 
+Pass ``compute_longest_edge=True`` to also return a pair of input point
+indices. For a finite, nonzero distance, with ``delta=0`` the edge realizes
+the exact distance. With a positive ``delta``, it is the longest edge in one
+of Hera's approximate matchings, while the returned distance is an upper
+bound and need not equal the edge length. An index of ``-1`` represents the
+diagonal. Zero and infinite distances return the sentinel pair ``(-1, -1)``.
+
+.. doctest::
+
+    >>> dgm1 = d.Diagram([(0, 10)])
+    >>> dgm2 = d.Diagram([(2, 12)])
+    >>> d.bottleneck_distance(dgm1, dgm2, delta=0, compute_longest_edge=True)
+    (2.0, (0, 0))
+
 .. _homologous-cycles:
 
 Homologous Cycles
