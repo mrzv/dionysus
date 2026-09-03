@@ -68,12 +68,19 @@ def plot_bars(dgm, order='birth', show=False, ax=None, **bar_style):
         ax (AxesSubplot): Axes that should be used for plotting (Default: None)
         **bar_style: Arguments passed to `ax.plot` for style of the bars.
                      (Defaults: color='b')
+
+    Infinite bars extend beyond every finite endpoint and end with a
+    right-facing marker.
     """
 
     import matplotlib.pyplot as plt
+    import math
 
     bar_kwargs = {'color': 'b'}
     bar_kwargs.update(bar_style)
+    infinite_kwargs = dict(bar_kwargs)
+    infinite_kwargs.setdefault('marker', '>')
+    infinite_kwargs.setdefault('markevery', [1])
 
     if order == 'death':
         generator = enumerate(sorted(dgm, key = lambda p: p.death))
@@ -81,7 +88,15 @@ def plot_bars(dgm, order='birth', show=False, ax=None, **bar_style):
         generator = enumerate(dgm)
 
     inf = float('inf')
-    max_death = max((p.death for p in dgm if p.death != inf), default = 1)
+    max_death = max((p.death for p in dgm if p.death != inf), default = None)
+    min_birth = min((p.birth for p in dgm), default = 0)
+    max_birth = max((p.birth for p in dgm), default = 1)
+    max_coordinate = max_birth if max_death is None else max(max_birth, max_death)
+    padding_scale = max(max_coordinate - min_birth,
+                        abs(max_coordinate), abs(min_birth), 1)
+    infinity_end = max_coordinate + .05 * padding_scale
+    if infinity_end == max_coordinate:
+        infinity_end = math.nextafter(max_coordinate, inf)
 
     if ax is None:
         ax = plt.axes()
@@ -90,7 +105,7 @@ def plot_bars(dgm, order='birth', show=False, ax=None, **bar_style):
         if p.death != inf:
             ax.plot([p.birth, p.death], [i,i], **bar_kwargs)
         else:
-            ax.plot([p.birth, max_death], [i,i], **bar_kwargs)
+            ax.plot([p.birth, infinity_end], [i,i], **infinite_kwargs)
 
     if show:
         plt.show()
