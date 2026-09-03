@@ -1,5 +1,5 @@
 import dionysus as d
-import matplotlib.pyplot as plt
+from matplotlib.figure import Figure
 
 def test_issue47():
     # init the complex/filtration
@@ -20,4 +20,4 @@ def test_issue47():
     m = d.homology_persistence(filtr)
     dgm = d.init_diagrams(m, filtr)
 
-    d.plot.plot_diagram(dgm[0])
+    d.plot.plot_diagram(dgm[0], ax=Figure().subplots())

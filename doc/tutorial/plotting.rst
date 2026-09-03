@@ -37,6 +37,9 @@ by passing ``order = 'death'`` to the function.
 
     >>> d.plot.plot_bars(dgms[1], show = True)
 
+Infinite bars extend beyond every finite endpoint and end with a right-facing
+marker.
+
 When the diagram is very dense, it's often convenient to look at the histogram
 of point density, using :func:`~dionysus.plot.plot_diagram_density`:
 
